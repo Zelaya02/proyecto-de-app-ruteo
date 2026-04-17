@@ -8,7 +8,10 @@
     <groupId>com.ruteo</groupId>
     <artifactId>ruteo-backend</artifactId>
     <version>1.0.0</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
+    <modules>
+        <module>demo</module>
+    </modules>
     
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
