@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 
 public class Main {
     private static final Gson gson = new Gson();
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/ruteo_db";
+    private static final String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db";
     private static final String DB_USER = "postgres";
-    private static final String DB_PASSWORD = "tu_contraseña";
+    private static final String DB_PASSWORD = "Zelaya1103";
     
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
