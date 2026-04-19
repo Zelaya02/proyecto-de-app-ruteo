@@ -1,0 +1,5 @@
+tener postgresql instalado , configurado y colocar tus datos correctos dentro del main
+tener las extensiones de java instaladas , lo ideal es que sea sea en antigravity y no en 
+visual
+crear la base de datos ruteo_db e importart los datoos que se encuentran en ek kml, cooo ya dentro del archivooo import.sql como 
+para su ejecucion en inyeccion en el sql de ruteo_db
