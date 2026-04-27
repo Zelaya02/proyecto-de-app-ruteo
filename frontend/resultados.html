@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXO - Rutas Generadas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1E3A5F, #2c4a6e);
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h1 i {
+            color: #F4A261;
+            margin-right: 10px;
+        }
+
+        .container {
+            max-width: 90%;
+            margin: 20px auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab.active {
+            background: #F4A261;
+            color: #1E3A5F;
+            border-bottom: 3px solid #1E3A5F;
+        }
+
+        .tab:hover:not(.active) {
+            background: #e0e0e0;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 0 12px 12px 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .ruta-resumen {
+            background: #1E3A5F;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f0f2f5;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .btn-wa {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-wa:hover {
+            background: #128C7E;
+        }
+
+        .btn-enviar-todos {
+            background: #F4A261;
+            color: #1E3A5F;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-cerrar {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .tab {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            td,
+            th {
+                font-size: 11px;
+                padding: 6px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1><i class="fas fa-route"></i> NEXO - Rutas Optimizadas</h1>
+        <p>Selecciona un móvil para ver los clientes en orden de visita</p>
+    </div>
+
+    <div class="container">
+        <div id="tabsContainer" class="tabs"></div>
+        <div id="contentContainer"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px;">
+            <button class="btn-cerrar" onclick="window.close()"><i class="fas fa-times"></i> Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        const rutasData = JSON.parse(localStorage.getItem('rutasGeneradas') || '{}');
+
+        if (!rutasData.moviles || rutasData.moviles.length === 0) {
+            document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>❌ No hay datos de rutas</h2><button onclick="window.close()">Cerrar</button></div>';
+        }
+
+        function generarLinkWhatsApp(movil) {
+            const token = movil.token;
+            const link = `http://localhost:8080/ruta.html?token=${token}`;
+            const mensaje = encodeURIComponent(`📦 *NEXO - Tu ruta de hoy* 📦\n\n🚚 *Móvil ${movil.movil}*\n📋 Clientes: ${movil.clientes.length}\n📍 Distancia total: ${movil.distancia_total} km\n⏱ Tiempo estimado: ${movil.tiempo_estimado} minutos\n\n🔗 *Haz clic aquí para ver tu ruta:*\n${link}\n\n⚠️ Recuerda marcar cada visita como ENTREGADO, RECHAZADO o PENDIENTE.`);
+            return `https://api.whatsapp.com/send?text=${mensaje}`;
+        }
+
+        function renderTabs() {
+            const tabsContainer = document.getElementById('tabsContainer');
+            const contentContainer = document.getElementById('contentContainer');
+
+            tabsContainer.innerHTML = '';
+            contentContainer.innerHTML = '';
+
+            rutasData.moviles.forEach((movil, idx) => {
+                // Crear tab
+                const tab = document.createElement('button');
+                tab.className = `tab ${idx === 0 ? 'active' : ''}`;
+                tab.innerHTML = `<i class="fas fa-truck"></i> Móvil ${movil.movil} (${movil.clientes.length})`;
+                tab.onclick = () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(`tab-${idx}`).classList.add('active');
+                };
+                tabsContainer.appendChild(tab);
+
+                // Crear contenido
+                const content = document.createElement('div');
+                content.className = `tab-content ${idx === 0 ? 'active' : ''}`;
+                content.id = `tab-${idx}`;
+
+                // Clientes en orden
+                let clientesHtml = '';
+                movil.clientes.forEach((cliente, i) => {
+                    const esUltimo = i === movil.clientes.length - 1;
+                    const distanciaSig = esUltimo ? 'FIN' : `${cliente.distancia_siguiente} km`;
+                    clientesHtml += `
+                    <tr>
+                        <td><strong>${i + 1}</strong></td>
+                        <td>${cliente.nombre}</td>
+                        <td>${distanciaSig}</td>
+                    </tr>
+                `;
+                });
+
+                content.innerHTML = `
+                <div class="ruta-resumen">
+                    <span><i class="fas fa-map-marker-alt"></i> ${movil.clientes.length} clientes</span>
+                    <span><i class="fas fa-road"></i> ${movil.distancia_total} km</span>
+                    <span><i class="fas fa-clock"></i> ${movil.tiempo_estimado} minutos</span>
+                </div>
+                <table>
+                    <thead><tr><th>#</th><th>Cliente</th><th>Distancia al siguiente</th></tr></thead>
+                    <tbody>${clientesHtml}</tbody>
+                </table>
+                <div style="margin-top: 20px;">
+                    <button class="btn-wa" onclick="window.open('${generarLinkWhatsApp(movil)}', '_blank')">
+                        <i class="fab fa-whatsapp"></i> Enviar ruta a WhatsApp
+                    </button>
+                </div>
+            `;
+                contentContainer.appendChild(content);
+            });
+
+            // Botón enviar todos
+            const btnWrapper = document.createElement('div');
+            btnWrapper.style.textAlign = 'center';
+            btnWrapper.style.marginTop = '20px';
+
+            const btnTodos = document.createElement('button');
+            btnTodos.className = 'btn-enviar-todos';
+            btnTodos.innerHTML = '<i class="fab fa-whatsapp"></i> ENVIAR TODAS LAS RUTAS A WHATSAPP';
+            btnTodos.onclick = () => {
+                rutasData.moviles.forEach(movil => {
+                    window.open(generarLinkWhatsApp(movil), '_blank');
+                });
+                setTimeout(() => alert('✅ Se abrieron los chats de WhatsApp para cada móvil'), 500);
+            };
+            btnWrapper.appendChild(btnTodos);
+            contentContainer.appendChild(btnWrapper);
+        }
+
+        renderTabs();
+    </script>
+
+</body>
+
+</html>

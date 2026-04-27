@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXO - Panel de Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f0f2f5;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1E3A5F, #2c4a6e);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 i {
+            font-size: 32px;
+            color: #F4A261;
+        }
+
+        .header p {
+            margin-top: 8px;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        /* Contenedor principal */
+        .container {
+            max-width: 95%;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        /* Panel de controles */
+        .controles {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .busqueda {
+            flex: 2;
+            min-width: 250px;
+        }
+
+        .busqueda label {
+            font-weight: 600;
+            color: #1E3A5F;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .busqueda input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .busqueda input:focus {
+            outline: none;
+            border-color: #F4A261;
+        }
+
+        .contadores {
+            background: #FFF3E0;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .contadores span {
+            font-size: 24px;
+            font-weight: bold;
+            color: #F4A261;
+        }
+
+        .botones-accion {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #F4A261;
+            color: #1E3A5F;
+        }
+
+        .btn-primary:hover {
+            background: #e8852a;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #1E3A5F;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #2c4a6e;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #1E3A5F;
+            color: #1E3A5F;
+        }
+
+        .btn-outline:hover {
+            background: #1E3A5F;
+            color: white;
+        }
+
+        /* Tabla */
+        .tabla-container {
+            background: white;
+            border-radius: 12px;
+            overflow-x: auto;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #1E3A5F;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .checkbox-cliente {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .badge {
+            background: #e0e0e0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .controles {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            th,
+            td {
+                font-size: 12px;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>
+            <i class="fas fa-truck-fast"></i>
+            NEXO - Ruteo Inteligente
+        </h1>
+        <p>Gestión de rutas para PyMEs de reparto - Gran Asunción</p>
+    </div>
+
+    <div class="container">
+        <!-- Panel de controles -->
+        <div class="controles">
+            <div class="busqueda">
+                <label><i class="fas fa-search"></i> Buscar cliente</label>
+                <input type="text" id="buscador" placeholder="Escribe el nombre...">
+            </div>
+
+            <div class="contadores">
+                <i class="fas fa-users"></i>
+                <span id="totalClientes">0</span> total |
+                <i class="fas fa-check-square"></i>
+                <span id="seleccionados">0</span> seleccionados
+            </div>
+
+            <div class="botones-accion">
+                <button class="btn btn-outline" onclick="seleccionarTodos(true)">
+                    <i class="fas fa-check-double"></i> Seleccionar todos
+                </button>
+                <button class="btn btn-outline" onclick="seleccionarTodos(false)">
+                    <i class="fas fa-times"></i> Deseleccionar todos
+                </button>
+            </div>
+        </div>
+
+        <!-- Configuración de móviles -->
+        <div class="controles" style="margin-top: -10px;">
+            <div>
+                <label><i class="fas fa-truck"></i> Número de móviles disponibles</label>
+                <input type="number" id="numMoviles" value="3" min="1" max="20"
+                    style="width: 100px; padding: 10px; border-radius: 8px; border: 2px solid #e0e0e0; margin-top: 5px;">
+            </div>
+            <button class="btn btn-primary" id="btnGenerar" onclick="generarRutas()">
+                <i class="fas fa-route"></i> GENERAR RUTAS ÓPTIMAS
+            </button>
+        </div>
+
+        <!-- Tabla de clientes -->
+        <div class="tabla-container">
+            <table id="tablaClientes">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;"><input type="checkbox" id="checkboxTodo" onclick="toggleAll()"></th>
+                        <th style="width: 60px;">ID</th>
+                        <th>Nombre del Cliente</th>
+                        <th>Ubicación (lat/lon)</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla">
+                    <tr>
+                        <td colspan="4" style="text-align: center;">Cargando clientes...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <i class="fas fa-clock"></i> Datos actualizados | NEXO - Sistema de Ruteo Inteligente
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let clientes = [];
+        let clientesFiltrados = [];
+
+        // ========== OBTENER CLIENTES DEL BACKEND ==========
+        async function cargarClientes() {
+            try {
+                const response = await fetch('http://localhost:8080/api/clientes');
+                if (!response.ok) throw new Error('Error al cargar clientes');
+                clientes = await response.json();
+                clientesFiltrados = [...clientes];
+                actualizarTabla();
+                actualizarContadores();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('cuerpoTabla').innerHTML = `
+                <tr><td colspan="4" style="text-align: center; color: red;">
+                    ❌ Error al conectar con el servidor. ¿El backend está corriendo en puerto 8080?
+                </td></tr>
+            `;
+            }
+        }
+
+        // Mostrar tabla
+        function actualizarTabla() {
+            const tbody = document.getElementById('cuerpoTabla');
+
+            if (clientesFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No se encontraron clientes</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = clientesFiltrados.map(cliente => `
+            <tr>
+                <td><input type="checkbox" class="checkbox-cliente" data-id="${cliente.id}" ${cliente.seleccionado ? 'checked' : ''} onchange="toggleCliente(${cliente.id})"></td>
+                <td>${cliente.id}</td>
+                <td><strong>${escapeHtml(cliente.nombre)}</strong><br><small class="badge">${cliente.direccion || 'Sin dirección'}</small></td>
+                <td>${cliente.latitud}, ${cliente.longitud}</td>
+            </tr>
+        `).join('');
+
+            document.getElementById('checkboxTodo').checked = clientesFiltrados.length > 0 && clientesFiltrados.every(c => c.seleccionado);
+        }
+
+        function actualizarContadores() {
+            const total = clientes.length;
+            const seleccionados = clientes.filter(c => c.seleccionado).length;
+            document.getElementById('totalClientes').textContent = total;
+            document.getElementById('seleccionados').textContent = seleccionados;
+        }
+
+        function toggleCliente(id) {
+            const cliente = clientes.find(c => c.id === id);
+            if (cliente) cliente.seleccionado = !cliente.seleccionado;
+            actualizarTabla();
+            actualizarContadores();
+        }
+
+        function seleccionarTodos(seleccionar) {
+            clientes.forEach(c => c.seleccionado = seleccionar);
+            actualizarTabla();
+            actualizarContadores();
+        }
+
+        function toggleAll() {
+            const seleccionar = document.getElementById('checkboxTodo').checked;
+            seleccionarTodos(seleccionar);
+        }
+
+        // Búsqueda en tiempo real
+        document.getElementById('buscador').addEventListener('input', function (e) {
+            const termino = e.target.value.toLowerCase();
+            clientesFiltrados = clientes.filter(c => c.nombre.toLowerCase().includes(termino));
+            actualizarTabla();
+        });
+
+        // Generar rutas
+        async function generarRutas() {
+            const seleccionados = clientes.filter(c => c.seleccionado).map(c => c.id);
+
+            if (seleccionados.length === 0) {
+                alert('❌ Seleccione al menos un cliente');
+                return;
+            }
+
+            const numMoviles = parseInt(document.getElementById('numMoviles').value);
+
+            if (isNaN(numMoviles) || numMoviles < 1) {
+                alert('Ingrese un número válido de móviles');
+                return;
+            }
+
+            // Mostrar loading
+            const btn = document.getElementById('btnGenerar');
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando rutas...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('http://localhost:8080/api/generar-rutas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente_ids: seleccionados,
+                        num_moviles: numMoviles
+                    })
+                });
+
+                if (!response.ok) throw new Error('Error al generar rutas');
+
+                const data = await response.json();
+
+                // Guardar en localStorage para pasar a la siguiente página
+                localStorage.setItem('rutasGeneradas', JSON.stringify(data));
+
+                // Abrir resultados en nueva pestaña
+                window.open('resultados.html', '_blank');
+
+            } catch (error) {
+                console.error(error);
+                alert('❌ Error al generar rutas. Verifique que el backend esté corriendo.');
+            } finally {
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Inicializar
+        cargarClientes();
+    </script>
+
+</body>
+
+</html>
