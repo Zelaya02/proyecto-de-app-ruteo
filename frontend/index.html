@@ -272,13 +272,12 @@
                     <tr>
                         <th style="width: 50px;"><input type="checkbox" id="checkboxTodo" onclick="toggleAll()"></th>
                         <th style="width: 60px;">ID</th>
-                        <th>Nombre del Cliente</th>
-                        <th>Ubicación (lat/lon)</th>
+                        <th>Nombre del Cliente y Dirección</th>
                     </tr>
                 </thead>
                 <tbody id="cuerpoTabla">
                     <tr>
-                        <td colspan="4" style="text-align: center;">Cargando clientes...</td>
+                        <td colspan="3" style="text-align: center;">Cargando clientes...</td>
                     </tr>
                 </tbody>
             </table>
@@ -306,7 +305,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('cuerpoTabla').innerHTML = `
-                <tr><td colspan="4" style="text-align: center; color: red;">
+                <tr><td colspan="3" style="text-align: center; color: red;">
                     ❌ Error al conectar con el servidor. ¿El backend está corriendo en puerto 8080?
                 </td></tr>
             `;
@@ -318,7 +317,7 @@
             const tbody = document.getElementById('cuerpoTabla');
 
             if (clientesFiltrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No se encontraron clientes</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No se encontraron clientes</td></tr>';
                 return;
             }
 
@@ -326,8 +325,7 @@
             <tr>
                 <td><input type="checkbox" class="checkbox-cliente" data-id="${cliente.id}" ${cliente.seleccionado ? 'checked' : ''} onchange="toggleCliente(${cliente.id})"></td>
                 <td>${cliente.id}</td>
-                <td><strong>${escapeHtml(cliente.nombre)}</strong><br><small class="badge">${cliente.direccion || 'Sin dirección'}</small></td>
-                <td>${cliente.latitud}, ${cliente.longitud}</td>
+                <td><strong>${escapeHtml(cliente.nombre)}</strong><br><small class="badge" style="background:#e8f0fe; color:#1E3A5F; margin-top:5px; display:inline-block;"><i class="fas fa-map-marker-alt"></i> ${cliente.direccion || 'Gran Asunción'}</small></td>
             </tr>
         `).join('');
 

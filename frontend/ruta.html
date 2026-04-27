@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXO - Mi Ruta</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding-bottom: 20px; }
+        .header { background: linear-gradient(135deg, #1E3A5F, #2c4a6e); color: white; padding: 15px; text-align: center; }
+        .header h1 { font-size: 20px; }
+        
+        .container { max-width: 800px; margin: 10px auto; padding: 0 10px; }
+        .resumen { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-around; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .resumen div { text-align: center; font-size: 14px; }
+        .resumen div i { color: #F4A261; display: block; font-size: 20px; margin-bottom: 5px; }
+        
+        #map { height: 250px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1; }
+        
+        .cliente-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .cliente-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+        .cliente-numero { background: #1E3A5F; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .cliente-info { flex: 1; margin-left: 10px; }
+        .cliente-info h3 { font-size: 16px; color: #333; }
+        .cliente-info p { font-size: 12px; color: #666; margin-top: 5px; }
+        
+        .estado-botones { display: flex; gap: 5px; margin-top: 10px; }
+        .btn-estado { flex: 1; padding: 8px; border: 1px solid #ccc; background: white; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.2s; }
+        
+        .btn-estado.pendiente.activo { background: #6c757d; color: white; border-color: #6c757d; }
+        .btn-estado.entregado.activo { background: #28a745; color: white; border-color: #28a745; }
+        .btn-estado.rechazado.activo { background: #dc3545; color: white; border-color: #dc3545; }
+        
+        .observacion { width: 100%; margin-top: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px; }
+        .btn-guardar { width: 100%; margin-top: 10px; padding: 10px; background: #F4A261; color: #1E3A5F; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .btn-finalizar { width: 100%; padding: 15px; background: #1E3A5F; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1><i class="fas fa-truck"></i> NEXO - Mi Ruta</h1>
+        <p id="movilLabel" style="font-size: 12px; margin-top: 5px;"></p>
+    </div>
+
+    <div class="container">
+        <div class="resumen" id="resumenRuta">
+            <div><i class="fas fa-route"></i> <span id="distTotal">0</span> km</div>
+            <div><i class="fas fa-clock"></i> <span id="tiempoEst">0</span> min</div>
+            <div><i class="fas fa-map-marker-alt"></i> <span id="cantClientes">0</span> paradas</div>
+        </div>
+
+        <div id="map"></div>
+
+        <div id="listaClientes">
+            <div style="text-align:center; padding: 20px;">Cargando ruta...</div>
+        </div>
+        
+        <button class="btn-finalizar" onclick="alert('Reporte finalizado!')">
+            <i class="fas fa-flag-checkered"></i> ENVIAR REPORTE FINAL
+        </button>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        let map;
+
+        if (!token) {
+            document.body.innerHTML = '<h2 style="text-align:center; margin-top:50px; color:red;">❌ No se proporcionó un token válido.</h2>';
+        } else {
+            cargarRuta();
+        }
+
+        async function cargarRuta() {
+            try {
+                // Como ahora el frontend y backend se sirven del mismo puerto 8080 si entran por "/", o por 5500 con LiveServer
+                const baseUrl = window.location.port === '5500' ? 'http://localhost:8080' : '';
+                const response = await fetch(`${baseUrl}/api/ruta?token=${token}`);
+                if (!response.ok) throw new Error('Error al cargar la ruta');
+                
+                const ruta = await response.json();
+                
+                document.getElementById('movilLabel').textContent = `Móvil ${ruta.movil}`;
+                document.getElementById('distTotal').textContent = ruta.distancia_total;
+                document.getElementById('tiempoEst').textContent = ruta.tiempo_estimado;
+                document.getElementById('cantClientes').textContent = ruta.clientes.length;
+                
+                renderMap(ruta.clientes);
+                renderClientes(ruta.clientes);
+                
+            } catch (error) {
+                console.error(error);
+                document.getElementById('listaClientes').innerHTML = `<p style="color:red;text-align:center;">❌ Error al cargar los datos de la ruta.</p>`;
+            }
+        }
+
+        function renderMap(clientes) {
+            if (clientes.length === 0) return;
+            
+            // Centrar el mapa en el primer cliente
+            map = L.map('map').setView([clientes[0].latitud, clientes[0].longitud], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            const latlngs = [];
+            
+            clientes.forEach((cliente, index) => {
+                const lat = cliente.latitud;
+                const lon = cliente.longitud;
+                latlngs.push([lat, lon]);
+                
+                const marker = L.marker([lat, lon]).addTo(map);
+                marker.bindPopup(`<b>${index + 1}. ${cliente.nombre}</b><br>Estado: ${cliente.estado}`);
+            });
+            
+            // Trazar línea de la ruta
+            const polyline = L.polyline(latlngs, {color: '#F4A261', weight: 4}).addTo(map);
+            map.fitBounds(polyline.getBounds());
+        }
+
+        function renderClientes(clientes) {
+            const container = document.getElementById('listaClientes');
+            container.innerHTML = '';
+            
+            clientes.forEach((c, index) => {
+                const html = `
+                <div class="cliente-card" id="card-${c.id}">
+                    <div class="cliente-header">
+                        <div class="cliente-numero">${index + 1}</div>
+                        <div class="cliente-info">
+                            <h3>${c.nombre}</h3>
+                            <p><i class="fas fa-location-arrow"></i> a ${c.distancia_siguiente || '0'} km del siguiente punto</p>
+                        </div>
+                    </div>
+                    
+                    <div class="estado-botones">
+                        <button class="btn-estado pendiente ${c.estado==='pendiente'?'activo':''}" onclick="setEstado(${c.id}, 'pendiente')">PENDIENTE</button>
+                        <button class="btn-estado entregado ${c.estado==='entregado'?'activo':''}" onclick="setEstado(${c.id}, 'entregado')">ENTREGADO</button>
+                        <button class="btn-estado rechazado ${c.estado==='rechazado'?'activo':''}" onclick="setEstado(${c.id}, 'rechazado')">RECHAZADO</button>
+                    </div>
+                    
+                    <input type="text" class="observacion" id="obs-${c.id}" placeholder="Observación (opcional)..." value="${c.observacion || ''}">
+                    <button class="btn-guardar" onclick="guardarEstado(${c.id})"><i class="fas fa-save"></i> Guardar Estado</button>
+                </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        function setEstado(clienteId, estado) {
+            const card = document.getElementById(`card-${clienteId}`);
+            card.querySelectorAll('.btn-estado').forEach(btn => btn.classList.remove('activo'));
+            card.querySelector(`.btn-estado.${estado}`).classList.add('activo');
+        }
+
+        async function guardarEstado(clienteId) {
+            const card = document.getElementById(`card-${clienteId}`);
+            let estado = 'pendiente';
+            if (card.querySelector('.btn-estado.entregado').classList.contains('activo')) estado = 'entregado';
+            if (card.querySelector('.btn-estado.rechazado').classList.contains('activo')) estado = 'rechazado';
+            
+            const observacion = document.getElementById(`obs-${clienteId}`).value;
+            
+            const btn = card.querySelector('.btn-guardar');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            btn.disabled = true;
+
+            try {
+                const baseUrl = window.location.port === '5500' ? 'http://localhost:8080' : '';
+                const res = await fetch(`${baseUrl}/api/actualizar-estado`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, cliente_id: clienteId, estado, observacion })
+                });
+                
+                if(!res.ok) throw new Error('Error al guardar');
+                
+                btn.innerHTML = '<i class="fas fa-check"></i> Guardado!';
+                btn.style.background = '#28a745';
+                btn.style.color = 'white';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '#F4A261';
+                    btn.style.color = '#1E3A5F';
+                    btn.disabled = false;
+                }, 2000);
+                
+            } catch (error) {
+                console.error(error);
+                alert('❌ Error al guardar estado');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
