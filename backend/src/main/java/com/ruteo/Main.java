@@ -90,6 +90,7 @@ public class Main {
                         cliente.put("id", rs.getInt("id"));
                         cliente.put("nombre", rs.getString("nombre"));
                         cliente.put("direccion", rs.getString("ciudad")); // Usamos ciudad como direccion para el frontend
+                        cliente.put("tipo_cliente", rs.getString("tipo_cliente"));
                         cliente.put("latitud", rs.getDouble("latitud"));
                         cliente.put("longitud", rs.getDouble("longitud"));
                         cliente.put("seleccionado", false);

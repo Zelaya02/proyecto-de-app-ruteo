@@ -220,12 +220,19 @@
 
 <body>
 
-    <div class="header">
-        <h1>
-            <i class="fas fa-truck-fast"></i>
-            NEXO - Ruteo Inteligente
-        </h1>
-        <p>Gestión de rutas para PyMEs de reparto - Gran Asunción</p>
+    <div class="header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+        <div>
+            <h1 style="display:flex; align-items:center;">
+                <img src="assets/img/LogoNexo.png" alt="NEXO" style="height: 40px; margin-right: 15px; border-radius: 8px;">
+                NEXO - Ruteo Inteligente
+            </h1>
+            <p>Gestión de rutas para PyMEs de reparto - Gran Asunción</p>
+        </div>
+        <div>
+            <a href="https://www.google.com/maps/d/viewer?mid=1QD8ZONKwo2HGKci8IL_QoxaHPZf2tkI" target="_blank" class="btn btn-secondary" style="text-decoration:none;">
+                <i class="fas fa-map-marked-alt"></i> Ver Mapa en MyMaps
+            </a>
+        </div>
     </div>
 
     <div class="container">
@@ -244,23 +251,38 @@
             </div>
 
             <div class="botones-accion">
-                <button class="btn btn-outline" onclick="seleccionarTodos(true)">
-                    <i class="fas fa-check-double"></i> Seleccionar todos
-                </button>
-                <button class="btn btn-outline" onclick="seleccionarTodos(false)">
-                    <i class="fas fa-times"></i> Deseleccionar todos
-                </button>
+                <details style="position:relative; z-index:100;">
+                    <summary class="btn btn-outline" style="list-style:none; cursor:pointer;">
+                        <i class="fas fa-filter"></i> Filtros rápidos <i class="fas fa-chevron-down" style="font-size:10px; margin-left:5px;"></i>
+                    </summary>
+                    <div style="position:absolute; top:100%; right:0; background:white; border:1px solid #ddd; padding:10px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:8px; min-width:220px; margin-top:5px;">
+                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox" onchange="filtrarPorTipo('minorista/gastronómico', this.checked)"> Minorista / Gastronómico</label>
+                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox" onchange="filtrarPorTipo('supermercado', this.checked)"> Supermercados</label>
+                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox" onchange="filtrarPorTipo('mayorista', this.checked)"> Mayoristas</label>
+                        <hr style="border:none; border-top:1px solid #eee;">
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size:12px; width:100%;" onclick="document.querySelectorAll('details input[type=checkbox]').forEach(cb => { cb.checked = false; filtrarPorTipo('', false); }); tiposFiltro.clear(); aplicarFiltros();">Limpiar filtros</button>
+                    </div>
+                </details>
             </div>
         </div>
 
         <!-- Configuración de móviles -->
-        <div class="controles" style="margin-top: -10px;">
-            <div>
-                <label><i class="fas fa-truck"></i> Número de móviles disponibles</label>
-                <input type="number" id="numMoviles" value="3" min="1" max="20"
-                    style="width: 100px; padding: 10px; border-radius: 8px; border: 2px solid #e0e0e0; margin-top: 5px;">
+        <div class="controles" style="margin-top: -10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+                <div>
+                    <label style="display:block; font-size:12px; margin-bottom:2px;"><i class="fas fa-truck"></i> Móviles disponibles</label>
+                    <input type="number" id="numMoviles" value="3" min="1" max="20"
+                        style="width: 80px; padding: 8px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:12px; margin-bottom:2px;"><i class="fas fa-sort"></i> Ordenar por</label>
+                    <select id="ordenarPor" onchange="aplicarFiltros()" style="padding: 8px; border-radius: 8px; border: 2px solid #e0e0e0; min-width: 150px;">
+                        <option value="recientes">Recientemente Agregados</option>
+                        <option value="abecedario">Abecedario (A - Z)</option>
+                    </select>
+                </div>
             </div>
-            <button class="btn btn-primary" id="btnGenerar" onclick="generarRutas()">
+            <button class="btn btn-primary" id="btnGenerar" onclick="generarRutas()" style="margin-top: auto;">
                 <i class="fas fa-route"></i> GENERAR RUTAS ÓPTIMAS
             </button>
         </div>
@@ -271,13 +293,12 @@
                 <thead>
                     <tr>
                         <th style="width: 50px;"><input type="checkbox" id="checkboxTodo" onclick="toggleAll()"></th>
-                        <th style="width: 60px;">ID</th>
                         <th>Nombre del Cliente y Dirección</th>
                     </tr>
                 </thead>
                 <tbody id="cuerpoTabla">
                     <tr>
-                        <td colspan="3" style="text-align: center;">Cargando clientes...</td>
+                        <td colspan="2" style="text-align: center;">Cargando clientes...</td>
                     </tr>
                 </tbody>
             </table>
@@ -292,6 +313,7 @@
         // Variables globales
         let clientes = [];
         let clientesFiltrados = [];
+        let tiposFiltro = new Set();
 
         // ========== OBTENER CLIENTES DEL BACKEND ==========
         async function cargarClientes() {
@@ -299,9 +321,7 @@
                 const response = await fetch('http://localhost:8080/api/clientes');
                 if (!response.ok) throw new Error('Error al cargar clientes');
                 clientes = await response.json();
-                clientesFiltrados = [...clientes];
-                actualizarTabla();
-                actualizarContadores();
+                aplicarFiltros();
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('cuerpoTabla').innerHTML = `
@@ -312,28 +332,57 @@
             }
         }
 
+        function aplicarFiltros() {
+            const termino = document.getElementById('buscador').value.toLowerCase();
+            const orden = document.getElementById('ordenarPor').value;
+            
+            clientesFiltrados = clientes.filter(c => {
+                const matchNombre = c.nombre.toLowerCase().includes(termino);
+                const matchTipo = tiposFiltro.size === 0 || tiposFiltro.has(c.tipo_cliente);
+                return matchNombre && matchTipo;
+            });
+            
+            // Aplicar ordenación
+            if (orden === 'abecedario') {
+                clientesFiltrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            } else if (orden === 'recientes') {
+                clientesFiltrados.sort((a, b) => b.id - a.id);
+            }
+            
+            actualizarTabla();
+            actualizarContadores();
+        }
+
+        // Búsqueda en tiempo real
+        document.getElementById('buscador').addEventListener('input', function (e) {
+            aplicarFiltros();
+        });
+
         // Mostrar tabla
         function actualizarTabla() {
             const tbody = document.getElementById('cuerpoTabla');
 
             if (clientesFiltrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No se encontraron clientes</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">No se encontraron clientes</td></tr>';
+                document.getElementById('checkboxTodo').checked = false;
                 return;
             }
 
             tbody.innerHTML = clientesFiltrados.map(cliente => `
             <tr>
                 <td><input type="checkbox" class="checkbox-cliente" data-id="${cliente.id}" ${cliente.seleccionado ? 'checked' : ''} onchange="toggleCliente(${cliente.id})"></td>
-                <td>${cliente.id}</td>
-                <td><strong>${escapeHtml(cliente.nombre)}</strong><br><small class="badge" style="background:#e8f0fe; color:#1E3A5F; margin-top:5px; display:inline-block;"><i class="fas fa-map-marker-alt"></i> ${cliente.direccion || 'Gran Asunción'}</small></td>
+                <td><strong>${escapeHtml(cliente.nombre)}</strong><br>
+                    <small class="badge" style="background:#e8f0fe; color:#1E3A5F; margin-top:5px; display:inline-block;"><i class="fas fa-map-marker-alt"></i> ${cliente.direccion || 'Gran Asunción'}</small>
+                    <small class="badge" style="background:#fff3e0; color:#e67e22; margin-top:5px; margin-left:5px; display:inline-block; border: 1px solid #ffeaa7;"><i class="fas fa-tag"></i> ${cliente.tipo_cliente || 'minorista/gastronómico'}</small>
+                </td>
             </tr>
         `).join('');
 
-            document.getElementById('checkboxTodo').checked = clientesFiltrados.length > 0 && clientesFiltrados.every(c => c.seleccionado);
+            document.getElementById('checkboxTodo').checked = clientesFiltrados.every(c => c.seleccionado);
         }
 
         function actualizarContadores() {
-            const total = clientes.length;
+            const total = clientesFiltrados.length;
             const seleccionados = clientes.filter(c => c.seleccionado).length;
             document.getElementById('totalClientes').textContent = total;
             document.getElementById('seleccionados').textContent = seleccionados;
@@ -347,9 +396,19 @@
         }
 
         function seleccionarTodos(seleccionar) {
-            clientes.forEach(c => c.seleccionado = seleccionar);
+            clientesFiltrados.forEach(c => c.seleccionado = seleccionar);
             actualizarTabla();
             actualizarContadores();
+        }
+        
+        function filtrarPorTipo(tipo, activo) {
+            if (tipo === '') return; // Limpiar filtros call
+            if (activo) {
+                tiposFiltro.add(tipo);
+            } else {
+                tiposFiltro.delete(tipo);
+            }
+            aplicarFiltros();
         }
 
         function toggleAll() {
