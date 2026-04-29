@@ -17,12 +17,12 @@ public class UpdateTipos {
         // Mayoristas: Encina, Fraxa, Kiko
         stmt.executeUpdate("UPDATE clientes SET tipo_cliente = 'mayorista' WHERE nombre ILIKE '%Encina%' OR nombre ILIKE '%Fraxa%' OR nombre ILIKE '%Kiko%'");
         
-        // Supermercados: contienen 'super' (Supermercado, Superseis, Supermas, etc)
-        stmt.executeUpdate("UPDATE clientes SET tipo_cliente = 'supermercado' WHERE nombre ILIKE '%super%' OR nombre ILIKE '%seis%'");
-        // Nota: Muchos superseis no dicen 'supermercado' sino 'Superseis' que contiene 'super'. Salemma no contiene 'super' pero es super.
-        // Voy a agregar Salemma, Arete, Gran Via, Real, Hiperseis, etc. para ser precisos porque el usuario dijo "los que dicen super son supermercados".
-        // La regla estricta: "los que dicen super son supermercados"
-        stmt.executeUpdate("UPDATE clientes SET tipo_cliente = 'supermercado' WHERE nombre ILIKE '%super%'");
+        // Supermercados: contienen 'super', 'seis', 'box', 'casa rica', 'punto carne' o 'ahorrazo'
+        stmt.executeUpdate("UPDATE clientes SET tipo_cliente = 'supermercado' WHERE nombre ILIKE '%super%' OR nombre ILIKE '%seis%' OR nombre ILIKE '%box%' OR nombre ILIKE '%casa rica%' OR nombre ILIKE '%punto carne%' OR nombre ILIKE '%ahorrazo%'");
+        
+        // Regla específica para asegurar que Salemma, Real, Arete y Gran Vía también sean supermercados
+        stmt.executeUpdate("UPDATE clientes SET tipo_cliente = 'supermercado' WHERE nombre ILIKE '%salemma%' OR nombre ILIKE '%real%' OR nombre ILIKE '%areté%' OR nombre ILIKE '%gran via%' OR nombre ILIKE '%gran vía%'");
+
         
         // El usuario dijo "los que sucen super son supermercados", asumo que se refiere a "dicen super".
         

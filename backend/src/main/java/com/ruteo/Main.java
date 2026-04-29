@@ -78,9 +78,10 @@ public class Main {
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
+
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                    String sql = "SELECT * FROM clientes WHERE activo = true";
+                    String sql = "SELECT * FROM clientes WHERE activo = true ORDER BY id DESC";
                     Statement stmt = conn.createStatement();
                     ResultSet rs = stmt.executeQuery(sql);
                     
@@ -89,16 +90,91 @@ public class Main {
                         Map<String, Object> cliente = new HashMap<>();
                         cliente.put("id", rs.getInt("id"));
                         cliente.put("nombre", rs.getString("nombre"));
-                        cliente.put("direccion", rs.getString("ciudad")); // Usamos ciudad como direccion para el frontend
+                        cliente.put("direccion", rs.getString("ciudad"));
                         cliente.put("tipo_cliente", rs.getString("tipo_cliente"));
                         cliente.put("latitud", rs.getDouble("latitud"));
                         cliente.put("longitud", rs.getDouble("longitud"));
+                        cliente.put("cadena", rs.getString("cadena"));
                         cliente.put("seleccionado", false);
                         clientes.add(cliente);
                     }
                     sendResponse(exchange, 200, gson.toJson(clientes));
                 } catch (SQLException e) {
                     sendError(exchange, 500, "Error de base de datos");
+                }
+            } 
+            else if ("POST".equals(exchange.getRequestMethod()) || "PUT".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))
+                        .lines().collect(Collectors.joining("\n"));
+                    Map<String, Object> req = gson.fromJson(body, Map.class);
+                    
+                    String nombre = (String) req.get("nombre");
+                    String tipo = (String) req.get("tipo_cliente");
+                    String url = (String) req.get("url");
+                    String cadena = (String) req.get("cadena");
+                    
+                    double lat = 0, lon = 0;
+                    if (url != null && !url.isEmpty()) {
+                        double[] coords = parseGoogleMapsUrl(url);
+                        lat = coords[0];
+                        lon = coords[1];
+                    } else if (req.containsKey("latitud")) {
+                        lat = (Double) req.get("latitud");
+                        lon = (Double) req.get("longitud");
+                    }
+
+                    String ciudad = determinarCiudad(lat, lon);
+
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        if ("POST".equals(exchange.getRequestMethod())) {
+                            String sql = "INSERT INTO clientes (nombre, tipo_cliente, latitud, longitud, ciudad, cadena, activo) VALUES (?, ?, ?, ?, ?, ?, true)";
+                            PreparedStatement pstmt = conn.prepareStatement(sql);
+                            pstmt.setString(1, nombre);
+                            pstmt.setString(2, tipo);
+                            pstmt.setDouble(3, lat);
+                            pstmt.setDouble(4, lon);
+                            pstmt.setString(5, ciudad);
+                            pstmt.setString(6, cadena);
+                            pstmt.executeUpdate();
+                            sendResponse(exchange, 201, "{\"status\":\"created\"}");
+                        } else {
+                            int id = ((Double) req.get("id")).intValue();
+                            String sql = "UPDATE clientes SET nombre=?, tipo_cliente=?, latitud=?, longitud=?, ciudad=?, cadena=? WHERE id=?";
+                            PreparedStatement pstmt = conn.prepareStatement(sql);
+                            pstmt.setString(1, nombre);
+                            pstmt.setString(2, tipo);
+                            pstmt.setDouble(3, lat);
+                            pstmt.setDouble(4, lon);
+                            pstmt.setString(5, ciudad);
+                            pstmt.setString(6, cadena);
+                            pstmt.setInt(7, id);
+                            pstmt.executeUpdate();
+                            sendResponse(exchange, 200, "{\"status\":\"updated\"}");
+                        }
+                    }
+                } catch (Exception e) {
+                    sendError(exchange, 500, "Error: " + e.getMessage());
+                }
+            } 
+            else if ("DELETE".equals(exchange.getRequestMethod())) {
+                try {
+                    String query = exchange.getRequestURI().getQuery();
+                    if (query == null || !query.contains("id=")) {
+                        sendError(exchange, 400, "ID requerido");
+                        return;
+                    }
+                    int id = Integer.parseInt(query.split("id=")[1].split("&")[0]);
+
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "UPDATE clientes SET activo = false WHERE id = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setInt(1, id);
+                        pstmt.executeUpdate();
+                        sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
+                    }
+                } catch (Exception e) {
+                    sendError(exchange, 500, "Error: " + e.getMessage());
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -483,5 +559,98 @@ public class Main {
             current = bestNext;
         }
         return result;
+    }
+
+    private static double[] parseGoogleMapsUrl(String url) {
+        try {
+            url = url.trim();
+            // Soporte para formato DMS: 25°07'53.7"S 57°20'51.7"W
+            if (url.contains("°")) {
+                return parseDMS(url);
+            }
+            // Soporte para coordenadas decimales simples: -25.123, -57.123
+            if (url.contains(",") && !url.contains("http")) {
+                String[] p = url.split(",");
+                return new double[]{Double.parseDouble(p[0].trim()), Double.parseDouble(p[1].trim())};
+            }
+            // Formato estándar @lat,lon de Google Maps
+            if (url.contains("@")) {
+                String part = url.split("@")[1];
+                String[] coords = part.split(",");
+                return new double[]{Double.parseDouble(coords[0]), Double.parseDouble(coords[1])};
+            }
+            // Otros parámetros de búsqueda
+            String[] patterns = {"q=", "ll=", "query="};
+            for (String p : patterns) {
+                if (url.contains(p)) {
+                    String part = url.split(p)[1].split("&")[0];
+                    if (part.contains(",")) {
+                        String[] coords = part.split(",");
+                        return new double[]{Double.parseDouble(coords[0]), Double.parseDouble(coords[1])};
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error parseando: " + url);
+        }
+        return new double[]{-25.286, -57.611};
+    }
+
+    private static double[] parseDMS(String dms) {
+        try {
+            // Ejemplo: 25°07'53.7"S 57°20'51.7"W
+            String[] parts = dms.split(" ");
+            double lat = convertDMSToDecimal(parts[0]);
+            double lon = convertDMSToDecimal(parts[1]);
+            return new double[]{lat, lon};
+        } catch (Exception e) {
+            return new double[]{-25.286, -57.611};
+        }
+    }
+
+    private static double convertDMSToDecimal(String part) {
+        // 25°07'53.7"S
+        String degrees = part.split("°")[0];
+        String minutes = part.split("°")[1].split("'")[0];
+        String seconds = part.split("'")[1].split("\"")[0];
+        String direction = part.substring(part.length() - 1);
+
+        double dd = Math.abs(Double.parseDouble(degrees)) + 
+                    (Double.parseDouble(minutes) / 60.0) + 
+                    (Double.parseDouble(seconds) / 3600.0);
+
+        if (direction.equalsIgnoreCase("S") || direction.equalsIgnoreCase("W")) {
+            dd = dd * -1;
+        }
+        return dd;
+    }
+
+    private static String determinarCiudad(double lat, double lon) {
+        Object[][] centros = {
+            {"Asunción", -25.2864, -57.6115},
+            {"San Lorenzo", -25.3396, -57.5173},
+            {"Luque", -25.2691, -57.4851},
+            {"Lambaré", -25.3458, -57.6064},
+            {"Fernando de la Mora", -25.3261, -57.5544},
+            {"Capiatá", -25.3533, -57.4261},
+            {"Ñemby", -25.3941, -57.5352},
+            {"Mariano Roque Alonso", -25.2161, -57.5323},
+            {"Villa Elisa", -25.3671, -57.5901},
+            {"Itauguá", -25.3854, -57.3342},
+            {"Limpio", -25.1661, -57.4761},
+            {"Villa Hayes", -25.0931, -57.5250},
+            {"Benjamín Aceval", -25.0111, -57.3300},
+            {"Emboscada", -25.1141, -57.3481},
+            {"Arroyos y Esteros", -25.0661, -56.9331}
+        };
+        String mejorCiudad = "Gran Asunción";
+        double menorDistancia = 15.0; // Radio de búsqueda
+        for (Object[] centro : centros) {
+            double dist = haversine(lat, lon, (double)centro[1], (double)centro[2]);
+            if (dist < menorDistancia) {
+                menorDistancia = dist; mejorCiudad = (String)centro[0];
+            }
+        }
+        return mejorCiudad;
     }
 }

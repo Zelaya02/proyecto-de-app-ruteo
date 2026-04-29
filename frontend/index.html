@@ -251,6 +251,9 @@
             </div>
 
             <div class="botones-accion">
+                <button class="btn btn-secondary" onclick="abrirModalCliente()">
+                    <i class="fas fa-plus"></i> Añadir Cliente
+                </button>
                 <details style="position:relative; z-index:100;">
                     <summary class="btn btn-outline" style="list-style:none; cursor:pointer;">
                         <i class="fas fa-filter"></i> Filtros rápidos <i class="fas fa-chevron-down" style="font-size:10px; margin-left:5px;"></i>
@@ -294,6 +297,7 @@
                     <tr>
                         <th style="width: 50px;"><input type="checkbox" id="checkboxTodo" onclick="toggleAll()"></th>
                         <th>Nombre del Cliente y Dirección</th>
+                        <th style="width: 100px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="cuerpoTabla">
@@ -309,11 +313,56 @@
         </div>
     </div>
 
+    <!-- Modal Añadir/Editar Cliente -->
+    <div id="modalCliente" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:12px; width:450px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <h2 id="modalTitulo" style="margin-bottom:20px; color:#1E3A5F;"><i class="fas fa-user-plus"></i> Añadir Cliente</h2>
+            <form id="formCliente" onsubmit="guardarCliente(event)">
+                <input type="hidden" id="clienteId">
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600;">Nombre del Cliente</label>
+                    <input type="text" id="clienteNombre" required style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600;">Tipo de Cliente</label>
+                    <select id="clienteTipo" required style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
+                        <option value="minorista/gastronómico">Minorista / Gastronómico</option>
+                        <option value="supermercado">Supermercado</option>
+                        <option value="mayorista">Mayorista</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600;">URL Google Maps (Ubicación)</label>
+                    <input type="url" id="clienteUrl" placeholder="https://www.google.com/maps/..." style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
+                    <small style="color:#666;">Se extraerán las coordenadas y ciudad automáticamente.</small>
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600;">Agrupar en Cadena / Grupo</label>
+                    <select id="clienteCadena" onchange="verificarNuevoGrupo(this.value)" style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
+                        <option value="">✨ Auto-detección del sistema</option>
+                        <option value="NINGUNO">🚫 Ninguno (Mantener individual)</option>
+                        <!-- Grupos existentes -->
+                        <optgroup label="Grupos actuales" id="optgroupExistentes"></optgroup>
+                        <option value="NUEVO">➕ Crear nuevo grupo personalizado...</option>
+                    </select>
+                    <div id="nuevoGrupoContainer" style="margin-top:10px; display:none;">
+                        <input type="text" id="nuevoGrupoNombre" placeholder="Escribe el nombre del nuevo grupo..." style="width:100%; padding:10px; border:2px solid #F4A261; border-radius:8px; outline:none;">
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="cerrarModalCliente()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Variables globales
         let clientes = [];
         let clientesFiltrados = [];
         let tiposFiltro = new Set();
+        let gruposAbiertos = new Set(); // Para recordar qué acordeones están abiertos
 
         // ========== OBTENER CLIENTES DEL BACKEND ==========
         async function cargarClientes() {
@@ -358,27 +407,118 @@
             aplicarFiltros();
         });
 
-        // Mostrar tabla
+        // Mostrar tabla con agrupación por cadenas
         function actualizarTabla() {
             const tbody = document.getElementById('cuerpoTabla');
-
             if (clientesFiltrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">No se encontraron clientes</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No se encontraron clientes</td></tr>';
                 document.getElementById('checkboxTodo').checked = false;
                 return;
             }
 
-            tbody.innerHTML = clientesFiltrados.map(cliente => `
+            // Lógica de agrupación por cadenas
+            const cadenas = {};
+            const individuales = [];
+            const nombresCadenasAuto = ['superseis', 'stock', 'box', 'casa rica', 'punto carne', 'ahorrazo', 'salemma', 'real', 'areté', 'gran via', 'biggie'];
+
+            clientesFiltrados.forEach(cliente => {
+                let cadenaFinal = null;
+                
+                if (cliente.cadena === 'NINGUNO') {
+                    cadenaFinal = null; // Forzar individual
+                } else if (cliente.cadena && cliente.cadena !== '') {
+                    cadenaFinal = cliente.cadena.toLowerCase(); // Manual
+                } else {
+                    // Auto-detección
+                    let nombreBuscado = cliente.nombre.toLowerCase();
+                    cadenaFinal = nombresCadenasAuto.find(c => nombreBuscado.includes(c));
+                }
+
+                if (cadenaFinal) {
+                    if (!cadenas[cadenaFinal]) cadenas[cadenaFinal] = [];
+                    cadenas[cadenaFinal].push(cliente);
+                } else {
+                    individuales.push(cliente);
+                }
+            });
+
+            let html = '';
+
+            // Ordenar nombres de cadenas alfabéticamente
+            const listaCadenasOrdenadas = Object.keys(cadenas).sort((a, b) => a.localeCompare(b));
+
+            // Renderizar Cadenas (Acordeones)
+            listaCadenasOrdenadas.forEach(nombreCadena => {
+                const lista = cadenas[nombreCadena];
+                lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+                
+                const todosSeleccionados = lista.every(c => c.seleccionado);
+                const cantidadSeleccionados = lista.filter(c => c.seleccionado).length;
+                const estaAbierto = gruposAbiertos.has(nombreCadena);
+
+                html += `
+                <tr style="background: #f8f9fa;">
+                    <td colspan="3" style="padding: 0;">
+                        <details style="width: 100%;" ${estaAbierto ? 'open' : ''} ontoggle="registrarToggle('${nombreCadena}', this.open)">
+                            <summary style="padding: 15px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; font-weight: bold; color: #1E3A5F; border-bottom: 1px solid #eee;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="checkbox" style="width:18px; height:18px;" ${todosSeleccionados ? 'checked' : ''} 
+                                        onclick="event.stopPropagation(); toggleGrupo('${nombreCadena}', this.checked)">
+                                    <i class="fas fa-store"></i> ${nombreCadena.toUpperCase()} 
+                                    <span class="badge" style="background:#1E3A5F; color:white;">${lista.length} sucursales</span>
+                                </div>
+                                <div style="font-size: 12px; color: #666;">
+                                    ${cantidadSeleccionados} seleccionados <i class="fas fa-chevron-down" style="margin-left:10px;"></i>
+                                </div>
+                            </summary>
+                            <div style="background: white; border-left: 4px solid #F4A261;">
+                                <table style="width: 100%; margin: 0;">
+                                    ${lista.map(c => renderFilaCliente(c)).join('')}
+                                </table>
+                            </div>
+                        </details>
+                    </td>
+                </tr>`;
+            });
+
+            // Renderizar Clientes Individuales (ya vienen ordenados por aplicarFiltros)
+            individuales.forEach(cliente => {
+                html += renderFilaCliente(cliente);
+            });
+
+            tbody.innerHTML = html;
+            document.getElementById('checkboxTodo').checked = clientesFiltrados.length > 0 && clientesFiltrados.every(c => c.seleccionado);
+        }
+
+        function renderFilaCliente(cliente) {
+            return `
             <tr>
-                <td><input type="checkbox" class="checkbox-cliente" data-id="${cliente.id}" ${cliente.seleccionado ? 'checked' : ''} onchange="toggleCliente(${cliente.id})"></td>
+                <td style="width: 50px;"><input type="checkbox" class="checkbox-cliente" data-id="${cliente.id}" ${cliente.seleccionado ? 'checked' : ''} onchange="toggleCliente(${cliente.id})"></td>
                 <td><strong>${escapeHtml(cliente.nombre)}</strong><br>
                     <small class="badge" style="background:#e8f0fe; color:#1E3A5F; margin-top:5px; display:inline-block;"><i class="fas fa-map-marker-alt"></i> ${cliente.direccion || 'Gran Asunción'}</small>
                     <small class="badge" style="background:#fff3e0; color:#e67e22; margin-top:5px; margin-left:5px; display:inline-block; border: 1px solid #ffeaa7;"><i class="fas fa-tag"></i> ${cliente.tipo_cliente || 'minorista/gastronómico'}</small>
                 </td>
-            </tr>
-        `).join('');
+                <td>
+                    <button class="btn btn-outline" style="padding:5px 10px; font-size:12px;" onclick="editarCliente(${cliente.id})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline" style="padding:5px 10px; font-size:12px; color: #e74c3c; border-color: #e74c3c;" onclick="eliminarCliente(${cliente.id})" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`;
+        }
 
-            document.getElementById('checkboxTodo').checked = clientesFiltrados.every(c => c.seleccionado);
+        function toggleGrupo(nombreCadena, seleccionar) {
+            clientesFiltrados.forEach(c => {
+                const cadenaC = c.cadena ? c.cadena.toLowerCase() : '';
+                const nombreC = c.nombre.toLowerCase();
+                if (cadenaC === nombreCadena.toLowerCase() || nombreC.includes(nombreCadena.toLowerCase())) {
+                    c.seleccionado = seleccionar;
+                }
+            });
+            actualizarTabla();
+            actualizarContadores();
         }
 
         function actualizarContadores() {
@@ -414,6 +554,11 @@
         function toggleAll() {
             const seleccionar = document.getElementById('checkboxTodo').checked;
             seleccionarTodos(seleccionar);
+        }
+
+        function registrarToggle(nombre, abierto) {
+            if (abierto) gruposAbiertos.add(nombre);
+            else gruposAbiertos.delete(nombre);
         }
 
         // Búsqueda en tiempo real
@@ -479,6 +624,127 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // ========== GESTIÓN DE CLIENTES ==========
+        function abrirModalCliente() {
+            document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-user-plus"></i> Añadir Cliente';
+            document.getElementById('clienteId').value = '';
+            document.getElementById('formCliente').reset();
+            document.getElementById('nuevoGrupoContainer').style.display = 'none';
+            actualizarDesplegableCadenas();
+            document.getElementById('modalCliente').style.display = 'flex';
+        }
+
+        function verificarNuevoGrupo(valor) {
+            const container = document.getElementById('nuevoGrupoContainer');
+            container.style.display = (valor === 'NUEVO') ? 'block' : 'none';
+            if (valor === 'NUEVO') {
+                document.getElementById('nuevoGrupoNombre').focus();
+            }
+        }
+
+        function actualizarDesplegableCadenas() {
+            const optgroup = document.getElementById('optgroupExistentes');
+            const nombresCadenasAuto = ['Superseis', 'Stock', 'Box', 'Casa Rica', 'Punto Carne', 'Ahorrazo', 'Salemma', 'Real', 'Areté', 'Gran Via', 'Biggie'];
+            
+            // Obtener cadenas manuales de la base de datos
+            const cadenasManuales = [...new Set(clientes.map(c => c.cadena).filter(c => c && c !== '' && c !== 'NINGUNO'))];
+            
+            // Combinar ambas listas sin duplicados
+            const todasLasCadenas = [...new Set([...nombresCadenasAuto, ...cadenasManuales])];
+            
+            optgroup.innerHTML = '';
+            
+            todasLasCadenas.sort((a, b) => a.localeCompare(b)).forEach(cadena => {
+                const opt = document.createElement('option');
+                opt.value = cadena;
+                opt.textContent = "📁 " + cadena;
+                optgroup.appendChild(opt);
+            });
+        }
+
+        function cerrarModalCliente() {
+            document.getElementById('modalCliente').style.display = 'none';
+        }
+
+        function editarCliente(id) {
+            const cliente = clientes.find(c => c.id === id);
+            if (!cliente) return;
+            
+            document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Cliente';
+            document.getElementById('clienteId').value = cliente.id;
+            document.getElementById('clienteNombre').value = cliente.nombre;
+            document.getElementById('clienteTipo').value = cliente.tipo_cliente || 'minorista/gastronómico';
+            actualizarDesplegableCadenas();
+            document.getElementById('clienteCadena').value = cliente.cadena || '';
+            verificarNuevoGrupo(document.getElementById('clienteCadena').value);
+            document.getElementById('clienteUrl').value = ''; 
+            
+            document.getElementById('modalCliente').style.display = 'flex';
+        }
+
+        async function guardarCliente(event) {
+            event.preventDefault();
+            const id = document.getElementById('clienteId').value;
+            const nombre = document.getElementById('clienteNombre').value;
+            const tipo = document.getElementById('clienteTipo').value;
+            let cadena = document.getElementById('clienteCadena').value;
+            
+            // Si hay un nuevo grupo escrito, usar ese
+            const nuevoGrupo = document.getElementById('nuevoGrupoNombre').value.trim();
+            if (cadena === 'NUEVO' && nuevoGrupo) {
+                cadena = nuevoGrupo;
+            }
+
+            const url = document.getElementById('clienteUrl').value;
+            
+            const method = id ? 'PUT' : 'POST';
+            const payload = { nombre, tipo_cliente: tipo, url, cadena };
+            
+            if (id) {
+                payload.id = parseInt(id);
+                // Si es edición y no hay URL nueva, enviar las coordenadas actuales
+                const clienteExistente = clientes.find(c => c.id === payload.id);
+                if (clienteExistente && !url) {
+                    payload.latitud = clienteExistente.latitud;
+                    payload.longitud = clienteExistente.longitud;
+                }
+            }
+
+            try {
+                const response = await fetch('http://localhost:8080/api/clientes', {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Error al guardar cliente');
+                
+                cerrarModalCliente();
+                cargarClientes(); // Recargar lista
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function eliminarCliente(id) {
+            const cliente = clientes.find(c => c.id === id);
+            if (!cliente) return;
+
+            if (confirm(`¿Estás seguro de que deseas eliminar al cliente "${cliente.nombre}"?`)) {
+                try {
+                    const response = await fetch(`http://localhost:8080/api/clientes?id=${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) throw new Error('Error al eliminar cliente');
+                    
+                    cargarClientes(); // Recargar lista
+                } catch (error) {
+                    alert('❌ Error: ' + error.message);
+                }
+            }
         }
 
         // Inicializar
