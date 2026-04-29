@@ -4,6 +4,17 @@ public class CreateTables {
         Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5000/ruteo_db", "postgres", "Zelaya1103");
         Statement stmt = conn.createStatement();
         
+        String sqlClientes = "CREATE TABLE IF NOT EXISTS clientes (" +
+            "id SERIAL PRIMARY KEY," +
+            "nombre VARCHAR(255)," +
+            "latitud DOUBLE PRECISION," +
+            "longitud DOUBLE PRECISION," +
+            "activo BOOLEAN," +
+            "ciudad VARCHAR(255)," +
+            "tipo_cliente VARCHAR(100)" +
+        ")";
+        stmt.executeUpdate(sqlClientes);
+        
         String sqlRutas = "CREATE TABLE IF NOT EXISTS rutas_generadas (" +
             "id SERIAL PRIMARY KEY," +
             "fecha DATE DEFAULT CURRENT_DATE," +
