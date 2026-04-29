@@ -208,13 +208,15 @@ public class Main {
                     List<Cliente> clientes = new ArrayList<>();
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                         String idList = clienteIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-                        String sql = "SELECT id, nombre, latitud, longitud FROM clientes WHERE id IN (" + idList + ")";
+                        String sql = "SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE id IN (" + idList + ")";
                         Statement stmt = conn.createStatement();
                         ResultSet rs = stmt.executeQuery(sql);
                         while (rs.next()) {
-                            clientes.add(new Cliente(rs.getInt("id"), rs.getString("nombre"), rs.getDouble("latitud"), rs.getDouble("longitud")));
+                            clientes.add(new Cliente(rs.getInt("id"), rs.getString("nombre"), rs.getDouble("latitud"), rs.getDouble("longitud"), rs.getString("tipo_cliente")));
                         }
                     }
+                    
+                    String prioridad = (String) request.getOrDefault("prioridad", "ninguna");
 
                     // K-Means adaptado simplificado para asignar a k moviles
                     List<List<Cliente>> clusters = kmeans(clientes, numMoviles);
@@ -226,8 +228,8 @@ public class Main {
                             List<Cliente> cluster = clusters.get(i);
                             if (cluster.isEmpty()) continue;
                             
-                            // Vecino mas cercano para ordenar
-                            List<Cliente> ordenados = nearestNeighbor(cluster);
+                            // Vecino mas cercano para ordenar con prioridad
+                            List<Cliente> ordenados = nearestNeighborWithPriority(cluster, prioridad);
                             
                             double distTotal = 0;
                             List<Map<String, Object>> clientesJson = new ArrayList<>();
@@ -464,9 +466,9 @@ public class Main {
 
     // -- Clases y utilidades de Ruteo --
     static class Cliente {
-        int id; String nombre; double lat, lon;
-        Cliente(int id, String nombre, double lat, double lon){
-            this.id = id; this.nombre = nombre; this.lat = lat; this.lon = lon;
+        int id; String nombre; double lat, lon; String tipo;
+        Cliente(int id, String nombre, double lat, double lon, String tipo){
+            this.id = id; this.nombre = nombre; this.lat = lat; this.lon = lon; this.tipo = tipo;
         }
     }
 
@@ -536,29 +538,50 @@ public class Main {
         return clusters;
     }
 
-    private static List<Cliente> nearestNeighbor(List<Cliente> cluster) {
+    private static List<Cliente> nearestNeighborWithPriority(List<Cliente> cluster, String prioridad) {
         if (cluster.isEmpty()) return cluster;
-        List<Cliente> unvisited = new ArrayList<>(cluster);
-        List<Cliente> result = new ArrayList<>();
+        List<Cliente> unvisitedPriority = new ArrayList<>();
+        List<Cliente> unvisitedNormal = new ArrayList<>();
         
-        Cliente current = unvisited.remove(0); // Empezar con cualquiera
-        result.add(current);
-        
-        while(!unvisited.isEmpty()) {
-            double bestDist = Double.MAX_VALUE;
-            Cliente bestNext = null;
-            for(Cliente c : unvisited) {
-                double d = haversine(current.lat, current.lon, c.lat, c.lon);
-                if (d < bestDist) {
-                    bestDist = d;
-                    bestNext = c;
-                }
-            }
-            result.add(bestNext);
-            unvisited.remove(bestNext);
-            current = bestNext;
+        for (Cliente c : cluster) {
+            if (c.tipo != null && c.tipo.equalsIgnoreCase(prioridad)) unvisitedPriority.add(c);
+            else unvisitedNormal.add(c);
         }
+        
+        List<Cliente> result = new ArrayList<>();
+        double currentLat = -25.3396; // Base Central
+        double currentLon = -57.5173;
+
+        // Primero los prioritarios
+        while(!unvisitedPriority.isEmpty()) {
+            Cliente best = findNearest(unvisitedPriority, currentLat, currentLon);
+            result.add(best);
+            currentLat = best.lat; currentLon = best.lon;
+            unvisitedPriority.remove(best);
+        }
+        
+        // Luego los normales
+        while(!unvisitedNormal.isEmpty()) {
+            Cliente best = findNearest(unvisitedNormal, currentLat, currentLon);
+            result.add(best);
+            currentLat = best.lat; currentLon = best.lon;
+            unvisitedNormal.remove(best);
+        }
+        
         return result;
+    }
+
+    private static Cliente findNearest(List<Cliente> lista, double lat, double lon) {
+        double bestDist = Double.MAX_VALUE;
+        Cliente bestNext = null;
+        for(Cliente c : lista) {
+            double d = haversine(lat, lon, c.lat, c.lon);
+            if (d < bestDist) {
+                bestDist = d;
+                bestNext = c;
+            }
+        }
+        return bestNext;
     }
 
     private static double[] parseGoogleMapsUrl(String url) {

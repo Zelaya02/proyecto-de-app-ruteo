@@ -228,9 +228,12 @@
             </h1>
             <p>Gestión de rutas para PyMEs de reparto - Gran Asunción</p>
         </div>
-        <div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn btn-outline" onclick="toggleConfig()" style="color:white; border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.1);">
+                <i class="fas fa-cog"></i> Configuraciones
+            </button>
             <a href="https://www.google.com/maps/d/viewer?mid=1QD8ZONKwo2HGKci8IL_QoxaHPZf2tkI" target="_blank" class="btn btn-secondary" style="text-decoration:none;">
-                <i class="fas fa-map-marked-alt"></i> Ver Mapa en MyMaps
+                <i class="fas fa-map-marked-alt"></i> Ver Mapa
             </a>
         </div>
     </div>
@@ -290,7 +293,28 @@
             </button>
         </div>
 
-        <!-- Tabla de clientes -->
+        <!-- Panel de Configuraciones (Oculto por defecto) -->
+        <div id="panelConfig" style="display:none; background:white; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 4px 15px rgba(0,0,0,0.1); border: 2px solid #F4A261;">
+            <h3 style="color:#1E3A5F; margin-bottom:15px; display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-sliders-h"></i> Ajustes de Ruteo
+            </h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+                <div>
+                    <label style="display:block; font-weight:600; margin-bottom:8px;">🚀 Prioridad de Entrega</label>
+                    <select id="prioridadTipo" style="width:100%; padding:10px; border-radius:8px; border:2px solid #ddd;">
+                        <option value="ninguna">Sin prioridad específica</option>
+                        <option value="supermercado">Supermercados primero</option>
+                        <option value="mayorista">Mayoristas primero</option>
+                        <option value="minorista/gastronómico">Minoristas primero</option>
+                    </select>
+                    <small style="color:#666; margin-top:5px; display:block;">Los clientes del tipo elegido se visitarán al inicio de la ruta.</small>
+                </div>
+                <div>
+                    <label style="display:block; font-weight:600; margin-bottom:8px;">📍 Punto de Inicio</label>
+                    <input type="text" value="Base Central - San Lorenzo" disabled style="width:100%; padding:10px; border-radius:8px; background:#f5f5f5; border:1px solid #ddd;">
+                </div>
+            </div>
+        </div>
         <div class="tabla-container">
             <table id="tablaClientes">
                 <thead>
@@ -568,6 +592,11 @@
             actualizarTabla();
         });
 
+        function toggleConfig() {
+            const panel = document.getElementById('panelConfig');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
         // Generar rutas
         async function generarRutas() {
             const seleccionados = clientes.filter(c => c.seleccionado).map(c => c.id);
@@ -578,6 +607,7 @@
             }
 
             const numMoviles = parseInt(document.getElementById('numMoviles').value);
+            const prioridad = document.getElementById('prioridadTipo').value;
 
             if (isNaN(numMoviles) || numMoviles < 1) {
                 alert('Ingrese un número válido de móviles');
@@ -596,7 +626,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         cliente_ids: seleccionados,
-                        num_moviles: numMoviles
+                        num_moviles: numMoviles,
+                        prioridad: prioridad
                     })
                 });
 
