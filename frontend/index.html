@@ -15,12 +15,34 @@
 
         body {
             font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background: #f0f2f5;
+            background: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #1E3A5F;
+            --card-bg: white;
+            --header-gradient: linear-gradient(135deg, #1E3A5F, #2c4a6e);
+            --border-color: #e0e0e0;
+            --input-bg: white;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --header-gradient: linear-gradient(135deg, #0a192f, #112240);
+            --border-color: #333;
+            --input-bg: #2d2d2d;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
         /* Header */
         .header {
-            background: linear-gradient(135deg, #1E3A5F, #2c4a6e);
+            background: var(--header-gradient);
             color: white;
             padding: 20px 30px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -53,11 +75,11 @@
 
         /* Panel de controles */
         .controles {
-            background: white;
+            background: var(--card-bg);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow);
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
@@ -80,9 +102,11 @@
         .busqueda input {
             width: 100%;
             padding: 10px 15px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
             font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-color);
             transition: all 0.3s;
         }
 
@@ -154,10 +178,10 @@
 
         /* Tabla */
         .tabla-container {
-            background: white;
+            background: var(--card-bg);
             border-radius: 12px;
             overflow-x: auto;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow);
         }
 
         table {
@@ -175,7 +199,7 @@
 
         td {
             padding: 12px 15px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--border-color);
         }
 
         tr:hover {
@@ -220,19 +244,34 @@
 
 <body>
 
-    <div class="header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+    <div class="header"
+        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
         <div>
             <h1 style="display:flex; align-items:center;">
-                <img src="assets/img/LogoNexo.png" alt="NEXO" style="height: 40px; margin-right: 15px; border-radius: 8px;">
-                NEXO - Ruteo Inteligente
+                <img src="assets/img/LogoNexo.png" alt="NEXO"
+                    style="height: 40px; margin-right: 15px; border-radius: 8px;">
+                Ruteo Inteligente
             </h1>
             <p>Gestión de rutas para PyMEs de reparto - Gran Asunción</p>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
-            <button class="btn btn-outline" onclick="toggleConfig()" style="color:white; border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.1);">
+            <button class="btn btn-outline" onclick="window.location.href='estadisticas.html'"
+                style="color:white; border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.1);">
+                <i class="fas fa-chart-bar"></i> Estadísticas
+            </button>
+            <button class="btn btn-outline" onclick="window.location.href='seguimiento.html'"
+                style="color:#2ecc71; border-color:rgba(46, 204, 113, 0.3); background:rgba(46, 204, 113, 0.1);">
+                <i class="fas fa-eye"></i> Estado de Entregas
+            </button>
+            <button class="btn btn-outline" onclick="toggleConfig()"
+                style="color:white; border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.1);">
                 <i class="fas fa-cog"></i> Configuraciones
             </button>
-            <a href="https://www.google.com/maps/d/viewer?mid=1QD8ZONKwo2HGKci8IL_QoxaHPZf2tkI" target="_blank" class="btn btn-secondary" style="text-decoration:none;">
+            <button class="btn btn-secondary" onclick="logout()" style="background:#e74c3c;">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </button>
+            <a href="https://www.google.com/maps/d/viewer?mid=1QD8ZONKwo2HGKci8IL_QoxaHPZf2tkI" target="_blank"
+                class="btn btn-secondary" style="text-decoration:none;">
                 <i class="fas fa-map-marked-alt"></i> Ver Mapa
             </a>
         </div>
@@ -259,30 +298,42 @@
                 </button>
                 <details style="position:relative; z-index:100;">
                     <summary class="btn btn-outline" style="list-style:none; cursor:pointer;">
-                        <i class="fas fa-filter"></i> Filtros rápidos <i class="fas fa-chevron-down" style="font-size:10px; margin-left:5px;"></i>
+                        <i class="fas fa-filter"></i> Filtros rápidos <i class="fas fa-chevron-down"
+                            style="font-size:10px; margin-left:5px;"></i>
                     </summary>
-                    <div style="position:absolute; top:100%; right:0; background:white; border:1px solid #ddd; padding:10px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:8px; min-width:220px; margin-top:5px;">
-                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox" onchange="filtrarPorTipo('minorista/gastronómico', this.checked)"> Minorista / Gastronómico</label>
-                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox" onchange="filtrarPorTipo('supermercado', this.checked)"> Supermercados</label>
-                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox" onchange="filtrarPorTipo('mayorista', this.checked)"> Mayoristas</label>
+                    <div
+                        style="position:absolute; top:100%; right:0; background:white; border:1px solid #ddd; padding:10px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:8px; min-width:220px; margin-top:5px;">
+                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox"
+                                onchange="filtrarPorTipo('minorista/gastronómico', this.checked)"> Minorista /
+                            Gastronómico</label>
+                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox"
+                                onchange="filtrarPorTipo('supermercado', this.checked)"> Supermercados</label>
+                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox"
+                                onchange="filtrarPorTipo('mayorista', this.checked)"> Mayoristas</label>
                         <hr style="border:none; border-top:1px solid #eee;">
-                        <button class="btn btn-outline" style="padding: 4px 8px; font-size:12px; width:100%;" onclick="document.querySelectorAll('details input[type=checkbox]').forEach(cb => { cb.checked = false; filtrarPorTipo('', false); }); tiposFiltro.clear(); aplicarFiltros();">Limpiar filtros</button>
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size:12px; width:100%;"
+                            onclick="document.querySelectorAll('details input[type=checkbox]').forEach(cb => { cb.checked = false; filtrarPorTipo('', false); }); tiposFiltro.clear(); aplicarFiltros();">Limpiar
+                            filtros</button>
                     </div>
                 </details>
             </div>
         </div>
 
         <!-- Configuración de móviles -->
-        <div class="controles" style="margin-top: -10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div class="controles"
+            style="margin-top: -10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
                 <div>
-                    <label style="display:block; font-size:12px; margin-bottom:2px;"><i class="fas fa-truck"></i> Móviles disponibles</label>
+                    <label style="display:block; font-size:12px; margin-bottom:2px;"><i class="fas fa-truck"></i>
+                        Móviles disponibles</label>
                     <input type="number" id="numMoviles" value="3" min="1" max="20"
                         style="width: 80px; padding: 8px; border-radius: 8px; border: 2px solid #e0e0e0;">
                 </div>
                 <div>
-                    <label style="display:block; font-size:12px; margin-bottom:2px;"><i class="fas fa-sort"></i> Ordenar por</label>
-                    <select id="ordenarPor" onchange="aplicarFiltros()" style="padding: 8px; border-radius: 8px; border: 2px solid #e0e0e0; min-width: 150px;">
+                    <label style="display:block; font-size:12px; margin-bottom:2px;"><i class="fas fa-sort"></i> Ordenar
+                        por</label>
+                    <select id="ordenarPor" onchange="aplicarFiltros()"
+                        style="padding: 8px; border-radius: 8px; border: 2px solid #e0e0e0; min-width: 150px;">
                         <option value="recientes">Recientemente Agregados</option>
                         <option value="abecedario">Abecedario (A - Z)</option>
                     </select>
@@ -294,24 +345,46 @@
         </div>
 
         <!-- Panel de Configuraciones (Oculto por defecto) -->
-        <div id="panelConfig" style="display:none; background:white; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 4px 15px rgba(0,0,0,0.1); border: 2px solid #F4A261;">
-            <h3 style="color:#1E3A5F; margin-bottom:15px; display:flex; align-items:center; gap:10px;">
-                <i class="fas fa-sliders-h"></i> Ajustes de Ruteo
-            </h3>
+        <div id="panelConfig"
+            style="display:none; background: var(--card-bg); border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: var(--shadow); border: 2px solid #F4A261;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="color:#1E3A5F; margin:0; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-sliders-h"></i> Ajustes de Ruteo
+                </h3>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label style="font-weight:600; cursor:pointer;" for="darkModeToggle">🌙 Modo Oscuro</label>
+                    <input type="checkbox" id="darkModeToggle" style="width:20px; height:20px; cursor:pointer;"
+                        onchange="toggleDarkMode(this.checked)">
+                </div>
+            </div>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+                <div class="config-card">
+                    <h4><i class="fas fa-tasks"></i> Reglas de Ruteo</h4>
+                    <p style="font-size:12px; color:#666; margin-bottom:10px;">Configura límites de clientes por móvil y categorías.</p>
+                    <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="usarReglas" checked style="width:18px; height:18px; cursor:pointer;">
+                        <label for="usarReglas" style="font-weight:600; cursor:pointer; font-size: 14px;">Aplicar reglas en ruteo</label>
+                    </div>
+                    <button class="btn btn-secondary" onclick="window.location.href='reglas.html'" style="width:100%; padding:8px;">
+                        Gestionar Reglas
+                    </button>
+                </div>
                 <div>
                     <label style="display:block; font-weight:600; margin-bottom:8px;">🚀 Prioridad de Entrega</label>
-                    <select id="prioridadTipo" style="width:100%; padding:10px; border-radius:8px; border:2px solid #ddd;">
+                    <select id="prioridadTipo"
+                        style="width:100%; padding:10px; border-radius:8px; border:2px solid #ddd;">
                         <option value="ninguna">Sin prioridad específica</option>
                         <option value="supermercado">Supermercados primero</option>
                         <option value="mayorista">Mayoristas primero</option>
                         <option value="minorista/gastronómico">Minoristas primero</option>
                     </select>
-                    <small style="color:#666; margin-top:5px; display:block;">Los clientes del tipo elegido se visitarán al inicio de la ruta.</small>
+                    <small style="color:#666; margin-top:5px; display:block;">Los clientes del tipo elegido se visitarán
+                        al inicio de la ruta.</small>
                 </div>
                 <div>
                     <label style="display:block; font-weight:600; margin-bottom:8px;">📍 Punto de Inicio</label>
-                    <input type="text" value="Base Central - San Lorenzo" disabled style="width:100%; padding:10px; border-radius:8px; background:#f5f5f5; border:1px solid #ddd;">
+                    <input type="text" value="Base Central - San Lorenzo" disabled
+                        style="width:100%; padding:10px; border-radius:8px; background:#f5f5f5; border:1px solid #ddd;">
                 </div>
             </div>
         </div>
@@ -338,31 +411,39 @@
     </div>
 
     <!-- Modal Añadir/Editar Cliente -->
-    <div id="modalCliente" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
-        <div style="background:white; padding:30px; border-radius:12px; width:450px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-            <h2 id="modalTitulo" style="margin-bottom:20px; color:#1E3A5F;"><i class="fas fa-user-plus"></i> Añadir Cliente</h2>
+    <div id="modalCliente"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+        <div
+            style="background:white; padding:30px; border-radius:12px; width:450px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <h2 id="modalTitulo" style="margin-bottom:20px; color:#1E3A5F;"><i class="fas fa-user-plus"></i> Añadir
+                Cliente</h2>
             <form id="formCliente" onsubmit="guardarCliente(event)">
                 <input type="hidden" id="clienteId">
                 <div style="margin-bottom:15px;">
                     <label style="display:block; margin-bottom:5px; font-weight:600;">Nombre del Cliente</label>
-                    <input type="text" id="clienteNombre" required style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
+                    <input type="text" id="clienteNombre" required
+                        style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
                 </div>
                 <div style="margin-bottom:15px;">
                     <label style="display:block; margin-bottom:5px; font-weight:600;">Tipo de Cliente</label>
-                    <select id="clienteTipo" required style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
+                    <select id="clienteTipo" required
+                        style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
                         <option value="minorista/gastronómico">Minorista / Gastronómico</option>
                         <option value="supermercado">Supermercado</option>
                         <option value="mayorista">Mayorista</option>
                     </select>
                 </div>
                 <div style="margin-bottom:20px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600;">URL Google Maps (Ubicación)</label>
-                    <input type="url" id="clienteUrl" placeholder="https://www.google.com/maps/..." style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600;">URL Google Maps
+                        (Ubicación)</label>
+                    <input type="url" id="clienteUrl" placeholder="https://www.google.com/maps/..."
+                        style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
                     <small style="color:#666;">Se extraerán las coordenadas y ciudad automáticamente.</small>
                 </div>
                 <div style="margin-bottom:15px;">
                     <label style="display:block; margin-bottom:5px; font-weight:600;">Agrupar en Cadena / Grupo</label>
-                    <select id="clienteCadena" onchange="verificarNuevoGrupo(this.value)" style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
+                    <select id="clienteCadena" onchange="verificarNuevoGrupo(this.value)"
+                        style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
                         <option value="">✨ Auto-detección del sistema</option>
                         <option value="NINGUNO">🚫 Ninguno (Mantener individual)</option>
                         <!-- Grupos existentes -->
@@ -370,7 +451,8 @@
                         <option value="NUEVO">➕ Crear nuevo grupo personalizado...</option>
                     </select>
                     <div id="nuevoGrupoContainer" style="margin-top:10px; display:none;">
-                        <input type="text" id="nuevoGrupoNombre" placeholder="Escribe el nombre del nuevo grupo..." style="width:100%; padding:10px; border:2px solid #F4A261; border-radius:8px; outline:none;">
+                        <input type="text" id="nuevoGrupoNombre" placeholder="Escribe el nombre del nuevo grupo..."
+                            style="width:100%; padding:10px; border:2px solid #F4A261; border-radius:8px; outline:none;">
                     </div>
                 </div>
                 <div style="display:flex; gap:10px; justify-content:flex-end;">
@@ -382,6 +464,29 @@
     </div>
 
     <script>
+        // --- PROTECCIÓN DE SESIÓN ---
+        if (!localStorage.getItem('nexo_token')) {
+            window.location.href = 'login.html';
+        }
+
+        // --- TEMPORIZADOR DE INACTIVIDAD (5 MINUTOS) ---
+        let inactivityTimer;
+        function resetTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                localStorage.removeItem('nexo_user');
+                localStorage.removeItem('nexo_token');
+                alert("Sesión expirada por inactividad.");
+                window.location.href = 'login.html';
+            }, 5 * 60 * 1000);
+        }
+
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('keypress', resetTimer);
+        document.addEventListener('click', resetTimer);
+        document.addEventListener('scroll', resetTimer);
+        resetTimer();
+
         // Variables globales
         let clientes = [];
         let clientesFiltrados = [];
@@ -408,20 +513,20 @@
         function aplicarFiltros() {
             const termino = document.getElementById('buscador').value.toLowerCase();
             const orden = document.getElementById('ordenarPor').value;
-            
+
             clientesFiltrados = clientes.filter(c => {
                 const matchNombre = c.nombre.toLowerCase().includes(termino);
                 const matchTipo = tiposFiltro.size === 0 || tiposFiltro.has(c.tipo_cliente);
                 return matchNombre && matchTipo;
             });
-            
+
             // Aplicar ordenación
             if (orden === 'abecedario') {
                 clientesFiltrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
             } else if (orden === 'recientes') {
                 clientesFiltrados.sort((a, b) => b.id - a.id);
             }
-            
+
             actualizarTabla();
             actualizarContadores();
         }
@@ -447,7 +552,7 @@
 
             clientesFiltrados.forEach(cliente => {
                 let cadenaFinal = null;
-                
+
                 if (cliente.cadena === 'NINGUNO') {
                     cadenaFinal = null; // Forzar individual
                 } else if (cliente.cadena && cliente.cadena !== '') {
@@ -475,7 +580,7 @@
             listaCadenasOrdenadas.forEach(nombreCadena => {
                 const lista = cadenas[nombreCadena];
                 lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
-                
+
                 const todosSeleccionados = lista.every(c => c.seleccionado);
                 const cantidadSeleccionados = lista.filter(c => c.seleccionado).length;
                 const estaAbierto = gruposAbiertos.has(nombreCadena);
@@ -564,7 +669,7 @@
             actualizarTabla();
             actualizarContadores();
         }
-        
+
         function filtrarPorTipo(tipo, activo) {
             if (tipo === '') return; // Limpiar filtros call
             if (activo) {
@@ -620,6 +725,8 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando rutas...';
             btn.disabled = true;
 
+            const usarReglas = document.getElementById('usarReglas').checked;
+
             try {
                 const response = await fetch('http://localhost:8080/api/generar-rutas', {
                     method: 'POST',
@@ -627,11 +734,15 @@
                     body: JSON.stringify({
                         cliente_ids: seleccionados,
                         num_moviles: numMoviles,
-                        prioridad: prioridad
+                        prioridad: prioridad,
+                        usar_reglas: usarReglas
                     })
                 });
 
-                if (!response.ok) throw new Error('Error al generar rutas');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Error desconocido en el servidor');
+                }
 
                 const data = await response.json();
 
@@ -643,7 +754,7 @@
 
             } catch (error) {
                 console.error(error);
-                alert('❌ Error al generar rutas. Verifique que el backend esté corriendo.');
+                alert('❌ Error: ' + error.message + '. Asegúrese de que el backend esté corriendo en el puerto 8080.');
             } finally {
                 btn.innerHTML = textoOriginal;
                 btn.disabled = false;
@@ -678,15 +789,15 @@
         function actualizarDesplegableCadenas() {
             const optgroup = document.getElementById('optgroupExistentes');
             const nombresCadenasAuto = ['Superseis', 'Stock', 'Box', 'Casa Rica', 'Punto Carne', 'Ahorrazo', 'Salemma', 'Real', 'Areté', 'Gran Via', 'Biggie'];
-            
+
             // Obtener cadenas manuales de la base de datos
             const cadenasManuales = [...new Set(clientes.map(c => c.cadena).filter(c => c && c !== '' && c !== 'NINGUNO'))];
-            
+
             // Combinar ambas listas sin duplicados
             const todasLasCadenas = [...new Set([...nombresCadenasAuto, ...cadenasManuales])];
-            
+
             optgroup.innerHTML = '';
-            
+
             todasLasCadenas.sort((a, b) => a.localeCompare(b)).forEach(cadena => {
                 const opt = document.createElement('option');
                 opt.value = cadena;
@@ -702,7 +813,7 @@
         function editarCliente(id) {
             const cliente = clientes.find(c => c.id === id);
             if (!cliente) return;
-            
+
             document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Cliente';
             document.getElementById('clienteId').value = cliente.id;
             document.getElementById('clienteNombre').value = cliente.nombre;
@@ -710,8 +821,8 @@
             actualizarDesplegableCadenas();
             document.getElementById('clienteCadena').value = cliente.cadena || '';
             verificarNuevoGrupo(document.getElementById('clienteCadena').value);
-            document.getElementById('clienteUrl').value = ''; 
-            
+            document.getElementById('clienteUrl').value = '';
+
             document.getElementById('modalCliente').style.display = 'flex';
         }
 
@@ -721,7 +832,7 @@
             const nombre = document.getElementById('clienteNombre').value;
             const tipo = document.getElementById('clienteTipo').value;
             let cadena = document.getElementById('clienteCadena').value;
-            
+
             // Si hay un nuevo grupo escrito, usar ese
             const nuevoGrupo = document.getElementById('nuevoGrupoNombre').value.trim();
             if (cadena === 'NUEVO' && nuevoGrupo) {
@@ -729,10 +840,10 @@
             }
 
             const url = document.getElementById('clienteUrl').value;
-            
+
             const method = id ? 'PUT' : 'POST';
             const payload = { nombre, tipo_cliente: tipo, url, cadena };
-            
+
             if (id) {
                 payload.id = parseInt(id);
                 // Si es edición y no hay URL nueva, enviar las coordenadas actuales
@@ -751,7 +862,7 @@
                 });
 
                 if (!response.ok) throw new Error('Error al guardar cliente');
-                
+
                 cerrarModalCliente();
                 cargarClientes(); // Recargar lista
             } catch (error) {
@@ -770,12 +881,38 @@
                     });
 
                     if (!response.ok) throw new Error('Error al eliminar cliente');
-                    
+
                     cargarClientes(); // Recargar lista
                 } catch (error) {
                     alert('❌ Error: ' + error.message);
                 }
             }
+        }
+
+        // Dark Mode Logic
+        function toggleDarkMode(isDark) {
+            if (isDark) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+
+        // Initialize Dark Mode from localStorage
+        (function initDarkMode() {
+            const darkMode = localStorage.getItem('darkMode');
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').checked = true;
+            }
+        })();
+
+        function logout() {
+            localStorage.removeItem('nexo_user');
+            localStorage.removeItem('nexo_token');
+            window.location.href = 'login.html';
         }
 
         // Inicializar

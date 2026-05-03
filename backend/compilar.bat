@@ -54,9 +54,17 @@ if not exist "lib\gson-2.10.1.jar" (
     echo ✅ Gson ya existe
 )
 
+if not exist "lib\jbcrypt-0.4.jar" (
+    echo Descargando jBCrypt...
+    powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/org/mindrot/jbcrypt/0.4/jbcrypt-0.4.jar' -OutFile 'lib\jbcrypt-0.4.jar'}"
+    echo ✅ jBCrypt descargado
+) else (
+    echo ✅ jBCrypt ya existe
+)
+
 echo.
 echo Compilando Java files...
-javac -cp "lib/*" -d target/classes src\main\java\com\ruteo\Main.java
+javac -encoding UTF-8 -cp "lib/*" -d target/classes src\main\java\com\ruteo\model\Usuario.java src\main\java\com\ruteo\repository\UsuarioRepository.java src\main\java\com\ruteo\Main.java
 
 if %errorlevel% neq 0 (
     echo.

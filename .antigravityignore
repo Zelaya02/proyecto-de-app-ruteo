@@ -1,9 +1,0 @@
-node_modules/
-dist/
-build/
-.next/
-*.log
-*.png
-*.jpg
-package-lock.json
-yarn.lock

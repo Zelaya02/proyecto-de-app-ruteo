@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXO | Configuración de Reglas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1E3A5F;
+            --secondary: #F4A261;
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        body.dark-mode {
+            --bg: #0f172a;
+            --white: #1e293b;
+            --text: #f1f5f9;
+            --border: #334155;
+            --primary: #38bdf8;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        .regla-item {
+            display: grid;
+            grid-template-columns: 1fr 150px 80px;
+            gap: 20px;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .regla-item:last-child { border-bottom: none; }
+
+        .categoria-name { font-weight: 600; text-transform: capitalize; }
+
+        input[type="number"] {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 100%;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--secondary); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        .btn-save {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 30px;
+            transition: all 0.3s;
+        }
+
+        .btn-save:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        .btn-back {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-tasks"></i> Reglas de Ruteo</h1>
+        <a href="index.html" class="btn-back"><i class="fas fa-arrow-left"></i> Volver</a>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2 style="margin-bottom: 10px;">Límites por Categoría</h2>
+            <p style="color: #64748b; margin-bottom: 30px; font-size: 14px;">
+                Define cuántos clientes de cada tipo puede llevar un mismo móvil como máximo.
+                Usa <b>0</b> para indicar que no hay límite.
+            </p>
+
+            <div id="listaReglas">
+                <!-- Se carga dinámicamente -->
+                <div style="text-align:center; padding: 20px;">Cargando reglas...</div>
+            </div>
+
+            <button class="btn-save" onclick="guardarReglas()">
+                <i class="fas fa-save"></i> Guardar Configuración
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const categoriasBasicas = ['supermercado', 'minorista', 'distribuidor', 'mayorista'];
+        let reglasCargadas = [];
+
+        async function cargarReglas() {
+            try {
+                const res = await fetch('http://localhost:8080/api/reglas');
+                reglasCargadas = await res.json();
+                renderReglas();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function addCategoria() {
+            const nueva = prompt("Ingrese el nombre de la nueva categoría:");
+            if (nueva) {
+                const cat = nueva.toLowerCase().trim();
+                if (!reglasCargadas.find(r => r.categoria === cat)) {
+                    reglasCargadas.push({
+                        categoria: cat,
+                        limite_por_movil: 0,
+                        activo: true
+                    });
+                    renderReglas();
+                }
+            }
+        }
+
+        function renderReglas() {
+            const container = document.getElementById('listaReglas');
+            container.innerHTML = '';
+
+            // Asegurar que las categorías básicas siempre aparezcan al menos para configurar
+            const todas = [...reglasCargadas];
+            categoriasBasicas.forEach(cat => {
+                if (!todas.find(r => r.categoria.toLowerCase() === cat)) {
+                    todas.push({ categoria: cat, limite_por_movil: 0, activo: false });
+                }
+            });
+
+            todas.sort((a,b) => a.categoria.localeCompare(b.categoria)).forEach(regla => {
+                const cat = regla.categoria.toLowerCase();
+                const div = document.createElement('div');
+                div.className = 'regla-item';
+                div.innerHTML = `
+                    <div class="categoria-name">${cat}</div>
+                    <div>
+                        <input type="number" value="${regla.limite_por_movil}" min="0" 
+                               id="limit-${cat}" placeholder="Sin límite">
+                    </div>
+                    <div style="text-align: right; display: flex; align-items: center; gap: 10px; justify-content: flex-end;">
+                        <label class="switch">
+                            <input type="checkbox" id="active-${cat}" ${regla.activo ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                        <button onclick="eliminarReglaLocal('${cat}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;" title="Eliminar regla">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function eliminarReglaLocal(cat) {
+            if (confirm(`¿Eliminar la regla para la categoría "${cat}"?`)) {
+                try {
+                    const res = await fetch(`http://localhost:8080/api/reglas?categoria=${encodeURIComponent(cat)}`, {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        reglasCargadas = reglasCargadas.filter(r => r.categoria !== cat);
+                        renderReglas();
+                    }
+                } catch (e) {
+                    alert("Error al eliminar la regla.");
+                }
+            }
+        }
+
+        async function guardarReglas() {
+            // Recolectar todos los inputs actuales
+            const items = document.querySelectorAll('.regla-item');
+            const payload = Array.from(items).map(div => {
+                const cat = div.querySelector('.categoria-name').textContent;
+                return {
+                    categoria: cat,
+                    limite_por_movil: parseInt(document.getElementById(`limit-${cat}`).value) || 0,
+                    activo: document.getElementById(`active-${cat}`).checked
+                };
+            });
+
+            try {
+                const res = await fetch('http://localhost:8080/api/reglas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    alert('✅ Reglas guardadas con éxito. Se aplicarán en el próximo ruteo.');
+                    cargarReglas();
+                }
+            } catch (e) {
+                alert('❌ Error al guardar las reglas.');
+            }
+        }
+
+        cargarReglas();
+    </script>
+    <div style="text-align: center; margin-top: 20px;">
+        <button class="btn-outline" onclick="addCategoria()" style="border: 2px dashed var(--primary); padding: 10px 20px; border-radius: 10px; cursor: pointer; background: transparent; color: var(--primary); font-weight: 600;">
+            <i class="fas fa-plus"></i> Agregar Nueva Categoría
+        </button>
+    </div>
+
+</body>
+</html>

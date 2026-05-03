@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXO | Seguimiento de Entregas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1E3A5F;
+            --secondary: #F4A261;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --bg: #f0f2f5;
+            --white: #ffffff;
+            --text-color: #1E3A5F;
+            --border: #eee;
+        }
+
+        body.dark-mode {
+            --bg: #121212;
+            --white: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border: #333;
+            --primary: #8FA2B0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1E3A5F, #2c4a6e);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .tab {
+            padding: 12px 25px;
+            background: var(--white);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            white-space: nowrap;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab.active {
+            background: var(--secondary);
+            color: var(--primary);
+            border-color: var(--secondary);
+        }
+
+        .card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            background: rgba(30, 58, 95, 0.05);
+            border-bottom: 2px solid var(--border);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-size: 15px;
+        }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-entregado { color: var(--success); font-weight: bold; }
+        .status-rechazado { color: var(--danger); font-weight: bold; }
+        .status-pendiente { color: var(--warning); font-weight: bold; }
+
+        .btn-back {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-back:hover { background: rgba(255,255,255,0.2); }
+
+        #loading {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--secondary);"></i>
+    </div>
+
+    <div class="header">
+        <h1><i class="fas fa-map-marked-alt"></i> Estado de Entregas</h1>
+        <a href="index.html" class="btn-back"><i class="fas fa-arrow-left"></i> Volver</a>
+    </div>
+
+    <div class="container">
+        <div id="tabsMoviles" class="tabs">
+            <!-- Se carga dinámicamente -->
+        </div>
+
+        <div class="card">
+            <h2 id="tituloMovil">Selecciona un móvil</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Cliente</th>
+                            <th>Estado</th>
+                            <th>Observación / Respuesta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaSeguimiento">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: #999;">
+                                Cargando información de entregas...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- PROTECCIÓN DE SESIÓN ---
+        if (!localStorage.getItem('nexo_token')) {
+            window.location.href = 'login.html';
+        }
+
+        // --- TEMPORIZADOR DE INACTIVIDAD (5 MINUTOS) ---
+        let inactivityTimer;
+        function resetTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                localStorage.removeItem('nexo_user');
+                localStorage.removeItem('nexo_token');
+                alert("Sesión expirada por inactividad.");
+                window.location.href = 'login.html';
+            }, 5 * 60 * 1000); 
+        }
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('keypress', resetTimer);
+        resetTimer();
+
+        // Initialize Dark Mode from localStorage
+        (function initDarkMode() {
+            const darkMode = localStorage.getItem('darkMode');
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+            }
+        })();
+
+        let allReportes = [];
+        let movilesUnicos = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('http://localhost:8080/api/reportes');
+                allReportes = await res.json();
+                
+                // Extraer móviles únicos
+                const movilesSet = new Set(allReportes.map(r => r.movil));
+                movilesUnicos = Array.from(movilesSet).sort((a,b) => a - b);
+                
+                renderTabs();
+                if(movilesUnicos.length > 0) {
+                    seleccionarMovil(movilesUnicos[0]);
+                } else {
+                    document.getElementById('tablaSeguimiento').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">No hay datos de entregas hoy.</td></tr>';
+                }
+
+            } catch (error) {
+                console.error(error);
+            } finally {
+                const loading = document.getElementById('loading');
+                loading.style.opacity = '0';
+                setTimeout(() => loading.style.display = 'none', 500);
+            }
+        });
+
+        function renderTabs() {
+            const container = document.getElementById('tabsMoviles');
+            container.innerHTML = movilesUnicos.map(m => `
+                <div class="tab" id="tab-${m}" onclick="seleccionarMovil(${m})">
+                    <i class="fas fa-truck"></i> Móvil #${m}
+                </div>
+            `).join('');
+        }
+
+        function seleccionarMovil(movil) {
+            // UI Update
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const tab = document.getElementById(`tab-${movil}`);
+            if(tab) tab.classList.add('active');
+            
+            document.getElementById('tituloMovil').innerHTML = `<i class="fas fa-info-circle"></i> Entregas del Móvil #${movil}`;
+
+            // Filter data
+            const filtrados = allReportes.filter(r => r.movil === movil);
+            const tbody = document.getElementById('tablaSeguimiento');
+            
+            tbody.innerHTML = filtrados.map(r => {
+                const statusClass = `status-${r.estado.toLowerCase()}`;
+                const icon = r.estado === 'entregado' ? 'fa-check-circle' : r.estado === 'rechazado' ? 'fa-times-circle' : 'fa-clock';
+                const fecha = new Date(r.fecha).toLocaleString('es-PY', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit'
+                });
+
+                return `
+                    <tr>
+                        <td style="color: #666; font-size: 13px;">${fecha}</td>
+                        <td><strong>${r.cliente}</strong></td>
+                        <td>
+                            <span class="${statusClass}">
+                                <i class="fas ${icon}"></i> ${r.estado.toUpperCase()}
+                            </span>
+                        </td>
+                        <td style="font-style: italic; color: #555;">
+                            ${r.observacion || '<span style="color:#ccc">Sin observaciones</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
