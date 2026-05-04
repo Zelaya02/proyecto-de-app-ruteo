@@ -13,7 +13,7 @@ if not exist "lib\postgresql-42.6.0.jar" (
 
 REM Compilar
 echo Compilando script de creacion...
-javac -cp "lib/*" CreacionDB.java
+javac -encoding UTF-8 -cp "lib/*" CreacionDB.java
 if %errorlevel% neq 0 (
     echo ERROR en la compilacion.
     pause
