@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,7 +64,7 @@
             max-width: 350px;
             background: var(--white);
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             border-top: 5px solid var(--secondary);
@@ -108,7 +109,7 @@
 
         .cliente-card:hover {
             transform: scale(1.02);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .cliente-card .numero {
@@ -180,9 +181,11 @@
         .modal {
             display: none;
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -221,26 +224,32 @@
             height: 10px;
             width: 8px;
         }
+
         ::-webkit-scrollbar-track {
             background: #eee;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #ccc;
             border-radius: 5px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: #bbb;
         }
     </style>
 </head>
+
 <body>
 
     <div class="header">
         <h1>
-            <img src="assets/img/LogoNexo.png" alt="NEXO" style="height: 35px; vertical-align: middle; margin-right: 10px;">
+            <img src="assets/img/LogoNexo.png" alt="NEXO"
+                style="height: 35px; vertical-align: middle; margin-right: 10px;">
             Gestión de Rutas
         </h1>
-        <button onclick="window.close()" style="background:none; border:1px solid white; color:white; padding:5px 15px; border-radius:5px; cursor:pointer;">
+        <button onclick="window.close()"
+            style="background:none; border:1px solid white; color:white; padding:5px 15px; border-radius:5px; cursor:pointer;">
             <i class="fas fa-times"></i> Salir
         </button>
     </div>
@@ -251,7 +260,8 @@
         </div>
 
         <div style="text-align: center; margin-top: 30px;">
-            <button class="btn-primary" onclick="enviarTodas()" style="width: auto; padding: 15px 30px; font-weight: bold; background: #25D366;">
+            <button class="btn-primary" onclick="enviarTodas()"
+                style="width: auto; padding: 15px 30px; font-weight: bold; background: #25D366;">
                 <i class="fab fa-whatsapp"></i> ENVIAR TODAS LAS RUTAS A LOS CHOFERES
             </button>
         </div>
@@ -264,7 +274,8 @@
             <p id="transferClienteNombre" style="font-size: 14px; margin-top: 5px; color: #666;"></p>
             <select id="selectMovilDestino"></select>
             <button class="btn-primary" onclick="confirmarTransferencia()">Transferir Ahora</button>
-            <button onclick="cerrarModal()" style="background:none; border:none; color:#666; margin-top:10px; cursor:pointer;">Cancelar</button>
+            <button onclick="cerrarModal()"
+                style="background:none; border:none; color:#666; margin-top:10px; cursor:pointer;">Cancelar</button>
         </div>
     </div>
 
@@ -290,7 +301,7 @@
             rutasData.moviles.forEach((movil, mIdx) => {
                 const col = document.createElement('div');
                 col.className = 'movil-col';
-                
+
                 col.innerHTML = `
                     <div class="movil-header">
                         <h2>Móvil #${movil.movil}</h2>
@@ -324,9 +335,9 @@
         function abrirTransfer(mIdx, cIdx) {
             movilOrigenIdx = mIdx;
             clienteEnTransferencia = rutasData.moviles[mIdx].clientes[cIdx];
-            
+
             document.getElementById('transferClienteNombre').textContent = clienteEnTransferencia.nombre;
-            
+
             const select = document.getElementById('selectMovilDestino');
             select.innerHTML = '';
             rutasData.moviles.forEach((m, idx) => {
@@ -347,19 +358,19 @@
 
         function confirmarTransferencia() {
             const destIdx = parseInt(document.getElementById('selectMovilDestino').value);
-            
+
             // Remover de origen
             rutasData.moviles[movilOrigenIdx].clientes = rutasData.moviles[movilOrigenIdx].clientes.filter(c => c.id !== clienteEnTransferencia.id);
-            
+
             // Agregar a destino
             rutasData.moviles[destIdx].clientes.push(clienteEnTransferencia);
-            
+
             // Recalcular estadísticas básicas (opcional, simplificado)
             recalcularRutas();
-            
+
             cerrarModal();
             renderRutas();
-            
+
             // Guardar cambios localmente
             localStorage.setItem('rutasGeneradas', JSON.stringify(rutasData));
         }
@@ -368,19 +379,19 @@
             rutasData.moviles.forEach(m => {
                 // Esto es una simplificación, en producción deberías pedir al backend recalcular distancias
                 // Aquí solo actualizamos el contador de clientes
-                m.distancia_total = "..."; 
+                m.distancia_total = "...";
             });
         }
 
         function generarMensajeWA(movil) {
             const link = `http://localhost:8080/ruta.html?token=${movil.token}`;
-            
+
             let listaClientesTxt = "";
             movil.clientes.forEach((c, index) => {
                 const mapsUrl = `https://www.google.com/maps?q=${c.latitud},${c.longitud}`;
                 listaClientesTxt += `${index + 1}. *${c.nombre}*\n📍 ${mapsUrl}\n\n`;
             });
-            
+
             return encodeURIComponent(`📦 *NEXO - Tu ruta de hoy* 📦\n\n🚚 *Móvil ${movil.movil}*\n📋 Total Clientes: ${movil.clientes.length}\n\n${listaClientesTxt}🔗 *Acceder al Sistema de Chofer:* ${link}`);
         }
 
@@ -400,4 +411,5 @@
         renderRutas();
     </script>
 </body>
+
 </html>
