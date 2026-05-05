@@ -370,8 +370,15 @@ public class Main {
                     ResultSet rs = pstmt.executeQuery();
                     
                     if (rs.next()) {
+                        java.sql.Timestamp fechaRuta = rs.getTimestamp("fecha");
+                        if (fechaRuta != null && (System.currentTimeMillis() - fechaRuta.getTime()) > 2L * 24 * 60 * 60 * 1000) {
+                            sendError(exchange, 403, "Esta ruta ha expirado (han pasado más de 2 días).");
+                            return;
+                        }
+
                         Map<String, Object> ruta = new HashMap<>();
                         ruta.put("movil", rs.getInt("movil_numero"));
+
                         ruta.put("distancia_total", rs.getDouble("distancia_total"));
                         ruta.put("tiempo_estimado", rs.getInt("tiempo_estimado"));
                         List<Map<String, Object>> clientes = gson.fromJson(rs.getString("clientes_json"), List.class);
@@ -422,6 +429,21 @@ public class Main {
                     String observacion = req.containsKey("observacion") ? (String) req.get("observacion") : "";
                     
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String checkSql = "SELECT fecha FROM rutas_generadas WHERE token = ?";
+                        PreparedStatement pCheck = conn.prepareStatement(checkSql);
+                        pCheck.setString(1, token);
+                        ResultSet rsCheck = pCheck.executeQuery();
+                        if (rsCheck.next()) {
+                            java.sql.Timestamp fechaRuta = rsCheck.getTimestamp("fecha");
+                            if (fechaRuta != null && (System.currentTimeMillis() - fechaRuta.getTime()) > 2L * 24 * 60 * 60 * 1000) {
+                                sendError(exchange, 403, "Esta ruta ha expirado (han pasado más de 2 días).");
+                                return;
+                            }
+                        } else {
+                            sendError(exchange, 404, "Ruta no encontrada");
+                            return;
+                        }
+
                         String sql = "UPDATE entregas SET estado = ?, observacion = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE ruta_token = ? AND cliente_id = ?";
                         PreparedStatement pstmt = conn.prepareStatement(sql);
                         pstmt.setString(1, estado);

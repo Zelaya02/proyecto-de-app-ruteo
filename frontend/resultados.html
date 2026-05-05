@@ -374,7 +374,14 @@
 
         function generarMensajeWA(movil) {
             const link = `http://localhost:8080/ruta.html?token=${movil.token}`;
-            return encodeURIComponent(`📦 *NEXO - Tu ruta de hoy* 📦\n\n🚚 *Móvil ${movil.movil}*\n📋 Clientes: ${movil.clientes.length}\n\n🔗 *Ver ruta:* ${link}`);
+            
+            let listaClientesTxt = "";
+            movil.clientes.forEach((c, index) => {
+                const mapsUrl = `https://www.google.com/maps?q=${c.latitud},${c.longitud}`;
+                listaClientesTxt += `${index + 1}. *${c.nombre}*\n📍 ${mapsUrl}\n\n`;
+            });
+            
+            return encodeURIComponent(`📦 *NEXO - Tu ruta de hoy* 📦\n\n🚚 *Móvil ${movil.movil}*\n📋 Total Clientes: ${movil.clientes.length}\n\n${listaClientesTxt}🔗 *Acceder al Sistema de Chofer:* ${link}`);
         }
 
         function enviarWhatsApp(idx) {
