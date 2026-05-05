@@ -1,24 +1,24 @@
 # Script de Sincronizacion Automatica para Git
-Write-Host "Iniciando sincronizacion automatica cada 60 segundos..." -ForegroundColor Cyan
+Write-Host "Iniciando sincronizacion automatica cada 30 segundos en rama DESARROLLO..." -ForegroundColor Cyan
 
 while ($true) {
-    # 1. Intentar traer cambios remotos
-    Write-Host "Revisando cambios remotos..." -ForegroundColor Gray
-    git pull origin main --quiet
+    # 1. Intentar traer cambios remotos de la rama de desarrollo
+    Write-Host "Revisando cambios remotos (desarrollo)..." -ForegroundColor Gray
+    git pull origin desarrollo --quiet
 
     # 2. Revisar si hay cambios locales
     $status = git status --porcelain
     if ($status) {
-        Write-Host "Cambios detectados. Sincronizando..." -ForegroundColor Yellow
+        Write-Host "Cambios detectados. Sincronizando en DESARROLLO..." -ForegroundColor Yellow
         git add .
-        git commit -m "Auto-sync: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" --quiet
-        git push origin main --quiet
-        Write-Host "Sincronizacion completada con exito." -ForegroundColor Green
+        git commit -m "Auto-sync Desarrollo: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" --quiet
+        git push origin desarrollo --quiet
+        Write-Host "Sincronizacion en DESARROLLO completada con exito." -ForegroundColor Green
     }
     else {
-        Write-Host "Sin cambios locales." -ForegroundColor Gray
+        Write-Host "Sin cambios locales en desarrollo." -ForegroundColor Gray
     }
 
-    # Esperar 60 segundos antes de la proxima revision
+    # Esperar 30 segundos antes de la proxima revision (segun tu preferencia)
     Start-Sleep -Seconds 30
 }
