@@ -540,7 +540,7 @@ public class Main {
                 String dateFilter = switch (periodo) {
                     case "semana" -> "r.fecha >= CURRENT_DATE - INTERVAL '7 days'";
                     case "mes" -> "r.fecha >= CURRENT_DATE - INTERVAL '30 days'";
-                    default -> "r.fecha = CURRENT_DATE";
+                    default -> "CAST(r.fecha AS DATE) = CURRENT_DATE";
                 };
 
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
