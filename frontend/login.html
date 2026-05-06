@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEXO | Acceso Corporativo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --primary: #1E3A5F;
-            --primary-light: #2c4a6e;
+            --primary-light: #368af0;
             --secondary: #F4A261;
             --accent: #E76F51;
             --bg: #f8fafc;
@@ -40,10 +42,10 @@
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg);
-            background-image: 
-                radial-gradient(at 0% 0%, hsla(210,100%,93%,1) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, hsla(21,81%,90%,1) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, hsla(210,100%,93%,1) 0, transparent 50%);
+            background-image:
+                radial-gradient(at 0% 0%, hsla(210, 100%, 93%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(21, 81%, 90%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(210, 100%, 93%, 1) 0, transparent 50%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -53,10 +55,10 @@
         }
 
         body.dark-mode {
-            background-image: 
-                radial-gradient(at 0% 0%, hsla(210,40%,15%,1) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, hsla(21,40%,15%,1) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, hsla(210,40%,15%,1) 0, transparent 50%);
+            background-image:
+                radial-gradient(at 0% 0%, hsla(210, 40%, 15%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(21, 40%, 15%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(210, 40%, 15%, 1) 0, transparent 50%);
         }
 
         .login-container {
@@ -67,8 +69,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .login-card {
@@ -90,7 +99,7 @@
         .logo {
             height: 80px;
             margin-bottom: 20px;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
             transition: transform 0.3s ease;
         }
 
@@ -205,9 +214,19 @@
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
         }
 
         .loader {
@@ -221,7 +240,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .footer-info {
@@ -238,6 +259,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="login-card">
@@ -259,7 +281,7 @@
                         <input type="text" id="username" placeholder="Tu nombre de usuario" required>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Contraseña</label>
                     <div class="input-wrapper">
@@ -320,11 +342,11 @@
                 if (data.success) {
                     localStorage.setItem('nexo_user', data.usuario);
                     localStorage.setItem('nexo_token', data.token);
-                    
+
                     // Efecto de éxito antes de redirigir
                     btnText.textContent = 'Acceso concedido';
                     btnLogin.style.background = '#2ecc71';
-                    
+
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 800);
@@ -343,4 +365,5 @@
         });
     </script>
 </body>
+
 </html>
