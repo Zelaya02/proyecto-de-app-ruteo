@@ -23,7 +23,7 @@ import com.ruteo.repository.UsuarioRepository;
 
 public class Main {
     private static final Gson gson = new Gson();
-    private static final String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db";
+    private static final String DB_URL = "jdbc:postgresql://localhost:5432/ruteo_db";
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = "Zelaya1103";
     private static final String ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; // Configura aquí tu API Key de OpenRouteService

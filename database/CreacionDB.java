@@ -5,7 +5,7 @@ import java.io.*;
 
 public class CreacionDB {
     public static void main(String[] args) {
-        int port = 5000; 
+        int port = 5432; 
         String dbName = "ruteo_db";
         String user = "postgres";
         String pass = "Zelaya1103";
@@ -35,7 +35,7 @@ public class CreacionDB {
                 
                 dbStmt.executeUpdate("INSERT INTO usuarios (username, password, nombre, rol) VALUES ('admin', 'admin', 'Administrador', 'admin')");
                 
-                Path sqlPath = Paths.get("import.sql");
+                Path sqlPath = Paths.get("database/import.sql");
                 if (Files.exists(sqlPath)) {
                     System.out.println("Cargando clientes...");
                     List<String> lines = Files.readAllLines(sqlPath);
@@ -57,7 +57,7 @@ public class CreacionDB {
                     }
                     System.out.println("✅ " + count + " clientes cargados.");
 
-                    // --- DATOS DE PRUEBA PARA ESTADÍSTICAS ---
+                    // --- DATOS DE PRUEBA PARA ESTADISTICAS ---
                     System.out.println("Migrando datos de ejemplo para estadisticas...");
                     dbStmt.executeUpdate("INSERT INTO rutas_generadas (token, movil_numero, clientes_json, distancia_total, tiempo_estimado) " +
                                        "VALUES ('TOKEN-PROCESADO', 1, '[]', 25.4, 60)");
