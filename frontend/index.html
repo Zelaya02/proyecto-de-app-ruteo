@@ -218,7 +218,7 @@
         }
 
         .badge {
-            background: #e0e0e0;
+            background: #c40505;
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 12px;
@@ -365,12 +365,15 @@
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
                 <div class="config-card">
                     <h4><i class="fas fa-tasks"></i> Reglas de Ruteo</h4>
-                    <p style="font-size:12px; color:#666; margin-bottom:10px;">Configura límites de clientes por móvil y categorías.</p>
+                    <p style="font-size:12px; color:#666; margin-bottom:10px;">Configura límites de clientes por móvil y
+                        categorías.</p>
                     <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                         <input type="checkbox" id="usarReglas" checked style="width:18px; height:18px; cursor:pointer;">
-                        <label for="usarReglas" style="font-weight:600; cursor:pointer; font-size: 14px;">Aplicar reglas en ruteo</label>
+                        <label for="usarReglas" style="font-weight:600; cursor:pointer; font-size: 14px;">Aplicar reglas
+                            en ruteo</label>
                     </div>
-                    <button class="btn btn-secondary" onclick="window.location.href='reglas.html'" style="width:100%; padding:8px;">
+                    <button class="btn btn-secondary" onclick="window.location.href='reglas.html'"
+                        style="width:100%; padding:8px;">
                         Gestionar Reglas
                     </button>
                 </div>
@@ -493,10 +496,24 @@
         let tiposFiltro = new Set();
         let gruposAbiertos = new Set(); // Para recordar qué acordeones están abiertos
 
+        // Helper para peticiones con autenticación
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('nexo_token');
+            if (!options.headers) options.headers = {};
+            options.headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                alert("Sesión expirada o no válida. Por favor, inicie sesión de nuevo.");
+                window.location.href = 'login.html';
+            }
+            return response;
+        }
+
         // ========== OBTENER CLIENTES DEL BACKEND ==========
         async function cargarClientes() {
             try {
-                const response = await fetch('http://localhost:8080/api/clientes');
+                const response = await fetchWithAuth('http://localhost:8080/api/clientes');
                 if (!response.ok) throw new Error('Error al cargar clientes');
                 clientes = await response.json();
                 aplicarFiltros();
@@ -728,7 +745,7 @@
             const usarReglas = document.getElementById('usarReglas').checked;
 
             try {
-                const response = await fetch('http://localhost:8080/api/generar-rutas', {
+                const response = await fetchWithAuth('http://localhost:8080/api/generar-rutas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -855,7 +872,7 @@
             }
 
             try {
-                const response = await fetch('http://localhost:8080/api/clientes', {
+                const response = await fetchWithAuth('http://localhost:8080/api/clientes', {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -876,7 +893,7 @@
 
             if (confirm(`¿Estás seguro de que deseas eliminar al cliente "${cliente.nombre}"?`)) {
                 try {
-                    const response = await fetch(`http://localhost:8080/api/clientes?id=${id}`, {
+                    const response = await fetchWithAuth(`http://localhost:8080/api/clientes?id=${id}`, {
                         method: 'DELETE'
                     });
 

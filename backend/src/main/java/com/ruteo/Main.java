@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.UUID;
 import java.net.http.HttpClient;
@@ -26,8 +27,25 @@ public class Main {
     private static final String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db";
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = "Zelaya1103";
-    private static final String ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; // Configura aquí tu API Key de OpenRouteService
+    private static final String ORS_KEY = System.getenv("ORS_API_KEY") != null ? System.getenv("ORS_API_KEY") : "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; 
     private static final String FRONTEND_DIR = "../frontend";
+
+    // Gestión de Sesiones (In-memory para esta demo/proyecto PyME)
+    static class SessionManager {
+        private static final Map<String, String> activeSessions = new ConcurrentHashMap<>();
+        
+        public static void addSession(String token, String username) {
+            activeSessions.put(token, username);
+        }
+        
+        public static boolean isValid(String token) {
+            return token != null && activeSessions.containsKey(token);
+        }
+        
+        public static void removeSession(String token) {
+            activeSessions.remove(token);
+        }
+    }
     
     // Modelos de Reglas
     static class Regla {
@@ -99,6 +117,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
@@ -211,6 +230,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
@@ -237,10 +257,20 @@ public class Main {
                     
                     List<Cliente> clientes = new ArrayList<>();
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String idList = clienteIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-                        String sql = "SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE id IN (" + idList + ")";
-                        Statement stmt = conn.createStatement();
-                        ResultSet rs = stmt.executeQuery(sql);
+                        // Usar PreparedStatement para evitar SQL Injection incluso con IDs numéricos
+                        StringBuilder sqlBuilder = new StringBuilder("SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE id IN (");
+                        for (int i = 0; i < clienteIds.size(); i++) {
+                            sqlBuilder.append("?");
+                            if (i < clienteIds.size() - 1) sqlBuilder.append(",");
+                        }
+                        sqlBuilder.append(")");
+                        
+                        PreparedStatement pstmt = conn.prepareStatement(sqlBuilder.toString());
+                        for (int i = 0; i < clienteIds.size(); i++) {
+                            pstmt.setInt(i + 1, clienteIds.get(i));
+                        }
+                        
+                        ResultSet rs = pstmt.executeQuery();
                         while (rs.next()) {
                             clientes.add(new Cliente(rs.getInt("id"), rs.getString("nombre"), rs.getDouble("latitud"), rs.getDouble("longitud"), rs.getString("tipo_cliente")));
                         }
@@ -353,6 +383,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("OPTIONS".equals(exchange.getRequestMethod())) return;
             
             if ("GET".equals(exchange.getRequestMethod())) {
@@ -417,6 +448,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("OPTIONS".equals(exchange.getRequestMethod())) return;
             
             if ("POST".equals(exchange.getRequestMethod())) {
@@ -464,6 +496,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM reglas_ruteo ORDER BY categoria";
@@ -530,6 +563,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("GET".equals(exchange.getRequestMethod())) {
                 String query = exchange.getRequestURI().getQuery();
                 String periodo = "dia";
@@ -610,6 +644,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT e.id, c.nombre as cliente, e.estado, e.observacion, e.fecha_actualizacion, r.movil_numero " +
@@ -673,6 +708,7 @@ public class Main {
 
                     if (usuario != null) {
                         String sessionToken = java.util.UUID.randomUUID().toString();
+                        SessionManager.addSession(sessionToken, usuario.getUsername());
                         response.put("success", true);
                         response.put("message", "Login exitoso");
                         response.put("usuario", usuario.getNombre());
@@ -711,6 +747,34 @@ public class Main {
         Map<String, String> error = new HashMap<>();
         error.put("error", message);
         sendResponse(exchange, statusCode, gson.toJson(error));
+    }
+
+    private static boolean isAuthorized(HttpExchange exchange) throws IOException {
+        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+        String token = null;
+        
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        } else {
+            // Fallback para query param si es necesario (ej: para los choferes en /api/ruta)
+            String query = exchange.getRequestURI().getQuery();
+            if (query != null && query.contains("token=")) {
+                token = query.split("token=")[1].split("&")[0];
+            }
+        }
+
+        if (SessionManager.isValid(token)) {
+            return true;
+        }
+
+        // Caso especial: Endpoints de choferes usan validación por token de base de datos
+        String path = exchange.getRequestURI().getPath();
+        if (path.equals("/api/ruta") || path.equals("/api/actualizar-estado")) {
+            return true; 
+        }
+
+        sendError(exchange, 401, "No autorizado. Sesión inválida o expirada.");
+        return false;
     }
 
     // -- New RouteService class for OpenRouteService integration --

@@ -359,6 +359,20 @@
 
         document.addEventListener('DOMContentLoaded', cargarDatos);
 
+        // Helper para peticiones con autenticación
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('nexo_token');
+            if (!options.headers) options.headers = {};
+            options.headers['Authorization'] = `Bearer ${token}`;
+            
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                alert("Sesión expirada o no válida. Por favor, inicie sesión de nuevo.");
+                window.location.href = 'login.html';
+            }
+            return response;
+        }
+
         async function cargarDatos() {
             document.getElementById('loading').style.display = 'flex';
             document.getElementById('loading').style.opacity = '1';
@@ -366,12 +380,12 @@
             const periodo = document.getElementById('selectPeriodo').value;
             try {
                 // Cargar Estadísticas
-                const resStats = await fetch(`http://localhost:8080/api/estadisticas?periodo=${periodo}`);
+                const resStats = await fetchWithAuth(`http://localhost:8080/api/estadisticas?periodo=${periodo}`);
                 const dataStats = await resStats.json();
                 renderDashboard(dataStats);
 
                 // Cargar Reportes Detallados
-                const resReportes = await fetch('http://localhost:8080/api/reportes');
+                const resReportes = await fetchWithAuth('http://localhost:8080/api/reportes');
                 const dataReportes = await resReportes.json();
                 renderReportes(dataReportes);
 

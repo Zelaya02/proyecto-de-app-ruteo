@@ -167,9 +167,23 @@
         const categoriasBasicas = ['supermercado', 'minorista', 'distribuidor', 'mayorista'];
         let reglasCargadas = [];
 
+        // Helper para peticiones con autenticación
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('nexo_token');
+            if (!options.headers) options.headers = {};
+            options.headers['Authorization'] = `Bearer ${token}`;
+            
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                alert("Sesión expirada o no válida. Por favor, inicie sesión de nuevo.");
+                window.location.href = 'login.html';
+            }
+            return response;
+        }
+
         async function cargarReglas() {
             try {
-                const res = await fetch('http://localhost:8080/api/reglas');
+                const res = await fetchWithAuth('http://localhost:8080/api/reglas');
                 reglasCargadas = await res.json();
                 renderReglas();
             } catch (e) {
@@ -231,7 +245,7 @@
         async function eliminarReglaLocal(cat) {
             if (confirm(`¿Eliminar la regla para la categoría "${cat}"?`)) {
                 try {
-                    const res = await fetch(`http://localhost:8080/api/reglas?categoria=${encodeURIComponent(cat)}`, {
+                    const res = await fetchWithAuth(`http://localhost:8080/api/reglas?categoria=${encodeURIComponent(cat)}`, {
                         method: 'DELETE'
                     });
                     if (res.ok) {
@@ -257,7 +271,7 @@
             });
 
             try {
-                const res = await fetch('http://localhost:8080/api/reglas', {
+                const res = await fetchWithAuth('http://localhost:8080/api/reglas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
