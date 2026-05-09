@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.UUID;
 import java.net.http.HttpClient;
@@ -26,8 +27,25 @@ public class Main {
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/ruteo_db";
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = "Zelaya1103";
-    private static final String ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; // Configura aquí tu API Key de OpenRouteService
+    private static final String ORS_KEY = System.getenv("ORS_API_KEY") != null ? System.getenv("ORS_API_KEY") : "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; 
     private static final String FRONTEND_DIR = "../frontend";
+
+    // Gestión de Sesiones (In-memory para esta demo/proyecto PyME)
+    static class SessionManager {
+        private static final Map<String, String> activeSessions = new ConcurrentHashMap<>();
+        
+        public static void addSession(String token, String username) {
+            activeSessions.put(token, username);
+        }
+        
+        public static boolean isValid(String token) {
+            return token != null && activeSessions.containsKey(token);
+        }
+        
+        public static void removeSession(String token) {
+            activeSessions.remove(token);
+        }
+    }
     
     // Modelos de Reglas
     static class Regla {
@@ -99,6 +117,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
@@ -211,6 +230,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
@@ -237,16 +257,33 @@ public class Main {
                     
                     List<Cliente> clientes = new ArrayList<>();
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String idList = clienteIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-                        String sql = "SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE id IN (" + idList + ")";
-                        Statement stmt = conn.createStatement();
-                        ResultSet rs = stmt.executeQuery(sql);
+                        // Usar PreparedStatement para evitar SQL Injection incluso con IDs numéricos
+                        StringBuilder sqlBuilder = new StringBuilder("SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE id IN (");
+                        for (int i = 0; i < clienteIds.size(); i++) {
+                            sqlBuilder.append("?");
+                            if (i < clienteIds.size() - 1) sqlBuilder.append(",");
+                        }
+                        sqlBuilder.append(")");
+                        
+                        PreparedStatement pstmt = conn.prepareStatement(sqlBuilder.toString());
+                        for (int i = 0; i < clienteIds.size(); i++) {
+                            pstmt.setInt(i + 1, clienteIds.get(i));
+                        }
+                        
+                        ResultSet rs = pstmt.executeQuery();
                         while (rs.next()) {
                             clientes.add(new Cliente(rs.getInt("id"), rs.getString("nombre"), rs.getDouble("latitud"), rs.getDouble("longitud"), rs.getString("tipo_cliente")));
                         }
                     }
                     
                     String prioridad = (String) request.getOrDefault("prioridad", "ninguna");
+                    String puntoInicio = (String) request.getOrDefault("punto_inicio", "Base Central - San Lorenzo");
+                    double[] startCoords = parseGoogleMapsUrl(puntoInicio);
+                    // Si el parseo devuelve el default genérico pero el texto es el de la base, forzar coordenadas de la base
+                    if (puntoInicio.contains("Base Central") && startCoords[0] == -25.286) {
+                        startCoords = new double[]{-25.3396, -57.5173};
+                    }
+                    
                     Object usarReglasObj = request.get("usar_reglas");
                     boolean usarReglas = true;
                     if (usarReglasObj instanceof Boolean) usarReglas = (Boolean) usarReglasObj;
@@ -274,8 +311,8 @@ public class Main {
                             List<Cliente> cluster = clusters.get(i);
                             if (cluster.isEmpty()) continue;
                             
-                            // Vecino mas cercano para ordenar con prioridad
-                            List<Cliente> ordenados = nearestNeighborWithPriority(cluster, prioridad);
+                            // Vecino mas cercano para ordenar con prioridad partiendo desde el punto configurado
+                            List<Cliente> ordenados = nearestNeighborWithPriority(cluster, prioridad, startCoords[0], startCoords[1]);
                             
                             double distTotal = 0;
                             List<Map<String, Object>> clientesJson = new ArrayList<>();
@@ -314,7 +351,7 @@ public class Main {
                             pstmt.setInt(2, i + 1);
                             pstmt.setString(3, gson.toJson(clientesJson));
                             pstmt.setDouble(4, distTotal);
-                            pstmt.setInt(5, tiempoEstimado);
+                            pstmt.setInt(5, 0); // Tiempo estimado removido (seteado a 0)
                             pstmt.executeUpdate();
                             
                             // Insertar entregas
@@ -332,14 +369,16 @@ public class Main {
                             movil.put("token", token);
                             movil.put("clientes", clientesJson);
                             movil.put("distancia_total", distTotal);
-                            movil.put("tiempo_estimado", tiempoEstimado);
+                            movil.put("distancia_total", distTotal);
                             movilesRespuesta.add(movil);
                         }
                     }
 
-                    Map<String, Object> respuestaFinal = new HashMap<>();
-                    respuestaFinal.put("moviles", movilesRespuesta);
-                    sendResponse(exchange, 200, gson.toJson(respuestaFinal));
+                    Map<String, Object> finalRes = new HashMap<>();
+                    finalRes.put("moviles", movilesRespuesta);
+                    finalRes.put("startLat", startCoords[0]);
+                    finalRes.put("startLon", startCoords[1]);
+                    sendResponse(exchange, 200, gson.toJson(finalRes));
                     
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -353,6 +392,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("OPTIONS".equals(exchange.getRequestMethod())) return;
             
             if ("GET".equals(exchange.getRequestMethod())) {
@@ -417,6 +457,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("OPTIONS".equals(exchange.getRequestMethod())) return;
             
             if ("POST".equals(exchange.getRequestMethod())) {
@@ -464,6 +505,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM reglas_ruteo ORDER BY categoria";
@@ -530,6 +572,7 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("GET".equals(exchange.getRequestMethod())) {
                 String query = exchange.getRequestURI().getQuery();
                 String periodo = "dia";
@@ -537,17 +580,32 @@ public class Main {
                     periodo = query.split("periodo=")[1].split("&")[0];
                 }
 
-                String dateFilter = switch (periodo) {
-                    case "semana" -> "r.fecha >= CURRENT_DATE - INTERVAL '7 days'";
-                    case "mes" -> "r.fecha >= CURRENT_DATE - INTERVAL '30 days'";
-                    default -> "CAST(r.fecha AS DATE) = CURRENT_DATE";
-                };
+                String fecha = null;
+                if (query != null && query.contains("fecha=")) {
+                    fecha = query.split("fecha=")[1].split("&")[0];
+                }
+
+                String dateFilter;
+                boolean useParam = false;
+                if (fecha != null && !fecha.isEmpty()) {
+                    dateFilter = "CAST(r.fecha AS DATE) = CAST(? AS DATE)";
+                    useParam = true;
+                } else {
+                    if ("semana".equals(periodo)) {
+                        dateFilter = "r.fecha >= CURRENT_DATE - INTERVAL '7 days'";
+                    } else if ("mes".equals(periodo)) {
+                        dateFilter = "r.fecha >= CURRENT_DATE - INTERVAL '30 days'";
+                    } else {
+                        dateFilter = "CAST(r.fecha AS DATE) = CURRENT_DATE";
+                    }
+                }
 
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     // Totales por Estado
                     String sql = "SELECT estado, COUNT(*) as cantidad FROM entregas e JOIN rutas_generadas r ON e.ruta_token = r.token WHERE " + dateFilter + " GROUP BY estado";
-                    Statement stmt = conn.createStatement();
-                    ResultSet rs = stmt.executeQuery(sql);
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    if (useParam) pstmt.setString(1, fecha);
+                    ResultSet rs = pstmt.executeQuery();
                     
                     int entregados = 0, pendientes = 0, rechazados = 0;
                     while(rs.next()){
@@ -572,7 +630,9 @@ public class Main {
                         "COUNT(e.id) as tot " +
                         "FROM rutas_generadas r JOIN entregas e ON r.token = e.ruta_token " +
                         "WHERE " + dateFilter + " GROUP BY r.movil_numero";
-                    ResultSet rsRend = stmt.executeQuery(sqlRend);
+                    PreparedStatement pstmtRend = conn.prepareStatement(sqlRend);
+                    if (useParam) pstmtRend.setString(1, fecha);
+                    ResultSet rsRend = pstmtRend.executeQuery();
                     List<Map<String, Object>> rendimientos = new ArrayList<>();
                     while(rsRend.next()){
                         Map<String, Object> rm = new HashMap<>();
@@ -584,15 +644,17 @@ public class Main {
                     res.put("rendimiento_por_movil", rendimientos);
 
                     // Historial (Tendencia)
-                    String sqlHist = "SELECT r.fecha, " +
+                    String sqlHist = "SELECT CAST(r.fecha AS DATE) as f, " +
                         "SUM(CASE WHEN e.estado = 'entregado' THEN 1 ELSE 0 END) as ent " +
                         "FROM rutas_generadas r JOIN entregas e ON r.token = e.ruta_token " +
-                        "WHERE " + dateFilter + " GROUP BY r.fecha ORDER BY r.fecha ASC";
-                    ResultSet rsHist = stmt.executeQuery(sqlHist);
+                        "WHERE " + dateFilter + " GROUP BY CAST(r.fecha AS DATE) ORDER BY CAST(r.fecha AS DATE) ASC";
+                    PreparedStatement pstmtHist = conn.prepareStatement(sqlHist);
+                    if (useParam) pstmtHist.setString(1, fecha);
+                    ResultSet rsHist = pstmtHist.executeQuery();
                     List<Map<String, Object>> historial = new ArrayList<>();
                     while(rsHist.next()){
                         Map<String, Object> h = new HashMap<>();
-                        h.put("fecha", rsHist.getDate("fecha").toString());
+                        h.put("fecha", rsHist.getDate("f").toString());
                         h.put("entregados", rsHist.getInt("ent"));
                         historial.add(h);
                     }
@@ -610,16 +672,32 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
             if ("GET".equals(exchange.getRequestMethod())) {
+                String query = exchange.getRequestURI().getQuery();
+                String fecha = null;
+                if (query != null && query.contains("fecha=")) {
+                    fecha = query.split("fecha=")[1].split("&")[0];
+                }
+
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT e.id, c.nombre as cliente, e.estado, e.observacion, e.fecha_actualizacion, r.movil_numero " +
                                  "FROM entregas e " +
                                  "JOIN clientes c ON e.cliente_id = c.id " +
                                  "JOIN rutas_generadas r ON e.ruta_token = r.token " +
-                                 "WHERE e.estado != 'pendiente' " +
-                                 "ORDER BY e.fecha_actualizacion DESC LIMIT 50";
-                    Statement stmt = conn.createStatement();
-                    ResultSet rs = stmt.executeQuery(sql);
+                                 "WHERE e.estado != 'pendiente' ";
+                    
+                    if (fecha != null && !fecha.isEmpty()) {
+                        sql += " AND CAST(e.fecha_actualizacion AS DATE) = CAST(? AS DATE) ";
+                    }
+                    
+                    sql += "ORDER BY e.fecha_actualizacion DESC LIMIT 50";
+                    
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    if (fecha != null && !fecha.isEmpty()) {
+                        pstmt.setString(1, fecha);
+                    }
+                    ResultSet rs = pstmt.executeQuery();
                     
                     List<Map<String, Object>> reportes = new ArrayList<>();
                     while(rs.next()){
@@ -663,8 +741,21 @@ public class Main {
                             .lines().collect(Collectors.joining("\n"));
                     
                     JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                    
+                    // Decodificar payload ofuscado si existe
+                    if (json.has("auth")) {
+                        try {
+                            String decoded = new String(java.util.Base64.getDecoder().decode(json.get("auth").getAsString()), StandardCharsets.UTF_8);
+                            json = JsonParser.parseString(decoded).getAsJsonObject();
+                        } catch (Exception ex) {
+                            System.err.println("Error decodificando auth: " + ex.getMessage());
+                        }
+                    }
+
                     String username = json.has("username") ? json.get("username").getAsString() : "";
                     String password = json.has("password") ? json.get("password").getAsString() : "";
+                    
+                    System.out.println("Intento de login para usuario: " + username);
 
                     Map<String, Object> response = new HashMap<>();
                     
@@ -673,6 +764,7 @@ public class Main {
 
                     if (usuario != null) {
                         String sessionToken = java.util.UUID.randomUUID().toString();
+                        SessionManager.addSession(sessionToken, usuario.getUsername());
                         response.put("success", true);
                         response.put("message", "Login exitoso");
                         response.put("usuario", usuario.getNombre());
@@ -711,6 +803,34 @@ public class Main {
         Map<String, String> error = new HashMap<>();
         error.put("error", message);
         sendResponse(exchange, statusCode, gson.toJson(error));
+    }
+
+    private static boolean isAuthorized(HttpExchange exchange) throws IOException {
+        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+        String token = null;
+        
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        } else {
+            // Fallback para query param si es necesario (ej: para los choferes en /api/ruta)
+            String query = exchange.getRequestURI().getQuery();
+            if (query != null && query.contains("token=")) {
+                token = query.split("token=")[1].split("&")[0];
+            }
+        }
+
+        if (SessionManager.isValid(token)) {
+            return true;
+        }
+
+        // Caso especial: Endpoints de choferes usan validación por token de base de datos
+        String path = exchange.getRequestURI().getPath();
+        if (path.equals("/api/ruta") || path.equals("/api/actualizar-estado")) {
+            return true; 
+        }
+
+        sendError(exchange, 401, "No autorizado. Sesión inválida o expirada.");
+        return false;
     }
 
     // -- New RouteService class for OpenRouteService integration --
@@ -854,7 +974,7 @@ public class Main {
         return actual < limite;
     }
 
-    private static List<Cliente> nearestNeighborWithPriority(List<Cliente> cluster, String prioridad) {
+    private static List<Cliente> nearestNeighborWithPriority(List<Cliente> cluster, String prioridad, double startLat, double startLon) {
         if (cluster.isEmpty()) return cluster;
         List<Cliente> unvisitedPriority = new ArrayList<>();
         List<Cliente> unvisitedNormal = new ArrayList<>();
@@ -865,8 +985,8 @@ public class Main {
         }
         
         List<Cliente> result = new ArrayList<>();
-        double currentLat = -25.3396; // Base Central
-        double currentLon = -57.5173;
+        double currentLat = startLat;
+        double currentLon = startLon;
 
         // Primero los prioritarios
         while(!unvisitedPriority.isEmpty()) {

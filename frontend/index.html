@@ -28,21 +28,31 @@
         :root {
             --bg-color: #f0f2f5;
             --text-color: #1E3A5F;
+            --primary: #1E3A5F;
+            --secondary: #F4A261;
             --card-bg: white;
             --header-gradient: linear-gradient(135deg, #1E3A5F, #2c4a6e);
             --border-color: #e0e0e0;
             --input-bg: white;
             --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --group-header-bg: #f8f9fa;
+            --group-content-bg: white;
+            --group-text-color: #1E3A5F;
         }
 
         body.dark-mode {
             --bg-color: #121212;
             --text-color: #e0e0e0;
+            --primary: #38bdf8;
+            --secondary: #F4A261;
             --card-bg: #1e1e1e;
             --header-gradient: linear-gradient(135deg, #0a192f, #112240);
             --border-color: #333;
             --input-bg: #2d2d2d;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --group-header-bg: #b3e5fc;
+            --group-content-bg: #e1f5fe;
+            --group-text-color: #01579b;
         }
 
         /* Header */
@@ -208,7 +218,8 @@
         }
 
         tr:hover {
-            background: #f8f9fa;
+            background: var(--bg-color);
+            filter: brightness(1.05);
         }
 
         .checkbox-cliente {
@@ -218,7 +229,7 @@
         }
 
         .badge {
-            background: #e0e0e0;
+            background: #c40505;
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 12px;
@@ -314,7 +325,7 @@
                         <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox"
                                 onchange="filtrarPorTipo('supermercado', this.checked)"> Supermercados</label>
                         <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox"
-                                onchange="filtrarPorTipo('mayorista', this.checked)"> Mayoristas</label>
+                                 onchange="filtrarPorTipo('mayorista / distribuidor', this.checked)"> Mayoristas / Distribuidores</label>
                         <hr style="border:none; border-top:1px solid #eee;">
                         <button class="btn btn-outline" style="padding: 4px 8px; font-size:12px; width:100%;"
                             onclick="document.querySelectorAll('details input[type=checkbox]').forEach(cb => { cb.checked = false; filtrarPorTipo('', false); }); tiposFiltro.clear(); aplicarFiltros();">Limpiar
@@ -353,7 +364,7 @@
         <div id="panelConfig"
             style="display:none; background: var(--card-bg); border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: var(--shadow); border: 2px solid #F4A261;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="color:#1E3A5F; margin:0; display:flex; align-items:center; gap:10px;">
+                <h3 style="color:var(--text-color); margin:0; display:flex; align-items:center; gap:10px;">
                     <i class="fas fa-sliders-h"></i> Ajustes de Ruteo
                 </h3>
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -365,12 +376,15 @@
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
                 <div class="config-card">
                     <h4><i class="fas fa-tasks"></i> Reglas de Ruteo</h4>
-                    <p style="font-size:12px; color:#666; margin-bottom:10px;">Configura límites de clientes por móvil y categorías.</p>
+                    <p style="font-size:12px; color:#666; margin-bottom:10px;">Configura límites de clientes por móvil y
+                        categorías.</p>
                     <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                         <input type="checkbox" id="usarReglas" checked style="width:18px; height:18px; cursor:pointer;">
-                        <label for="usarReglas" style="font-weight:600; cursor:pointer; font-size: 14px;">Aplicar reglas en ruteo</label>
+                        <label for="usarReglas" style="font-weight:600; cursor:pointer; font-size: 14px;">Aplicar reglas
+                            en ruteo</label>
                     </div>
-                    <button class="btn btn-secondary" onclick="window.location.href='reglas.html'" style="width:100%; padding:8px;">
+                    <button class="btn btn-secondary" onclick="window.location.href='reglas.html'"
+                        style="width:100%; padding:8px;">
                         Gestionar Reglas
                     </button>
                 </div>
@@ -380,7 +394,7 @@
                         style="width:100%; padding:10px; border-radius:8px; border:2px solid #ddd;">
                         <option value="ninguna">Sin prioridad específica</option>
                         <option value="supermercado">Supermercados primero</option>
-                        <option value="mayorista">Mayoristas primero</option>
+                        <option value="mayorista / distribuidor">Mayoristas / Distribuidores primero</option>
                         <option value="minorista/gastronómico">Minoristas primero</option>
                     </select>
                     <small style="color:#666; margin-top:5px; display:block;">Los clientes del tipo elegido se visitarán
@@ -388,8 +402,8 @@
                 </div>
                 <div>
                     <label style="display:block; font-weight:600; margin-bottom:8px;">📍 Punto de Inicio</label>
-                    <input type="text" value="Base Central - San Lorenzo" disabled
-                        style="width:100%; padding:10px; border-radius:8px; background:#f5f5f5; border:1px solid #ddd;">
+                    <input type="text" id="puntoInicio" value="Base Central - San Lorenzo"
+                        style="width:100%; padding:10px; border-radius:8px; background:var(--input-bg); border:1px solid #ddd; color:var(--text-color);">
                 </div>
             </div>
         </div>
@@ -419,8 +433,8 @@
     <div id="modalCliente"
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
         <div
-            style="background:white; padding:30px; border-radius:12px; width:450px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-            <h2 id="modalTitulo" style="margin-bottom:20px; color:#1E3A5F;"><i class="fas fa-user-plus"></i> Añadir
+            style="background:var(--card-bg); color:var(--text-color); padding:30px; border-radius:12px; width:450px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <h2 id="modalTitulo" style="margin-bottom:20px; color:var(--text-color);"><i class="fas fa-user-plus"></i> Añadir
                 Cliente</h2>
             <form id="formCliente" onsubmit="guardarCliente(event)">
                 <input type="hidden" id="clienteId">
@@ -435,7 +449,7 @@
                         style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
                         <option value="minorista/gastronómico">Minorista / Gastronómico</option>
                         <option value="supermercado">Supermercado</option>
-                        <option value="mayorista">Mayorista</option>
+                        <option value="mayorista / distribuidor">Mayorista / Distribuidor</option>
                     </select>
                 </div>
                 <div style="margin-bottom:20px;">
@@ -493,10 +507,24 @@
         let tiposFiltro = new Set();
         let gruposAbiertos = new Set(); // Para recordar qué acordeones están abiertos
 
+        // Helper para peticiones con autenticación
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('nexo_token');
+            if (!options.headers) options.headers = {};
+            options.headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                alert("Sesión expirada o no válida. Por favor, inicie sesión de nuevo.");
+                window.location.href = 'login.html';
+            }
+            return response;
+        }
+
         // ========== OBTENER CLIENTES DEL BACKEND ==========
         async function cargarClientes() {
             try {
-                const response = await fetch('http://localhost:8080/api/clientes');
+                const response = await fetchWithAuth('http://localhost:8080/api/clientes');
                 if (!response.ok) throw new Error('Error al cargar clientes');
                 clientes = await response.json();
                 aplicarFiltros();
@@ -586,21 +614,21 @@
                 const estaAbierto = gruposAbiertos.has(nombreCadena);
 
                 html += `
-                <tr style="background: #f8f9fa;">
+                <tr style="background: var(--group-header-bg);">
                     <td colspan="3" style="padding: 0;">
                         <details style="width: 100%;" ${estaAbierto ? 'open' : ''} ontoggle="registrarToggle('${nombreCadena}', this.open)">
-                            <summary style="padding: 15px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; font-weight: bold; color: #1E3A5F; border-bottom: 1px solid #eee;">
+                            <summary style="padding: 15px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; font-weight: bold; color: var(--group-text-color); border-bottom: 1px solid var(--border-color);">
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <input type="checkbox" style="width:18px; height:18px;" ${todosSeleccionados ? 'checked' : ''} 
                                         onclick="event.stopPropagation(); toggleGrupo('${nombreCadena}', this.checked)">
                                     <i class="fas fa-store"></i> ${nombreCadena.toUpperCase()} 
-                                    <span class="badge" style="background:#1E3A5F; color:white;">${lista.length} sucursales</span>
+                                    <span class="badge" style="background:var(--primary); color:white;">${lista.length} sucursales</span>
                                 </div>
                                 <div style="font-size: 12px; color: #666;">
                                     ${cantidadSeleccionados} seleccionados <i class="fas fa-chevron-down" style="margin-left:10px;"></i>
                                 </div>
                             </summary>
-                            <div style="background: white; border-left: 4px solid #F4A261;">
+                            <div style="background: var(--group-content-bg); border-left: 4px solid #F4A261;">
                                 <table style="width: 100%; margin: 0;">
                                     ${lista.map(c => renderFilaCliente(c)).join('')}
                                 </table>
@@ -728,14 +756,15 @@
             const usarReglas = document.getElementById('usarReglas').checked;
 
             try {
-                const response = await fetch('http://localhost:8080/api/generar-rutas', {
+                const response = await fetchWithAuth('http://localhost:8080/api/generar-rutas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         cliente_ids: seleccionados,
                         num_moviles: numMoviles,
                         prioridad: prioridad,
-                        usar_reglas: usarReglas
+                        usar_reglas: usarReglas,
+                        punto_inicio: document.getElementById('puntoInicio').value
                     })
                 });
 
@@ -855,7 +884,7 @@
             }
 
             try {
-                const response = await fetch('http://localhost:8080/api/clientes', {
+                const response = await fetchWithAuth('http://localhost:8080/api/clientes', {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -876,7 +905,7 @@
 
             if (confirm(`¿Estás seguro de que deseas eliminar al cliente "${cliente.nombre}"?`)) {
                 try {
-                    const response = await fetch(`http://localhost:8080/api/clientes?id=${id}`, {
+                    const response = await fetchWithAuth(`http://localhost:8080/api/clientes?id=${id}`, {
                         method: 'DELETE'
                     });
 

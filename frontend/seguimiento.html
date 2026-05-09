@@ -161,7 +161,10 @@
 
     <div class="header">
         <h1><i class="fas fa-map-marked-alt"></i> Estado de Entregas</h1>
-        <a href="index.html" class="btn-back"><i class="fas fa-arrow-left"></i> Volver</a>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <input type="date" id="inputFecha" onchange="cargarDatos()" style="padding:8px; border-radius:8px; border:none; background:rgba(255,255,255,0.1); color:white; color-scheme: dark;">
+            <a href="index.html" class="btn-back"><i class="fas fa-arrow-left"></i> Volver</a>
+        </div>
     </div>
 
     <div class="container">
@@ -220,9 +223,39 @@
         let allReportes = [];
         let movilesUnicos = [];
 
+        // Helper para peticiones con autenticación
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('nexo_token');
+            if (!options.headers) options.headers = {};
+            options.headers['Authorization'] = `Bearer ${token}`;
+            
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                alert("Sesión expirada o no válida. Por favor, inicie sesión de nuevo.");
+                window.location.href = 'login.html';
+            }
+            return response;
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fechaParam = urlParams.get('fecha');
+            if (fechaParam) {
+                document.getElementById('inputFecha').value = fechaParam;
+            }
+            await cargarDatos();
+        });
+
+        async function cargarDatos() {
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('loading').style.opacity = '1';
+            
+            const fecha = document.getElementById('inputFecha').value;
+            let url = 'http://localhost:8080/api/reportes';
+            if (fecha) url += `?fecha=${fecha}`;
+
             try {
-                const res = await fetch('http://localhost:8080/api/reportes');
+                const res = await fetchWithAuth(url);
                 allReportes = await res.json();
                 
                 // Extraer móviles únicos
@@ -233,7 +266,7 @@
                 if(movilesUnicos.length > 0) {
                     seleccionarMovil(movilesUnicos[0]);
                 } else {
-                    document.getElementById('tablaSeguimiento').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">No hay datos de entregas hoy.</td></tr>';
+                    document.getElementById('tablaSeguimiento').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">No hay datos de entregas para esta fecha.</td></tr>';
                 }
 
             } catch (error) {
@@ -243,7 +276,7 @@
                 loading.style.opacity = '0';
                 setTimeout(() => loading.style.display = 'none', 500);
             }
-        });
+        }
 
         function renderTabs() {
             const container = document.getElementById('tabsMoviles');
