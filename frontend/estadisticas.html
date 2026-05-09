@@ -258,7 +258,14 @@
                 <option value="dia" style="color:black;">Hoy</option>
                 <option value="semana" style="color:black;">Últimos 7 días</option>
                 <option value="mes" style="color:black;">Último mes</option>
+                <option value="especifico" style="color:black;">Día Específico</option>
             </select>
+            <div id="containerFecha" style="display:none; align-items:center; gap:5px;">
+                <input type="date" id="inputFecha" onchange="cargarDatos()" style="padding:8px; border-radius:8px; border:none; background:rgba(255,255,255,0.2); color:white; color-scheme: dark;">
+            </div>
+            <button id="btnVerRuteo" class="btn-back" style="display:none; background:var(--secondary); color:var(--primary); border:none;" onclick="verRuteoDia()">
+                <i class="fas fa-truck"></i> Ver Ruteo de este día
+            </button>
             <a href="index.html" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Volver
             </a>
@@ -377,15 +384,36 @@
             document.getElementById('loading').style.display = 'flex';
             document.getElementById('loading').style.opacity = '1';
             
-            const periodo = document.getElementById('selectPeriodo').value;
+            const select = document.getElementById('selectPeriodo');
+            const containerFecha = document.getElementById('containerFecha');
+            const inputFecha = document.getElementById('inputFecha');
+            const btnVerRuteo = document.getElementById('btnVerRuteo');
+            
+            if (select.value === 'especifico') {
+                containerFecha.style.display = 'flex';
+                btnVerRuteo.style.display = 'flex';
+            } else {
+                containerFecha.style.display = 'none';
+                btnVerRuteo.style.display = 'none';
+            }
+            
+            const periodo = select.value;
+            const fecha = inputFecha.value;
+
             try {
                 // Cargar Estadísticas
-                const resStats = await fetchWithAuth(`http://localhost:8080/api/estadisticas?periodo=${periodo}`);
+                let urlStats = `http://localhost:8080/api/estadisticas?periodo=${periodo}`;
+                if (fecha) urlStats += `&fecha=${fecha}`;
+                
+                const resStats = await fetchWithAuth(urlStats);
                 const dataStats = await resStats.json();
                 renderDashboard(dataStats);
 
                 // Cargar Reportes Detallados
-                const resReportes = await fetchWithAuth('http://localhost:8080/api/reportes');
+                let urlReportes = 'http://localhost:8080/api/reportes';
+                if (fecha) urlReportes += `?fecha=${fecha}`;
+                
+                const resReportes = await fetchWithAuth(urlReportes);
                 const dataReportes = await resReportes.json();
                 renderReportes(dataReportes);
 
@@ -395,6 +423,15 @@
                 document.getElementById('loading').style.opacity = '0';
                 setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
             }
+        }
+
+        function verRuteoDia() {
+            const fecha = document.getElementById('inputFecha').value;
+            if (!fecha) {
+                alert("Por favor seleccione una fecha primero.");
+                return;
+            }
+            window.location.href = `seguimiento.html?fecha=${fecha}`;
         }
 
         function renderDashboard(data) {

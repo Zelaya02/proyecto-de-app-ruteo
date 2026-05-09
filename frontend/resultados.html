@@ -382,10 +382,30 @@
 
         function recalcularRutas() {
             rutasData.moviles.forEach(m => {
-                // Esto es una simplificación, en producción deberías pedir al backend recalcular distancias
-                // Aquí solo actualizamos el contador de clientes
-                m.distancia_total = "...";
+                let distTotal = 0;
+                m.clientes.forEach((c, idx) => {
+                    if (idx < m.clientes.length - 1) {
+                        const next = m.clientes[idx + 1];
+                        const d = haversine(c.latitud, c.longitud, next.latitud, next.longitud);
+                        c.distancia_siguiente = Math.round(d * 100.0) / 100.0;
+                        distTotal += d;
+                    } else {
+                        c.distancia_siguiente = 0;
+                    }
+                });
+                m.distancia_total = Math.round(distTotal * 100.0) / 100.0;
             });
+        }
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radio de la Tierra en km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
         }
 
         function generarMensajeWA(movil) {

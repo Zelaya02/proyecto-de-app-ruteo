@@ -329,12 +329,16 @@
 
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
+            
+            // UTF-8 compatible Base64
+            const utf8Bytes = new TextEncoder().encode(JSON.stringify({ username, password }));
+            const authPayload = btoa(String.fromCharCode(...utf8Bytes));
 
             try {
                 const response = await fetch('http://localhost:8080/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ auth: authPayload })
                 });
 
                 const data = await response.json();
