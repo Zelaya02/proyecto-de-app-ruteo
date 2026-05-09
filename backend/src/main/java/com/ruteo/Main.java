@@ -24,13 +24,13 @@ import com.ruteo.repository.UsuarioRepository;
 
 public class Main {
     private static final Gson gson = new Gson();
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/ruteo_db";
+    private static final String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db";
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = "Zelaya1103";
     private static final String ORS_KEY = System.getenv("ORS_API_KEY") != null ? System.getenv("ORS_API_KEY") : "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; 
     private static final String FRONTEND_DIR = "../frontend";
 
-    // Gestión de Sesiones (In-memory para esta demo/proyecto PyME)
+    // GestiÃƒÂ³n de Sesiones (In-memory para esta demo/proyecto PyME)
     static class SessionManager {
         private static final Map<String, String> activeSessions = new ConcurrentHashMap<>();
         
@@ -76,6 +76,10 @@ public class Main {
         server.createContext("/api/reportes", new ReportesHandler());
         server.createContext("/api/health", new HealthHandler());
         server.createContext("/api/reglas", new ReglasHandler());
+        server.createContext("/api/choferes", new ChoferesHandler());
+        server.createContext("/api/vehiculos", new VehiculosHandler());
+        server.createContext("/api/asignar-recursos", new AsignarRecursosHandler());
+        server.createContext("/api/finalizar-ruta", new FinalizarRutaHandler());
         
         server.setExecutor(null);
         server.start();
@@ -139,6 +143,7 @@ public class Main {
                         cliente.put("latitud", rs.getDouble("latitud"));
                         cliente.put("longitud", rs.getDouble("longitud"));
                         cliente.put("cadena", rs.getString("cadena"));
+                        cliente.put("url_google", rs.getString("url_google"));
                         cliente.put("seleccionado", false);
                         clientes.add(cliente);
                     }
@@ -172,7 +177,17 @@ public class Main {
 
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                         if ("POST".equals(exchange.getRequestMethod())) {
-                            String sql = "INSERT INTO clientes (nombre, tipo_cliente, latitud, longitud, ciudad, cadena, activo) VALUES (?, ?, ?, ?, ?, ?, true)";
+                            // Validar duplicado
+                            String checkSql = "SELECT COUNT(*) FROM clientes WHERE nombre = ? AND activo = true";
+                            PreparedStatement pCheck = conn.prepareStatement(checkSql);
+                            pCheck.setString(1, nombre);
+                            ResultSet rsCheck = pCheck.executeQuery();
+                            if (rsCheck.next() && rsCheck.getInt(1) > 0) {
+                                sendError(exchange, 409, "Ya existe un cliente con este nombre.");
+                                return;
+                            }
+
+                            String sql = "INSERT INTO clientes (nombre, tipo_cliente, latitud, longitud, ciudad, cadena, url_google, activo) VALUES (?, ?, ?, ?, ?, ?, ?, true)";
                             PreparedStatement pstmt = conn.prepareStatement(sql);
                             pstmt.setString(1, nombre);
                             pstmt.setString(2, tipo);
@@ -180,11 +195,24 @@ public class Main {
                             pstmt.setDouble(4, lon);
                             pstmt.setString(5, ciudad);
                             pstmt.setString(6, cadena);
+                            pstmt.setString(7, url);
                             pstmt.executeUpdate();
                             sendResponse(exchange, 201, "{\"status\":\"created\"}");
                         } else {
                             int id = ((Double) req.get("id")).intValue();
-                            String sql = "UPDATE clientes SET nombre=?, tipo_cliente=?, latitud=?, longitud=?, ciudad=?, cadena=? WHERE id=?";
+                            
+                            // Validar duplicado en ediciÃƒÂ³n (si cambia el nombre)
+                            String checkSql = "SELECT COUNT(*) FROM clientes WHERE nombre = ? AND id != ? AND activo = true";
+                            PreparedStatement pCheck = conn.prepareStatement(checkSql);
+                            pCheck.setString(1, nombre);
+                            pCheck.setInt(2, id);
+                            ResultSet rsCheck = pCheck.executeQuery();
+                            if (rsCheck.next() && rsCheck.getInt(1) > 0) {
+                                sendError(exchange, 409, "Ya existe otro cliente con este nombre.");
+                                return;
+                            }
+
+                            String sql = "UPDATE clientes SET nombre=?, tipo_cliente=?, latitud=?, longitud=?, ciudad=?, cadena=?, url_google=? WHERE id=?";
                             PreparedStatement pstmt = conn.prepareStatement(sql);
                             pstmt.setString(1, nombre);
                             pstmt.setString(2, tipo);
@@ -192,7 +220,8 @@ public class Main {
                             pstmt.setDouble(4, lon);
                             pstmt.setString(5, ciudad);
                             pstmt.setString(6, cadena);
-                            pstmt.setInt(7, id);
+                            pstmt.setString(7, url);
+                            pstmt.setInt(8, id);
                             pstmt.executeUpdate();
                             sendResponse(exchange, 200, "{\"status\":\"updated\"}");
                         }
@@ -225,8 +254,7 @@ public class Main {
             }
         }
     }
-    
-    static class RutasHandler implements HttpHandler {
+      static class RutasHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
@@ -241,13 +269,17 @@ public class Main {
                         .lines().collect(Collectors.joining("\n"));
                     
                     Map<String, Object> request = gson.fromJson(body, Map.class);
-                    System.out.println("Generando rutas con: " + body);
-
                     List<Double> cIds = (List<Double>) request.get("cliente_ids");
-                    Object numMovilesObj = request.get("num_moviles");
+                    List<Map<String, Object>> asignaciones = (List<Map<String, Object>>) request.get("asignaciones");
+                    
                     int numMoviles = 1;
-                    if (numMovilesObj instanceof Double) numMoviles = ((Double) numMovilesObj).intValue();
-                    else if (numMovilesObj instanceof Integer) numMoviles = (Integer) numMovilesObj;
+                    if (asignaciones != null && !asignaciones.isEmpty()) {
+                        numMoviles = asignaciones.size();
+                    } else {
+                        Object numMovilesObj = request.get("num_moviles");
+                        if (numMovilesObj instanceof Double) numMoviles = ((Double) numMovilesObj).intValue();
+                        else if (numMovilesObj instanceof Integer) numMoviles = (Integer) numMovilesObj;
+                    }
                     
                     if (cIds == null || cIds.isEmpty()) {
                         sendError(exchange, 400, "cliente_ids es requerido");
@@ -257,7 +289,6 @@ public class Main {
                     
                     List<Cliente> clientes = new ArrayList<>();
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        // Usar PreparedStatement para evitar SQL Injection incluso con IDs numéricos
                         StringBuilder sqlBuilder = new StringBuilder("SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE id IN (");
                         for (int i = 0; i < clienteIds.size(); i++) {
                             sqlBuilder.append("?");
@@ -279,7 +310,6 @@ public class Main {
                     String prioridad = (String) request.getOrDefault("prioridad", "ninguna");
                     String puntoInicio = (String) request.getOrDefault("punto_inicio", "Base Central - San Lorenzo");
                     double[] startCoords = parseGoogleMapsUrl(puntoInicio);
-                    // Si el parseo devuelve el default genérico pero el texto es el de la base, forzar coordenadas de la base
                     if (puntoInicio.contains("Base Central") && startCoords[0] == -25.286) {
                         startCoords = new double[]{-25.3396, -57.5173};
                     }
@@ -288,7 +318,6 @@ public class Main {
                     boolean usarReglas = true;
                     if (usarReglasObj instanceof Boolean) usarReglas = (Boolean) usarReglasObj;
 
-                    // Obtener reglas activas (solo si el usuario quiere aplicarlas)
                     Map<String, Integer> reglasActivas = new HashMap<>();
                     if (usarReglas) {
                         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
@@ -301,9 +330,7 @@ public class Main {
                         }
                     }
 
-                    // K-Means adaptado con REGLAS
                     List<List<Cliente>> clusters = kmeans(clientes, numMoviles, reglasActivas);
-                    
                     List<Map<String, Object>> movilesRespuesta = new ArrayList<>();
                     
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
@@ -311,7 +338,6 @@ public class Main {
                             List<Cliente> cluster = clusters.get(i);
                             if (cluster.isEmpty()) continue;
                             
-                            // Vecino mas cercano para ordenar con prioridad partiendo desde el punto configurado
                             List<Cliente> ordenados = nearestNeighborWithPriority(cluster, prioridad, startCoords[0], startCoords[1]);
                             
                             double distTotal = 0;
@@ -322,11 +348,9 @@ public class Main {
                                 if (j < ordenados.size() - 1) {
                                     Cliente siguiente = ordenados.get(j+1);
                                     try {
-                                        // Intentar usar OpenRouteService (Distancia real por carretera)
                                         RouteService.RouteInfo info = RouteService.getRoute(c.lat, c.lon, siguiente.lat, siguiente.lon);
                                         dist = info.distanceKm;
                                     } catch (Exception e) {
-                                        // Fallback a Haversine si falla el servicio o no hay API Key
                                         dist = haversine(c.lat, c.lon, siguiente.lat, siguiente.lon);
                                     }
                                     distTotal += dist;
@@ -341,20 +365,26 @@ public class Main {
                             }
                             
                             distTotal = Math.round(distTotal * 100.0) / 100.0;
-                            int tiempoEstimado = (int) Math.ceil((distTotal / 40.0) * 60.0);
                             String token = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
                             
-                            // Insertar ruta
-                            String insertRuta = "INSERT INTO rutas_generadas (token, movil_numero, clientes_json, distancia_total, tiempo_estimado) VALUES (?, ?, ?, ?, ?)";
+                            Integer choferId = null;
+                            Integer vehiculoId = null;
+                            if (asignaciones != null && i < asignaciones.size()) {
+                                Map<String, Object> asig = asignaciones.get(i);
+                                if (asig.get("chofer_id") != null) choferId = ((Double) asig.get("chofer_id")).intValue();
+                                if (asig.get("vehiculo_id") != null) vehiculoId = ((Double) asig.get("vehiculo_id")).intValue();
+                            }
+
+                            String insertRuta = "INSERT INTO rutas_generadas (token, movil_numero, chofer_id, vehiculo_id, clientes_json, distancia_total, tiempo_estimado) VALUES (?, ?, ?, ?, ?, ?, 0)";
                             PreparedStatement pstmt = conn.prepareStatement(insertRuta);
                             pstmt.setString(1, token);
                             pstmt.setInt(2, i + 1);
-                            pstmt.setString(3, gson.toJson(clientesJson));
-                            pstmt.setDouble(4, distTotal);
-                            pstmt.setInt(5, 0); // Tiempo estimado removido (seteado a 0)
+                            if (choferId != null) pstmt.setInt(3, choferId); else pstmt.setNull(3, Types.INTEGER);
+                            if (vehiculoId != null) pstmt.setInt(4, vehiculoId); else pstmt.setNull(4, Types.INTEGER);
+                            pstmt.setString(5, gson.toJson(clientesJson));
+                            pstmt.setDouble(6, distTotal);
                             pstmt.executeUpdate();
                             
-                            // Insertar entregas
                             String insertEntrega = "INSERT INTO entregas (ruta_token, cliente_id, estado, orden_en_ruta) VALUES (?, ?, 'pendiente', ?)";
                             PreparedStatement pstmt2 = conn.prepareStatement(insertEntrega);
                             for (int j = 0; j < ordenados.size(); j++) {
@@ -369,17 +399,14 @@ public class Main {
                             movil.put("token", token);
                             movil.put("clientes", clientesJson);
                             movil.put("distancia_total", distTotal);
-                            movil.put("distancia_total", distTotal);
                             movilesRespuesta.add(movil);
                         }
                     }
-
                     Map<String, Object> finalRes = new HashMap<>();
                     finalRes.put("moviles", movilesRespuesta);
                     finalRes.put("startLat", startCoords[0]);
                     finalRes.put("startLon", startCoords[1]);
                     sendResponse(exchange, 200, gson.toJson(finalRes));
-                    
                 } catch (Exception e) {
                     e.printStackTrace();
                     sendError(exchange, 500, "Error generando rutas: " + e.getMessage());
@@ -388,12 +415,57 @@ public class Main {
         }
     }
 
-    static class RutaTokenHandler implements HttpHandler {
+
+    static class AsignarRecursosHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
             if (!isAuthorized(exchange)) return;
-            if ("OPTIONS".equals(exchange.getRequestMethod())) return;
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))
+                        .lines().collect(Collectors.joining("\n"));
+                    
+                    List<Map<String, Object>> assignments = gson.fromJson(body, List.class);
+                    
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "UPDATE rutas_generadas SET chofer_id = ?, vehiculo_id = ? WHERE token = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        
+                        for (Map<String, Object> asig : assignments) {
+                            String token = (String) asig.get("token");
+                            int choferId = ((Double) asig.get("chofer_id")).intValue();
+                            int vehiculoId = ((Double) asig.get("vehiculo_id")).intValue();
+                            
+                            pstmt.setInt(1, choferId);
+                            pstmt.setInt(2, vehiculoId);
+                            pstmt.setString(3, token);
+                            pstmt.addBatch();
+                        }
+                        pstmt.executeBatch();
+                        sendResponse(exchange, 200, "{\"status\":\"success\"}");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sendError(exchange, 500, "Error asignando recursos: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+
+    static class RutaTokenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
             
             if ("GET".equals(exchange.getRequestMethod())) {
                 String query = exchange.getRequestURI().getQuery();
@@ -412,12 +484,13 @@ public class Main {
                     if (rs.next()) {
                         java.sql.Timestamp fechaRuta = rs.getTimestamp("fecha");
                         if (fechaRuta != null && (System.currentTimeMillis() - fechaRuta.getTime()) > 2L * 24 * 60 * 60 * 1000) {
-                            sendError(exchange, 403, "Esta ruta ha expirado (han pasado más de 2 días).");
+                            sendError(exchange, 403, "Esta ruta ha expirado (han pasado mÃƒÂ¡s de 2 dÃƒÂ­as).");
                             return;
                         }
 
                         Map<String, Object> ruta = new HashMap<>();
                         ruta.put("movil", rs.getInt("movil_numero"));
+                        ruta.put("finalizada", rs.getBoolean("finalizada"));
 
                         ruta.put("distancia_total", rs.getDouble("distancia_total"));
                         ruta.put("tiempo_estimado", rs.getInt("tiempo_estimado"));
@@ -457,8 +530,10 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
-            if (!isAuthorized(exchange)) return;
-            if ("OPTIONS".equals(exchange.getRequestMethod())) return;
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
             
             if ("POST".equals(exchange.getRequestMethod())) {
                 try {
@@ -470,14 +545,18 @@ public class Main {
                     String observacion = req.containsKey("observacion") ? (String) req.get("observacion") : "";
                     
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String checkSql = "SELECT fecha FROM rutas_generadas WHERE token = ?";
+                        String checkSql = "SELECT fecha, finalizada FROM rutas_generadas WHERE token = ?";
                         PreparedStatement pCheck = conn.prepareStatement(checkSql);
                         pCheck.setString(1, token);
                         ResultSet rsCheck = pCheck.executeQuery();
                         if (rsCheck.next()) {
+                            if (rsCheck.getBoolean("finalizada")) {
+                                sendError(exchange, 403, "Esta ruta ya ha sido finalizada y no permite mas cambios.");
+                                return;
+                            }
                             java.sql.Timestamp fechaRuta = rsCheck.getTimestamp("fecha");
                             if (fechaRuta != null && (System.currentTimeMillis() - fechaRuta.getTime()) > 2L * 24 * 60 * 60 * 1000) {
-                                sendError(exchange, 403, "Esta ruta ha expirado (han pasado más de 2 días).");
+                                sendError(exchange, 403, "Esta ruta ha expirado (han pasado mÃƒÂ¡s de 2 dÃƒÂ­as).");
                                 return;
                             }
                         } else {
@@ -500,6 +579,35 @@ public class Main {
             }
         }
     }
+
+    static class FinalizarRutaHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+                    Map<String, Object> req = gson.fromJson(body, Map.class);
+                    String token = (String) req.get("token");
+                    
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "UPDATE rutas_generadas SET finalizada = true WHERE token = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setString(1, token);
+                        pstmt.executeUpdate();
+                        sendResponse(exchange, 200, "{\"status\":\"ok\"}");
+                    }
+                } catch (Exception e) {
+                    sendError(exchange, 500, e.getMessage());
+                }
+            }
+        }
+    }
+
 
     static class ReglasHandler implements HttpHandler {
         @Override
@@ -549,7 +657,7 @@ public class Main {
                 try {
                     String query = exchange.getRequestURI().getQuery();
                     if (query == null || !query.contains("categoria=")) {
-                        sendError(exchange, 400, "Categoría requerida");
+                        sendError(exchange, 400, "CategorÃƒÂ­a requerida");
                         return;
                     }
                     String cat = java.net.URLDecoder.decode(query.split("categoria=")[1].split("&")[0], "UTF-8").toLowerCase();
@@ -624,7 +732,7 @@ public class Main {
                     res.put("pendientes", pendientes);
                     res.put("porcentaje_exito", Math.round(exito * 100.0)/100.0);
                     
-                    // Rendimiento por móvil
+                    // Rendimiento por mÃƒÂ³vil
                     String sqlRend = "SELECT r.movil_numero, " +
                         "SUM(CASE WHEN e.estado = 'entregado' THEN 1 ELSE 0 END) as ent, " +
                         "COUNT(e.id) as tot " +
@@ -773,7 +881,7 @@ public class Main {
                         sendResponse(exchange, 200, gson.toJson(response));
                     } else {
                         response.put("success", false);
-                        response.put("message", "Usuario o contraseña incorrectos");
+                        response.put("message", "Usuario o contraseÃƒÂ±a incorrectos");
                         sendResponse(exchange, 401, gson.toJson(response));
                     }
                 } catch (Exception e) {
@@ -823,13 +931,13 @@ public class Main {
             return true;
         }
 
-        // Caso especial: Endpoints de choferes usan validación por token de base de datos
+        // Caso especial: Endpoints de choferes usan validaciÃƒÂ³n por token de base de datos
         String path = exchange.getRequestURI().getPath();
         if (path.equals("/api/ruta") || path.equals("/api/actualizar-estado")) {
             return true; 
         }
 
-        sendError(exchange, 401, "No autorizado. Sesión inválida o expirada.");
+        sendError(exchange, 401, "No autorizado. SesiÃƒÂ³n invÃƒÂ¡lida o expirada.");
         return false;
     }
 
@@ -920,7 +1028,7 @@ public class Main {
                 int bestK = -1;
                 double bestDist = Double.MAX_VALUE;
                 
-                // Intentar asignar al más cercano que cumpla las reglas
+                // Intentar asignar al mÃƒÂ¡s cercano que cumpla las reglas
                 for (int i=0; i<k; i++) {
                     double d = haversine(c.lat, c.lon, centroids.get(i)[0], centroids.get(i)[1]);
                     if (d < bestDist && validarRegla(c, clusters.get(i), reglas)) {
@@ -929,7 +1037,7 @@ public class Main {
                     }
                 }
                 
-                // Si ninguna cumple, asignar al más cercano por fuerza bruta (o manejar excepción)
+                // Si ninguna cumple, asignar al mÃƒÂ¡s cercano por fuerza bruta (o manejar excepciÃƒÂ³n)
                 if (bestK == -1) {
                     for (int i=0; i<k; i++) {
                         double d = haversine(c.lat, c.lon, centroids.get(i)[0], centroids.get(i)[1]);
@@ -968,7 +1076,7 @@ public class Main {
         if (!reglas.containsKey(cat)) return true;
         
         int limite = reglas.get(cat);
-        if (limite <= 0) return true; // Sin límite
+        if (limite <= 0) return true; // Sin lÃƒÂ­mite
 
         long actual = cluster.stream().filter(cl -> cl.tipo != null && cl.tipo.toLowerCase().equals(cat)).count();
         return actual < limite;
@@ -1023,8 +1131,8 @@ public class Main {
     private static double[] parseGoogleMapsUrl(String url) {
         try {
             url = url.trim();
-            // Soporte para formato DMS: 25°07'53.7"S 57°20'51.7"W
-            if (url.contains("°")) {
+            // Soporte para formato DMS: 25Ã‚Â°07'53.7"S 57Ã‚Â°20'51.7"W
+            if (url.contains("Ã‚Â°")) {
                 return parseDMS(url);
             }
             // Soporte para coordenadas decimales simples: -25.123, -57.123
@@ -1032,13 +1140,13 @@ public class Main {
                 String[] p = url.split(",");
                 return new double[]{Double.parseDouble(p[0].trim()), Double.parseDouble(p[1].trim())};
             }
-            // Formato estándar @lat,lon de Google Maps
+            // Formato estÃƒÂ¡ndar @lat,lon de Google Maps
             if (url.contains("@")) {
                 String part = url.split("@")[1];
                 String[] coords = part.split(",");
                 return new double[]{Double.parseDouble(coords[0]), Double.parseDouble(coords[1])};
             }
-            // Otros parámetros de búsqueda
+            // Otros parÃƒÂ¡metros de bÃƒÂºsqueda
             String[] patterns = {"q=", "ll=", "query="};
             for (String p : patterns) {
                 if (url.contains(p)) {
@@ -1057,7 +1165,7 @@ public class Main {
 
     private static double[] parseDMS(String dms) {
         try {
-            // Ejemplo: 25°07'53.7"S 57°20'51.7"W
+            // Ejemplo: 25Ã‚Â°07'53.7"S 57Ã‚Â°20'51.7"W
             String[] parts = dms.split(" ");
             double lat = convertDMSToDecimal(parts[0]);
             double lon = convertDMSToDecimal(parts[1]);
@@ -1068,9 +1176,9 @@ public class Main {
     }
 
     private static double convertDMSToDecimal(String part) {
-        // 25°07'53.7"S
-        String degrees = part.split("°")[0];
-        String minutes = part.split("°")[1].split("'")[0];
+        // 25Ã‚Â°07'53.7"S
+        String degrees = part.split("Ã‚Â°")[0];
+        String minutes = part.split("Ã‚Â°")[1].split("'")[0];
         String seconds = part.split("'")[1].split("\"")[0];
         String direction = part.substring(part.length() - 1);
 
@@ -1086,24 +1194,24 @@ public class Main {
 
     private static String determinarCiudad(double lat, double lon) {
         Object[][] centros = {
-            {"Asunción", -25.2864, -57.6115},
+            {"AsunciÃƒÂ³n", -25.2864, -57.6115},
             {"San Lorenzo", -25.3396, -57.5173},
             {"Luque", -25.2691, -57.4851},
-            {"Lambaré", -25.3458, -57.6064},
+            {"LambarÃƒÂ©", -25.3458, -57.6064},
             {"Fernando de la Mora", -25.3261, -57.5544},
-            {"Capiatá", -25.3533, -57.4261},
-            {"Ñemby", -25.3941, -57.5352},
+            {"CapiatÃƒÂ¡", -25.3533, -57.4261},
+            {"Ãƒâ€˜emby", -25.3941, -57.5352},
             {"Mariano Roque Alonso", -25.2161, -57.5323},
             {"Villa Elisa", -25.3671, -57.5901},
-            {"Itauguá", -25.3854, -57.3342},
+            {"ItauguÃƒÂ¡", -25.3854, -57.3342},
             {"Limpio", -25.1661, -57.4761},
             {"Villa Hayes", -25.0931, -57.5250},
-            {"Benjamín Aceval", -25.0111, -57.3300},
+            {"BenjamÃƒÂ­n Aceval", -25.0111, -57.3300},
             {"Emboscada", -25.1141, -57.3481},
             {"Arroyos y Esteros", -25.0661, -56.9331}
         };
-        String mejorCiudad = "Gran Asunción";
-        double menorDistancia = 15.0; // Radio de búsqueda
+        String mejorCiudad = "Gran AsunciÃƒÂ³n";
+        double menorDistancia = 15.0; // Radio de bÃƒÂºsqueda
         for (Object[] centro : centros) {
             double dist = haversine(lat, lon, (double)centro[1], (double)centro[2]);
             if (dist < menorDistancia) {
@@ -1111,5 +1219,103 @@ public class Main {
             }
         }
         return mejorCiudad;
+    }
+
+    static class ChoferesHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
+            if ("GET".equals(exchange.getRequestMethod())) {
+                try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                    String sql = "SELECT * FROM choferes WHERE activo = true ORDER BY nombre";
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery(sql);
+                    List<Map<String, Object>> lista = new ArrayList<>();
+                    while (rs.next()) {
+                        Map<String, Object> item = new HashMap<>();
+                        item.put("id", rs.getInt("id"));
+                        item.put("nombre", rs.getString("nombre"));
+                        item.put("telefono", rs.getString("telefono"));
+                        lista.add(item);
+                    }
+                    sendResponse(exchange, 200, gson.toJson(lista));
+                } catch (Exception e) { sendError(exchange, 500, e.getMessage()); }
+            } else if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+                    Map<String, String> req = gson.fromJson(body, Map.class);
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "INSERT INTO choferes (nombre, telefono) VALUES (?, ?)";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setString(1, req.get("nombre"));
+                        pstmt.setString(2, req.get("telefono"));
+                        pstmt.executeUpdate();
+                        sendResponse(exchange, 201, "{\"status\":\"created\"}");
+                    }
+                } catch (Exception e) { sendError(exchange, 500, e.getMessage()); }
+            } else if ("DELETE".equals(exchange.getRequestMethod())) {
+                try {
+                    String query = exchange.getRequestURI().getQuery();
+                    int id = Integer.parseInt(query.split("id=")[1].split("&")[0]);
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "UPDATE choferes SET activo = false WHERE id = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setInt(1, id);
+                        pstmt.executeUpdate();
+                        sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
+                    }
+                } catch (Exception e) { sendError(exchange, 500, e.getMessage()); }
+            }
+        }
+    }
+
+    static class VehiculosHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            setCORS(exchange);
+            if (!isAuthorized(exchange)) return;
+            if ("GET".equals(exchange.getRequestMethod())) {
+                try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                    String sql = "SELECT * FROM vehiculos WHERE activo = true ORDER BY nombre";
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery(sql);
+                    List<Map<String, Object>> lista = new ArrayList<>();
+                    while (rs.next()) {
+                        Map<String, Object> item = new HashMap<>();
+                        item.put("id", rs.getInt("id"));
+                        item.put("nombre", rs.getString("nombre"));
+                        item.put("chapa", rs.getString("chapa"));
+                        lista.add(item);
+                    }
+                    sendResponse(exchange, 200, gson.toJson(lista));
+                } catch (Exception e) { sendError(exchange, 500, e.getMessage()); }
+            } else if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+                    Map<String, String> req = gson.fromJson(body, Map.class);
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "INSERT INTO vehiculos (nombre, chapa) VALUES (?, ?)";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setString(1, req.get("nombre"));
+                        pstmt.setString(2, req.get("chapa"));
+                        pstmt.executeUpdate();
+                        sendResponse(exchange, 201, "{\"status\":\"created\"}");
+                    }
+                } catch (Exception e) { sendError(exchange, 500, e.getMessage()); }
+            } else if ("DELETE".equals(exchange.getRequestMethod())) {
+                try {
+                    String query = exchange.getRequestURI().getQuery();
+                    int id = Integer.parseInt(query.split("id=")[1].split("&")[0]);
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "UPDATE vehiculos SET activo = false WHERE id = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setInt(1, id);
+                        pstmt.executeUpdate();
+                        sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
+                    }
+                } catch (Exception e) { sendError(exchange, 500, e.getMessage()); }
+            }
+        }
     }
 }

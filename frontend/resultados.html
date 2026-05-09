@@ -224,23 +224,56 @@
             width: 100%;
         }
 
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            height: 10px;
-            width: 8px;
+        .asignacion-panel {
+            padding: 15px;
+            background: #fff8f0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        ::-webkit-scrollbar-track {
-            background: #eee;
+        .asignacion-panel select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 13px;
         }
 
-        ::-webkit-scrollbar-thumb {
+        .asignacion-panel label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: -5px;
+        }
+
+        .btn-confirmar-todo {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .btn-confirmar-todo:disabled {
             background: #ccc;
-            border-radius: 5px;
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #bbb;
+        .badge-asignado {
+            background: #25D366;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 5px;
         }
     </style>
 </head>
@@ -264,10 +297,12 @@
             <!-- Se carga dinámicamente -->
         </div>
 
-        <div style="text-align: center; margin-top: 30px;">
-            <button class="btn-primary" onclick="enviarTodas()"
-                style="width: auto; padding: 15px 30px; font-weight: bold; background: #25D366;">
-                <i class="fab fa-whatsapp"></i> ENVIAR TODAS LAS RUTAS A LOS CHOFERES
+        <div id="panelAcciones" style="text-align: center; margin-top: 30px; display:none;">
+            <div style="margin-bottom: 20px; color: #666;">
+                <p><i class="fas fa-info-circle"></i> Debe asignar un chofer y móvil único a cada ruta antes de finalizar.</p>
+            </div>
+            <button id="btnFinalizarAsignacion" class="btn-confirmar-todo" onclick="guardarAsignaciones()" disabled>
+                <i class="fas fa-check-double"></i> CONFIRMAR ASIGNACIONES Y ACTIVAR RUTAS
             </button>
         </div>
     </div>
@@ -286,8 +321,9 @@
 
     <script>
         let rutasData = JSON.parse(localStorage.getItem('rutasGeneradas') || '{}');
-        let clienteEnTransferencia = null;
-        let movilOrigenIdx = null;
+        let choferesDisponibles = [];
+        let vehiculosDisponibles = [];
+        let asignaciones = {}; // {token: {chofer_id, vehiculo_id}}
 
         // Initialize Dark Mode from localStorage
         (function initDarkMode() {
@@ -297,24 +333,67 @@
             }
         })();
 
+        async function cargarRecursos() {
+            try {
+                const [resC, resV] = await Promise.all([
+                    fetchWithAuth('/api/choferes'),
+                    fetchWithAuth('/api/vehiculos')
+                ]);
+                choferesDisponibles = await resC.json();
+                vehiculosDisponibles = await resV.json();
+                renderRutas();
+            } catch (error) {
+                console.error("Error cargando recursos:", error);
+            }
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('nexo_token');
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            return fetch(url, { ...options, headers });
+        }
+
         function renderRutas() {
             const grid = document.getElementById('rutasGrid');
             grid.innerHTML = '';
 
             if (!rutasData.moviles) return;
+            document.getElementById('panelAcciones').style.display = 'block';
 
             rutasData.moviles.forEach((movil, mIdx) => {
                 const col = document.createElement('div');
                 col.className = 'movil-col';
+                
+                const token = movil.token;
+                if (!asignaciones[token]) asignaciones[token] = { chofer_id: '', vehiculo_id: '' };
 
                 col.innerHTML = `
                     <div class="movil-header">
-                        <h2>Móvil #${movil.movil}</h2>
+                        <h2>Ruta ${mIdx + 1} <span id="badge-${token}" class="badge-asignado" style="display:none;">Asignado</span></h2>
                         <div class="movil-stats">
                             <span><i class="fas fa-box"></i> ${movil.clientes.length}</span>
                             <span><i class="fas fa-road"></i> ${movil.distancia_total} km</span>
                         </div>
                     </div>
+                    
+                    <div class="asignacion-panel">
+                        <label>Chofer Responsable</label>
+                        <select onchange="updateAsignacion('${token}', 'chofer_id', this.value)" class="sel-chofer" data-token="${token}">
+                            <option value="">-- Seleccionar Chofer --</option>
+                            ${choferesDisponibles.map(c => `<option value="${c.id}" ${asignaciones[token].chofer_id == c.id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+                        </select>
+                        
+                        <label>Móvil / Vehículo</label>
+                        <select onchange="updateAsignacion('${token}', 'vehiculo_id', this.value)" class="sel-vehiculo" data-token="${token}">
+                            <option value="">-- Seleccionar Móvil --</option>
+                            ${vehiculosDisponibles.map(v => `<option value="${v.id}" ${asignaciones[token].vehiculo_id == v.id ? 'selected' : ''}>${v.nombre} (${v.chapa})</option>`).join('')}
+                        </select>
+                    </div>
+
                     <div class="clientes-lista">
                         ${movil.clientes.map((c, cIdx) => `
                             <div class="cliente-card">
@@ -327,7 +406,7 @@
                             </div>
                         `).join('')}
                     </div>
-                    <div class="movil-footer">
+                    <div class="movil-footer" style="display:none;" id="footer-${token}">
                         <button class="btn-wa" onclick="enviarWhatsApp(${mIdx})">
                             <i class="fab fa-whatsapp"></i> WhatsApp
                         </button>
@@ -335,49 +414,106 @@
                 `;
                 grid.appendChild(col);
             });
+            validarDisponibilidad();
         }
 
-        function abrirTransfer(mIdx, cIdx) {
-            movilOrigenIdx = mIdx;
-            clienteEnTransferencia = rutasData.moviles[mIdx].clientes[cIdx];
+        function updateAsignacion(token, field, value) {
+            asignaciones[token][field] = value;
+            validarDisponibilidad();
+        }
 
-            document.getElementById('transferClienteNombre').textContent = clienteEnTransferencia.nombre;
+        function validarDisponibilidad() {
+            const selectedChoferes = Object.values(asignaciones).map(a => a.chofer_id).filter(id => id !== '');
+            const selectedVehiculos = Object.values(asignaciones).map(a => a.vehiculo_id).filter(id => id !== '');
 
-            const select = document.getElementById('selectMovilDestino');
-            select.innerHTML = '';
-            rutasData.moviles.forEach((m, idx) => {
-                if (idx !== mIdx) {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.textContent = `Móvil #${m.movil}`;
-                    select.appendChild(opt);
-                }
+            // Deshabilitar opciones ya seleccionadas en otros selects
+            document.querySelectorAll('.sel-chofer').forEach(select => {
+                const currentToken = select.dataset.token;
+                const currentValue = select.value;
+                Array.from(select.options).forEach(opt => {
+                    if (opt.value === '') return;
+                    const isUsedElsewhere = selectedChoferes.includes(opt.value) && opt.value !== asignaciones[currentToken].chofer_id;
+                    opt.disabled = isUsedElsewhere;
+                });
             });
 
-            document.getElementById('modalTransfer').style.display = 'flex';
+            document.querySelectorAll('.sel-vehiculo').forEach(select => {
+                const currentToken = select.dataset.token;
+                const currentValue = select.value;
+                Array.from(select.options).forEach(opt => {
+                    if (opt.value === '') return;
+                    const isUsedElsewhere = selectedVehiculos.includes(opt.value) && opt.value !== asignaciones[currentToken].vehiculo_id;
+                    opt.disabled = isUsedElsewhere;
+                });
+            });
+
+            // Verificar si todo está asignado
+            const todasAsignadas = rutasData.moviles.every(m => 
+                asignaciones[m.token].chofer_id !== '' && 
+                asignaciones[m.token].vehiculo_id !== ''
+            );
+
+            document.getElementById('btnFinalizarAsignacion').disabled = !todasAsignadas;
         }
 
-        function cerrarModal() {
-            document.getElementById('modalTransfer').style.display = 'none';
+        async function guardarAsignaciones() {
+            const payload = Object.entries(asignaciones).map(([token, data]) => ({
+                token,
+                chofer_id: parseInt(data.chofer_id),
+                vehiculo_id: parseInt(data.vehiculo_id)
+            }));
+
+            try {
+                const res = await fetchWithAuth('/api/asignar-recursos', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert("✅ Recursos asignados correctamente. Rutas activadas.");
+                    document.getElementById('btnFinalizarAsignacion').style.display = 'none';
+                    
+                    // Mostrar badges y footers
+                    Object.keys(asignaciones).forEach(token => {
+                        const badge = document.getElementById(`badge-${token}`);
+                        const footer = document.getElementById(`footer-${token}`);
+                        if (badge) badge.style.display = 'inline';
+                        if (footer) footer.style.display = 'block';
+                    });
+                    
+                    // Deshabilitar selects y ocultar transferencias
+                    document.querySelectorAll('select').forEach(s => s.disabled = true);
+                    document.querySelectorAll('.btn-transferir').forEach(b => b.style.display = 'none');
+                } else {
+                    throw new Error("Error al guardar");
+                }
+            } catch (error) {
+                alert("❌ Error al confirmar: " + error.message);
+            }
         }
 
-        function confirmarTransferencia() {
-            const destIdx = parseInt(document.getElementById('selectMovilDestino').value);
-
-            // Remover de origen
-            rutasData.moviles[movilOrigenIdx].clientes = rutasData.moviles[movilOrigenIdx].clientes.filter(c => c.id !== clienteEnTransferencia.id);
-
-            // Agregar a destino
-            rutasData.moviles[destIdx].clientes.push(clienteEnTransferencia);
-
-            // Recalcular estadísticas básicas (opcional, simplificado)
-            recalcularRutas();
-
-            cerrarModal();
-            renderRutas();
-
-            // Guardar cambios localmente
-            localStorage.setItem('rutasGeneradas', JSON.stringify(rutasData));
+        // --- Lógica de Transferencia ---
+        function abrirTransfer(mIdx, cIdx) {
+            movilOrigenIdx = mIdx;
+            clienteEnTransferencia = cIdx;
+            
+            const cliente = rutasData.moviles[mIdx].clientes[cIdx];
+            const targetMovil = prompt(`Mover cliente "${cliente.nombre}" a la ruta número (1 a ${rutasData.moviles.length}):`);
+            
+            if (targetMovil) {
+                const targetIdx = parseInt(targetMovil) - 1;
+                if (targetIdx >= 0 && targetIdx < rutasData.moviles.length && targetIdx !== mIdx) {
+                    const clienteObj = rutasData.moviles[mIdx].clientes.splice(cIdx, 1)[0];
+                    rutasData.moviles[targetIdx].clientes.push(clienteObj);
+                    
+                    // Recalcular distancias
+                    recalcularRutas();
+                    localStorage.setItem('rutasGeneradas', JSON.stringify(rutasData));
+                    renderRutas();
+                } else if (targetIdx !== mIdx) {
+                    alert("Número de ruta inválido.");
+                }
+            }
         }
 
         function recalcularRutas() {
@@ -398,7 +534,7 @@
         }
 
         function haversine(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radio de la Tierra en km
+            const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -409,15 +545,33 @@
         }
 
         function generarMensajeWA(movil) {
-            const link = `http://localhost:8080/ruta.html?token=${movil.token}`;
+            const token = movil.token;
+            const asig = asignaciones[token] || {};
+            
+            // Buscar nombres de chofer y móvil
+            const choferObj = choferesDisponibles.find(c => c.id == asig.chofer_id);
+            const vehiculoObj = vehiculosDisponibles.find(v => v.id == asig.vehiculo_id);
+            
+            const choferNombre = choferObj ? choferObj.nombre : "S/A";
+            const vehiculoNombre = vehiculoObj ? vehiculoObj.nombre : "S/A";
 
-            let listaClientesTxt = "";
+            const link = `http://${window.location.hostname}:8080/ruta.html?token=${token}`;
+            
+            let msg = "NEXO - RUTA DE ENTREGAS\n";
+            msg += "--------------------------\n";
+            msg += "CHOFER: " + choferNombre + "\n";
+            msg += "MOVIL: " + vehiculoNombre + "\n";
+            msg += "--------------------------\n\n";
+            
             movil.clientes.forEach((c, index) => {
-                const mapsUrl = `https://www.google.com/maps?q=${c.latitud},${c.longitud}`;
-                listaClientesTxt += `${index + 1}. *${c.nombre}*\n📍 ${mapsUrl}\n\n`;
+                msg += (index + 1) + ". " + c.nombre + "\n";
+                msg += "Ubicacion: https://www.google.com/maps?q=" + c.latitud + "," + c.longitud + "\n";
+                msg += "--------------------------\n\n";
             });
-
-            return encodeURIComponent(`📦 *NEXO - Tu ruta de hoy* 📦\n\n🚚 *Móvil ${movil.movil}*\n📋 Total Clientes: ${movil.clientes.length}\n\n${listaClientesTxt}🔗 *Acceder al Sistema de Chofer:* ${link}`);
+            
+            msg += "VER MAPA INTERACTIVO:\n" + link;
+            
+            return encodeURIComponent(msg);
         }
 
         function enviarWhatsApp(idx) {
@@ -425,15 +579,7 @@
             window.open(`https://api.whatsapp.com/send?text=${generarMensajeWA(movil)}`, '_blank');
         }
 
-        function enviarTodas() {
-            rutasData.moviles.forEach((m, idx) => {
-                setTimeout(() => {
-                    window.open(`https://api.whatsapp.com/send?text=${generarMensajeWA(m)}`, '_blank');
-                }, idx * 500);
-            });
-        }
-
-        renderRutas();
+        cargarRecursos();
     </script>
 </body>
 

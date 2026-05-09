@@ -183,7 +183,7 @@
 
         async function cargarReglas() {
             try {
-                const res = await fetchWithAuth('http://localhost:8080/api/reglas');
+                const res = await fetchWithAuth('/api/reglas');
                 reglasCargadas = await res.json();
                 renderReglas();
             } catch (e) {
@@ -245,7 +245,7 @@
         async function eliminarReglaLocal(cat) {
             if (confirm(`¿Eliminar la regla para la categoría "${cat}"?`)) {
                 try {
-                    const res = await fetchWithAuth(`http://localhost:8080/api/reglas?categoria=${encodeURIComponent(cat)}`, {
+                    const res = await fetchWithAuth(`/api/reglas?categoria=${encodeURIComponent(cat)}`, {
                         method: 'DELETE'
                     });
                     if (res.ok) {
@@ -271,7 +271,7 @@
             });
 
             try {
-                const res = await fetchWithAuth('http://localhost:8080/api/reglas', {
+                const res = await fetchWithAuth('/api/reglas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

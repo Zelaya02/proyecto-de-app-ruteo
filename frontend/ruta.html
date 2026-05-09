@@ -44,6 +44,9 @@
     <div class="header">
         <h1><img src="assets/img/LogoNexo.png" alt="NEXO" style="height: 25px; margin-right: 10px; border-radius: 5px; vertical-align: middle;"> NEXO - Mi Ruta</h1>
         <p id="movilLabel" style="font-size: 12px; margin-top: 5px;"></p>
+        <div id="bannerFinalizada" style="display:none; background: #dc3545; color: white; padding: 5px; margin-top: 10px; border-radius: 5px; font-weight: bold; font-size: 14px;">
+            <i class="fas fa-lock"></i> RUTA FINALIZADA - SOLO LECTURA
+        </div>
     </div>
 
     <div class="container">
@@ -59,8 +62,8 @@
             <div style="text-align:center; padding: 20px;">Cargando ruta...</div>
         </div>
         
-        <button class="btn-finalizar" onclick="alert('Reporte finalizado!')">
-            <i class="fas fa-flag-checkered"></i> ENVIAR REPORTE FINAL
+        <button id="btnFinalizarRuta" class="btn-finalizar" onclick="finalizarRuta()">
+            <i class="fas fa-flag-checkered"></i> ENVIAR REPORTE FINAL Y CERRAR
         </button>
     </div>
 
@@ -86,13 +89,18 @@
                 
                 const ruta = await response.json();
                 
+                if (ruta.finalizada) {
+                    document.getElementById('bannerFinalizada').style.display = 'block';
+                    document.getElementById('btnFinalizarRuta').style.display = 'none';
+                }
+
                 document.getElementById('movilLabel').textContent = `Móvil ${ruta.movil}`;
                 document.getElementById('distTotal').textContent = ruta.distancia_total;
                 document.getElementById('tiempoEst').textContent = ruta.tiempo_estimado;
                 document.getElementById('cantClientes').textContent = ruta.clientes.length;
                 
                 renderMap(ruta.clientes);
-                renderClientes(ruta.clientes);
+                renderClientes(ruta.clientes, ruta.finalizada);
                 
             } catch (error) {
                 console.error(error);
@@ -126,7 +134,7 @@
             map.fitBounds(polyline.getBounds());
         }
 
-        function renderClientes(clientes) {
+        function renderClientes(clientes, finalizada = false) {
             const container = document.getElementById('listaClientes');
             container.innerHTML = '';
             
@@ -141,14 +149,14 @@
                         </div>
                     </div>
                     
-                    <div class="estado-botones">
+                    <div class="estado-botones" style="${finalizada ? 'pointer-events:none; opacity:0.7;' : ''}">
                         <button class="btn-estado pendiente ${c.estado==='pendiente'?'activo':''}" onclick="setEstado(${c.id}, 'pendiente')">PENDIENTE</button>
                         <button class="btn-estado entregado ${c.estado==='entregado'?'activo':''}" onclick="setEstado(${c.id}, 'entregado')">ENTREGADO</button>
                         <button class="btn-estado rechazado ${c.estado==='rechazado'?'activo':''}" onclick="setEstado(${c.id}, 'rechazado')">RECHAZADO</button>
                     </div>
                     
-                    <input type="text" class="observacion" id="obs-${c.id}" placeholder="Observación (opcional)..." value="${c.observacion || ''}">
-                    <button class="btn-guardar" onclick="guardarEstado(${c.id})"><i class="fas fa-save"></i> Guardar Estado</button>
+                    <input type="text" class="observacion" id="obs-${c.id}" placeholder="Observación (opcional)..." value="${c.observacion || ''}" ${finalizada ? 'disabled' : ''}>
+                    ${finalizada ? '' : `<button class="btn-guardar" onclick="guardarEstado(${c.id})"><i class="fas fa-save"></i> Guardar Estado</button>`}
                 </div>
                 `;
                 container.innerHTML += html;
@@ -167,7 +175,12 @@
             if (card.querySelector('.btn-estado.entregado').classList.contains('activo')) estado = 'entregado';
             if (card.querySelector('.btn-estado.rechazado').classList.contains('activo')) estado = 'rechazado';
             
-            const observacion = document.getElementById(`obs-${clienteId}`).value;
+            const observacion = document.getElementById(`obs-${clienteId}`).value.trim();
+            
+            if ((estado === 'pendiente' || estado === 'rechazado') && observacion === '') {
+                alert("⚠️ Debe ingresar un comentario explicando el motivo para este estado.");
+                return;
+            }
             
             const btn = card.querySelector('.btn-guardar');
             const originalText = btn.innerHTML;
@@ -199,6 +212,28 @@
                 alert('❌ Error al guardar estado');
                 btn.innerHTML = originalText;
                 btn.disabled = false;
+            }
+        }
+
+        async function finalizarRuta() {
+            if (!confirm("¿Deseas finalizar la jornada? Ya no podrás realizar cambios en esta ruta.")) return;
+            
+            try {
+                const baseUrl = window.location.port === '5500' ? 'http://localhost:8080' : '';
+                const res = await fetch(`${baseUrl}/api/finalizar-ruta`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                
+                if (res.ok) {
+                    alert("✅ Jornada finalizada con éxito.");
+                    location.reload();
+                } else {
+                    throw new Error("Error al finalizar");
+                }
+            } catch (error) {
+                alert("❌ Error: " + error.message);
             }
         }
     </script>

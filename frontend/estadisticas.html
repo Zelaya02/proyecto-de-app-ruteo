@@ -402,7 +402,7 @@
 
             try {
                 // Cargar Estadísticas
-                let urlStats = `http://localhost:8080/api/estadisticas?periodo=${periodo}`;
+                let urlStats = `/api/estadisticas?periodo=${periodo}`;
                 if (fecha) urlStats += `&fecha=${fecha}`;
                 
                 const resStats = await fetchWithAuth(urlStats);
@@ -410,7 +410,7 @@
                 renderDashboard(dataStats);
 
                 // Cargar Reportes Detallados
-                let urlReportes = 'http://localhost:8080/api/reportes';
+                let urlReportes = '/api/reportes';
                 if (fecha) urlReportes += `?fecha=${fecha}`;
                 
                 const resReportes = await fetchWithAuth(urlReportes);

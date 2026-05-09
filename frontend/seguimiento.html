@@ -251,7 +251,7 @@
             document.getElementById('loading').style.opacity = '1';
             
             const fecha = document.getElementById('inputFecha').value;
-            let url = 'http://localhost:8080/api/reportes';
+            let url = '/api/reportes';
             if (fecha) url += `?fecha=${fecha}`;
 
             try {
