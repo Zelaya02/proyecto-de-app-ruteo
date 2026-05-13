@@ -11,6 +11,7 @@
     </script>
     <title>NEXO - Panel de Control</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -281,6 +282,82 @@
                 padding: 8px;
             }
         }
+
+        /* ===== MODAL KMZ ===== */
+        #modalKmz {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .kmz-box {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border-radius: 16px;
+            padding: 32px;
+            width: 620px;
+            max-width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .kmz-dropzone {
+            border: 3px dashed #F4A261;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 20px 0;
+            background: rgba(244,162,97,0.05);
+        }
+        .kmz-dropzone:hover, .kmz-dropzone.drag-over {
+            background: rgba(244,162,97,0.15);
+            border-color: #e8852a;
+        }
+        .kmz-dropzone i { font-size: 48px; color: #F4A261; margin-bottom: 12px; }
+        .kmz-dropzone p { margin: 8px 0; color: var(--text-color); opacity: 0.8; }
+        .kmz-dropzone small { color: #999; }
+        #kmzPreviewTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #kmzPreviewTable th {
+            background: #1E3A5F;
+            color: white;
+            padding: 10px 12px;
+        }
+        #kmzPreviewTable td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #kmzPreviewTable tr:hover td { background: rgba(244,162,97,0.08); }
+        .kmz-badge-new  { background:#d4edda; color:#155724; padding:2px 8px; border-radius:10px; font-size:11px; }
+        .kmz-badge-dup  { background:#fff3cd; color:#856404; padding:2px 8px; border-radius:10px; font-size:11px; }
+        .kmz-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .kmz-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #F4A261, #e8852a);
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
@@ -308,6 +385,10 @@
             <button class="btn btn-outline" onclick="toggleConfig()"
                 style="color:white; border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.1);">
                 <i class="fas fa-cog"></i> Configuraciones
+            </button>
+            <button class="btn btn-outline" onclick="abrirModalKmz()"
+                style="color:#F4A261; border-color:rgba(244,162,97,0.5); background:rgba(244,162,97,0.1);">
+                <i class="fas fa-file-import"></i> Importar KMZ
             </button>
             <button class="btn btn-secondary" onclick="logout()" style="background:#e74c3c;">
                 <i class="fas fa-sign-out-alt"></i> Salir
@@ -473,6 +554,59 @@
 
         <div class="footer">
             <i class="fas fa-clock"></i> Datos actualizados | NEXO - Sistema de Ruteo Inteligente
+        </div>
+    </div>
+
+    <!-- ===== MODAL IMPORTAR KMZ ===== -->
+    <div id="modalKmz">
+        <div class="kmz-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="margin:0; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-file-import" style="color:#F4A261;"></i> Importar desde KMZ
+                </h2>
+                <button onclick="cerrarModalKmz()" style="background:none; border:none; font-size:22px; cursor:pointer; color:var(--text-color); line-height:1;">×</button>
+            </div>
+            <p style="font-size:13px; opacity:0.7; margin-bottom:4px;">Exportá tu mapa desde <strong>Google My Maps</strong> → Exportar → KMZ. Luego arrastrá o seleccioná el archivo aquí.</p>
+
+            <!-- Drop zone -->
+            <div class="kmz-dropzone" id="kmzDropzone"
+                ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                ondragleave="this.classList.remove('drag-over')"
+                ondrop="onKmzDrop(event)"
+                onclick="document.getElementById('kmzFileInput').click()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p><strong>Arrastrá tu archivo KMZ aquí</strong></p>
+                <p>o hacé clic para seleccionarlo</p>
+                <small>Formatos aceptados: .kmz · .kml</small>
+            </div>
+            <input type="file" id="kmzFileInput" accept=".kmz,.kml" style="display:none" onchange="onKmzFileSelected(this.files[0])">
+
+            <!-- Preview -->
+            <div id="kmzPreviewArea" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div id="kmzResumen" style="font-size:13px; font-weight:600;"></div>
+                    <button class="btn btn-outline" style="padding:4px 10px; font-size:12px;" onclick="limpiarKmz()"><i class="fas fa-times"></i> Cambiar archivo</button>
+                </div>
+                <div style="max-height:280px; overflow-y:auto; border-radius:8px; border:1px solid var(--border-color);">
+                    <table id="kmzPreviewTable">
+                        <thead><tr><th>#</th><th>Nombre</th><th>Tipo cliente</th><th>Coords</th><th>Estado</th></tr></thead>
+                        <tbody id="kmzPreviewBody"></tbody>
+                    </table>
+                </div>
+                <p style="font-size:12px; color:#888; margin-top:10px;"><i class="fas fa-info-circle"></i> Podés cambiar el tipo de cliente de cada fila individualmente antes de importar.</p>
+                <div id="kmzProgressArea" style="display:none; margin-top:12px;">
+                    <p id="kmzProgressLabel" style="font-size:13px; margin-bottom:4px;"></p>
+                    <div class="kmz-progress-bar"><div class="kmz-progress-fill" id="kmzProgressFill"></div></div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+                <button class="btn btn-outline" onclick="cerrarModalKmz()">Cancelar</button>
+                <button class="btn btn-primary" id="btnImportarKmz" onclick="importarKmz()" disabled>
+                    <i class="fas fa-database"></i> Importar Clientes
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1051,18 +1185,31 @@
                 return alert("❌ Selecciona al menos un cliente");
             }
 
-            const numMoviles = document.getElementById('numMoviles').value;
+            const numMoviles = parseInt(document.getElementById('numMoviles').value);
+            
             const btn = document.getElementById('btnGenerar');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GENERANDO...';
             btn.disabled = true;
 
             try {
+                // Verificar que haya suficientes choferes y moviles
+                const resChoferes = await fetchWithAuth('/api/choferes');
+                const choferesDisp = await resChoferes.json();
+                
+                const resVehiculos = await fetchWithAuth('/api/vehiculos');
+                const vehiculosDisp = await resVehiculos.json();
+
+                if (choferesDisp.length < numMoviles || vehiculosDisp.length < numMoviles) {
+                    alert(`❌ No tienes suficientes recursos. Solicitas ${numMoviles} rutas, pero tienes ${choferesDisp.length} choferes y ${vehiculosDisp.length} vehículos disponibles. Ve a Configuraciones para agregarlos.`);
+                    return; // Abortar
+                }
+
                 const response = await fetchWithAuth('/api/generar-rutas', {
                     method: 'POST',
                     body: JSON.stringify({
                         cliente_ids: seleccionados,
-                        num_moviles: parseInt(numMoviles),
+                        num_moviles: numMoviles,
                         prioridad: document.getElementById('prioridadTipo').value,
                         punto_inicio: document.getElementById('puntoInicio').value,
                         usar_reglas: document.getElementById('usarReglas').checked
@@ -1087,6 +1234,183 @@
             localStorage.removeItem('nexo_user');
             localStorage.removeItem('nexo_token');
             window.location.href = 'login.html';
+        }
+
+        // ========== IMPORTACIÓN KMZ ==========
+        let kmzPlacemarks = []; // [{nombre, lat, lon, descripcion}]
+
+        function abrirModalKmz() {
+            limpiarKmz();
+            document.getElementById('modalKmz').style.display = 'flex';
+        }
+
+        function cerrarModalKmz() {
+            document.getElementById('modalKmz').style.display = 'none';
+            limpiarKmz();
+        }
+
+        function limpiarKmz() {
+            kmzPlacemarks = [];
+            document.getElementById('kmzFileInput').value = '';
+            document.getElementById('kmzDropzone').style.display = 'block';
+            document.getElementById('kmzPreviewArea').style.display = 'none';
+            document.getElementById('kmzProgressArea').style.display = 'none';
+            document.getElementById('btnImportarKmz').disabled = true;
+        }
+
+        function onKmzDrop(event) {
+            event.preventDefault();
+            document.getElementById('kmzDropzone').classList.remove('drag-over');
+            const file = event.dataTransfer.files[0];
+            if (file) onKmzFileSelected(file);
+        }
+
+        async function onKmzFileSelected(file) {
+            if (!file) return;
+            const name = file.name.toLowerCase();
+            let kmlText;
+            try {
+                if (name.endsWith('.kmz')) {
+                    // KMZ es un ZIP; descomprimir para obtener el KML
+                    const zip = await JSZip.loadAsync(file);
+                    // El archivo principal suele llamarse 'doc.kml'
+                    const kmlFile = Object.values(zip.files).find(f => f.name.endsWith('.kml'));
+                    if (!kmlFile) return alert('❌ No se encontró un archivo KML dentro del KMZ.');
+                    kmlText = await kmlFile.async('text');
+                } else if (name.endsWith('.kml')) {
+                    kmlText = await file.text();
+                } else {
+                    return alert('❌ Formato no soportado. Usá .kmz o .kml');
+                }
+                parsearKml(kmlText);
+            } catch (e) {
+                console.error(e);
+                alert('❌ Error al leer el archivo: ' + e.message);
+            }
+        }
+
+        function parsearKml(kmlText) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(kmlText, 'text/xml');
+            const placemarks = doc.querySelectorAll('Placemark');
+
+            kmzPlacemarks = [];
+            placemarks.forEach(pm => {
+                const nombre = pm.querySelector('name')?.textContent?.trim() || 'Sin nombre';
+                // Solo importar puntos (Point), ignorar polígonos/líneas
+                const pointEl = pm.querySelector('Point coordinates') || pm.querySelector('coordinates');
+                if (!pointEl) return;
+                const coords = pointEl.textContent.trim().split(',');
+                if (coords.length < 2) return;
+                const lon = parseFloat(coords[0]);
+                const lat = parseFloat(coords[1]);
+                if (isNaN(lat) || isNaN(lon)) return;
+                // Descripción opcional (para inferir tipo)
+                const desc = (pm.querySelector('description')?.textContent || '').toLowerCase();
+                kmzPlacemarks.push({ nombre, lat, lon, desc });
+            });
+
+            if (kmzPlacemarks.length === 0) {
+                return alert('⚠️ No se encontraron puntos (Placemarks) en el archivo. Verificá que tu mapa tenga marcadores.');
+            }
+
+            mostrarPreviewKmz();
+        }
+
+        function mostrarPreviewKmz() {
+            const nombres = new Set(clientes.map(c => c.nombre.toLowerCase()));
+            const tbody = document.getElementById('kmzPreviewBody');
+            let htmlRows = '';
+            let nuevos = 0, duplicados = 0;
+
+            kmzPlacemarks.forEach((p, i) => {
+                const esDup = nombres.has(p.nombre.toLowerCase());
+                if (esDup) duplicados++; else nuevos++;
+                const selectDisabled = esDup ? 'disabled' : '';
+                htmlRows += `
+                <tr style="${esDup ? 'opacity:0.55;' : ''}">
+                    <td style="color:#999;">${i+1}</td>
+                    <td><strong>${escapeHtml(p.nombre)}</strong></td>
+                    <td>
+                        <select id="kmz-tipo-${i}" ${selectDisabled}
+                            style="padding:4px 6px; border-radius:6px; border:1px solid #ddd; font-size:12px; background:var(--input-bg); color:var(--text-color); width:100%;">
+                            <option value="minorista/gastronómico">Minorista / Gastronómico</option>
+                            <option value="supermercado">Supermercado</option>
+                            <option value="mayorista / distribuidor">Mayorista / Distribuidor</option>
+                        </select>
+                    </td>
+                    <td style="font-family:monospace; font-size:11px;">${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</td>
+                    <td>${esDup
+                        ? '<span class="kmz-badge-dup">⚠ Duplicado</span>'
+                        : '<span class="kmz-badge-new">✔ Nuevo</span>'}</td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = htmlRows;
+            document.getElementById('kmzResumen').innerHTML =
+                `📍 <strong>${kmzPlacemarks.length}</strong> puntos encontrados &nbsp;·&nbsp; ` +
+                `<span style="color:#27ae60;">✔ ${nuevos} nuevos</span> &nbsp;·&nbsp; ` +
+                `<span style="color:#e67e22;">⚠ ${duplicados} duplicados (se omitirán)</span>`;
+
+            document.getElementById('kmzDropzone').style.display = 'none';
+            document.getElementById('kmzPreviewArea').style.display = 'block';
+            document.getElementById('btnImportarKmz').disabled = (nuevos === 0);
+        }
+
+        async function importarKmz() {
+            const nombresExistentes = new Set(clientes.map(c => c.nombre.toLowerCase()));
+            // Construir lista con el tipo elegido por fila
+            const nuevos = kmzPlacemarks
+                .map((p, i) => ({
+                    ...p,
+                    tipo: (document.getElementById(`kmz-tipo-${i}`)?.value || 'minorista/gastronómico')
+                }))
+                .filter(p => !nombresExistentes.has(p.nombre.toLowerCase()));
+
+            if (nuevos.length === 0) return alert('⚠️ Todos los puntos ya existen en la base de datos.');
+
+            document.getElementById('btnImportarKmz').disabled = true;
+            document.getElementById('kmzProgressArea').style.display = 'block';
+            const fill = document.getElementById('kmzProgressFill');
+            const label = document.getElementById('kmzProgressLabel');
+
+            let ok = 0, errores = 0;
+            for (let i = 0; i < nuevos.length; i++) {
+                const p = nuevos[i];
+                label.textContent = `Importando ${i+1} de ${nuevos.length}: ${p.nombre}`;
+                fill.style.width = (((i+1)/nuevos.length)*100) + '%';
+                try {
+                    const res = await fetchWithAuth('/api/clientes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            nombre: p.nombre,
+                            tipo_cliente: p.tipo,
+                            latitud: p.lat,
+                            longitud: p.lon,
+                            cadena: ''
+                        })
+                    });
+                    if (res.status === 409) {
+                        // Duplicado detectado en el server: ignorar silenciosamente
+                    } else if (!res.ok) {
+                        errores++;
+                    } else {
+                        ok++;
+                    }
+                } catch(e) {
+                    errores++;
+                }
+            }
+
+            label.textContent = `✅ Importación completa: ${ok} importados, ${errores} errores.`;
+            fill.style.width = '100%';
+            await cargarClientes();
+            document.getElementById('btnImportarKmz').disabled = false;
+            setTimeout(() => {
+                cerrarModalKmz();
+                alert(`✅ Se importaron ${ok} cliente(s) exitosamente.${errores > 0 ? ' Hubo ' + errores + ' error(es).' : ''}`);
+            }, 1200);
         }
 
         // Inicializar
