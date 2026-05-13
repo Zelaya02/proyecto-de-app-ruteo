@@ -369,7 +369,10 @@
                 col.className = 'movil-col';
                 
                 const token = movil.token;
-                if (!asignaciones[token]) asignaciones[token] = { chofer_id: '', vehiculo_id: '' };
+                if (!asignaciones[token]) asignaciones[token] = { 
+                    chofer_id: movil.chofer_id || '', 
+                    vehiculo_id: movil.vehiculo_id || '' 
+                };
 
                 col.innerHTML = `
                     <div class="movil-header">

@@ -1178,14 +1178,101 @@
         }
 
 
-        async function generarRutas() {
-            const seleccionados = clientes.filter(c => c.seleccionado).map(c => c.id);
+        // --- ASIGNACIÓN DE RECURSOS ---
+        let listaChoferesGlob = [];
+        let listaVehiculosGlob = [];
 
-            if (seleccionados.length === 0) {
-                return alert("❌ Selecciona al menos un cliente");
+        async function abrirModalAsignacion() {
+            const seleccionados = clientes.filter(c => c.seleccionado);
+            if (seleccionados.length === 0) return alert("❌ Selecciona al menos un cliente");
+
+            const numMoviles = parseInt(document.getElementById('numMoviles').value) || 1;
+            const container = document.getElementById('container-asignaciones');
+            container.innerHTML = '<p style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando recursos...</p>';
+            
+            document.getElementById('modalAsignacion').style.display = 'flex';
+
+            try {
+                const [resC, resV] = await Promise.all([
+                    fetchWithAuth('/api/choferes'),
+                    fetchWithAuth('/api/vehiculos')
+                ]);
+                listaChoferesGlob = await resC.json();
+                listaVehiculosGlob = await resV.json();
+
+                container.innerHTML = '';
+                for(let i=0; i < numMoviles; i++) {
+                    addFilaAsignacion();
+                }
+            } catch (e) {
+                alert("Error al cargar recursos: " + e.message);
+            }
+        }
+
+        function addFilaAsignacion() {
+            const container = document.getElementById('container-asignaciones');
+            const num = container.children.length + 1;
+            const div = document.createElement('div');
+            div.className = 'fila-asignacion';
+            div.style = "display:grid; grid-template-columns: 40px 1fr 1fr 40px; gap:10px; align-items:center; margin-bottom:10px; background:#f8f9fa; padding:10px; border-radius:8px; border:1px solid #eee;";
+            
+            let choferOpts = listaChoferesGlob.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+            let vehiculoOpts = listaVehiculosGlob.map(v => `<option value="${v.id}">${v.nombre} (${v.chapa})</option>`).join('');
+
+            div.innerHTML = `
+                <div style="font-weight:bold; color:var(--primary);">${num}</div>
+                <select class="sel-chofer" style="padding:8px; border-radius:6px; border:1px solid #ddd;">
+                    <option value="">-- Seleccionar Chofer --</option>
+                    ${choferOpts}
+                </select>
+                <select class="sel-vehiculo" style="padding:8px; border-radius:6px; border:1px solid #ddd;">
+                    <option value="">-- Seleccionar Móvil --</option>
+                    ${vehiculoOpts}
+                </select>
+                <button onclick="this.parentElement.remove(); reenumerarAsignaciones();" style="background:none; border:none; color:#e74c3c; cursor:pointer;"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(div);
+        }
+
+        function reenumerarAsignaciones() {
+            const container = document.getElementById('container-asignaciones');
+            Array.from(container.children).forEach((div, i) => {
+                div.children[0].textContent = i + 1;
+            });
+        }
+
+        async function confirmarAsignacion() {
+            const container = document.getElementById('container-asignaciones');
+            const asignaciones = [];
+            let valid = true;
+
+            Array.from(container.children).forEach((div, i) => {
+                const choferId = div.querySelector('.sel-chofer').value;
+                const vehiculoId = div.querySelector('.sel-vehiculo').value;
+                if(!choferId || !vehiculoId) valid = false;
+                asignaciones.push({
+                    movil: i + 1,
+                    chofer_id: parseInt(choferId),
+                    vehiculo_id: parseInt(vehiculoId)
+                });
+            });
+
+            if(!valid) {
+                if(!confirm("Hay móviles sin chofer o vehículo asignado. ¿Deseas continuar de todas formas?")) return;
             }
 
-            const numMoviles = parseInt(document.getElementById('numMoviles').value);
+            document.getElementById('modalAsignacion').style.display = 'none';
+            generarRutasFinal(asignaciones);
+        }
+
+        async function generarRutas() {
+            // Ahora pide asignación primero
+            abrirModalAsignacion();
+        }
+
+        async function generarRutasFinal(asignaciones) {
+            const seleccionados = clientes.filter(c => c.seleccionado).map(c => c.id);
+            const numMoviles = asignaciones.length; // Usar la cantidad de la asignación
             
             const btn = document.getElementById('btnGenerar');
             const originalText = btn.innerHTML;
@@ -1193,18 +1280,6 @@
             btn.disabled = true;
 
             try {
-                // Verificar que haya suficientes choferes y moviles
-                const resChoferes = await fetchWithAuth('/api/choferes');
-                const choferesDisp = await resChoferes.json();
-                
-                const resVehiculos = await fetchWithAuth('/api/vehiculos');
-                const vehiculosDisp = await resVehiculos.json();
-
-                if (choferesDisp.length < numMoviles || vehiculosDisp.length < numMoviles) {
-                    alert(`❌ No tienes suficientes recursos. Solicitas ${numMoviles} rutas, pero tienes ${choferesDisp.length} choferes y ${vehiculosDisp.length} vehículos disponibles. Ve a Configuraciones para agregarlos.`);
-                    return; // Abortar
-                }
-
                 const response = await fetchWithAuth('/api/generar-rutas', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -1212,7 +1287,8 @@
                         num_moviles: numMoviles,
                         prioridad: document.getElementById('prioridadTipo').value,
                         punto_inicio: document.getElementById('puntoInicio').value,
-                        usar_reglas: document.getElementById('usarReglas').checked
+                        usar_reglas: document.getElementById('usarReglas').checked,
+                        asignaciones: asignaciones
                     })
                 });
 
@@ -1229,6 +1305,8 @@
                 btn.disabled = false;
             }
         }
+
+        // Fin de asignación de recursos
 
         function logout() {
             localStorage.removeItem('nexo_user');

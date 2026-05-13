@@ -62,6 +62,7 @@ public class Main {
         server.createContext("/api/clientes", new ClientesHandler());
         server.createContext("/api/login", new LoginHandler());
         server.createContext("/api/generar-rutas", new RutasHandler());
+        server.createContext("/api/asignar-recursos", new AsignarRecursosHandler());
         server.createContext("/api/ruta", new RutaTokenHandler());
         server.createContext("/api/actualizar-estado", new EstadoHandler());
         server.createContext("/api/estadisticas", new EstadisticasHandler());
@@ -330,14 +331,58 @@ public class Main {
                             int tiempoEstimado = (int) Math.ceil((distTotal / 40.0) * 60.0);
                             String token = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
+                            // Buscar asignación para este móvil
+                            Integer choferId = null;
+                            Integer vehiculoId = null;
+                            String choferNombre = "";
+                            String vehiculoNombre = "";
+
+                            if (request.containsKey("asignaciones")) {
+                                List<Map<String, Object>> asigs = (List<Map<String, Object>>) request.get("asignaciones");
+                                for (Map<String, Object> asig : asigs) {
+                                    Object movObj = asig.get("movil");
+                                    int movNum = 0;
+                                    if (movObj instanceof Double) movNum = ((Double) movObj).intValue();
+                                    else if (movObj instanceof Integer) movNum = (Integer) movObj;
+
+                                    if (movNum == i + 1) {
+                                        Object cId = asig.get("chofer_id");
+                                        Object vId = asig.get("vehiculo_id");
+                                        if (cId != null) choferId = ((Double) cId).intValue();
+                                        if (vId != null) vehiculoId = ((Double) vId).intValue();
+                                        
+                                        // Buscar nombres
+                                        if (choferId != null) {
+                                            try (PreparedStatement pName = conn.prepareStatement("SELECT nombre FROM choferes WHERE id = ?")) {
+                                                pName.setInt(1, choferId);
+                                                ResultSet rsName = pName.executeQuery();
+                                                if (rsName.next()) choferNombre = rsName.getString("nombre");
+                                            }
+                                        }
+                                        if (vehiculoId != null) {
+                                            try (PreparedStatement pName = conn.prepareStatement("SELECT nombre FROM vehiculos WHERE id = ?")) {
+                                                pName.setInt(1, vehiculoId);
+                                                ResultSet rsName = pName.executeQuery();
+                                                if (rsName.next()) vehiculoNombre = rsName.getString("nombre");
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+
                             // Insertar ruta
-                            String insertRuta = "INSERT INTO rutas_generadas (token, movil_numero, clientes_json, distancia_total, tiempo_estimado) VALUES (?, ?, ?, ?, ?)";
+                            String insertRuta = "INSERT INTO rutas_generadas (token, movil_numero, clientes_json, distancia_total, tiempo_estimado, chofer_id, vehiculo_id, chofer_nombre, vehiculo_nombre) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                             PreparedStatement pstmt = conn.prepareStatement(insertRuta);
                             pstmt.setString(1, token);
                             pstmt.setInt(2, i + 1);
                             pstmt.setString(3, gson.toJson(clientesJson));
                             pstmt.setDouble(4, distTotal);
                             pstmt.setInt(5, tiempoEstimado);
+                            if (choferId != null) pstmt.setInt(6, choferId); else pstmt.setNull(6, java.sql.Types.INTEGER);
+                            if (vehiculoId != null) pstmt.setInt(7, vehiculoId); else pstmt.setNull(7, java.sql.Types.INTEGER);
+                            pstmt.setString(8, choferNombre);
+                            pstmt.setString(9, vehiculoNombre);
                             pstmt.executeUpdate();
 
                             // Insertar entregas
@@ -356,6 +401,10 @@ public class Main {
                             movil.put("clientes", clientesJson);
                             movil.put("distancia_total", distTotal);
                             movil.put("tiempo_estimado", tiempoEstimado);
+                            movil.put("chofer_id", choferId);
+                            movil.put("vehiculo_id", vehiculoId);
+                            movil.put("chofer_nombre", choferNombre);
+                            movil.put("vehiculo_nombre", vehiculoNombre);
                             movilesRespuesta.add(movil);
                         }
                     }
@@ -427,6 +476,10 @@ public class Main {
                         }
 
                         ruta.put("clientes", clientes);
+                        ruta.put("chofer_id", rs.getInt("chofer_id"));
+                        ruta.put("vehiculo_id", rs.getInt("vehiculo_id"));
+                        ruta.put("chofer_nombre", rs.getString("chofer_nombre"));
+                        ruta.put("vehiculo_nombre", rs.getString("vehiculo_nombre"));
                         sendResponse(exchange, 200, gson.toJson(ruta));
                     } else {
                         sendError(exchange, 404, "Ruta no encontrada");
@@ -1187,6 +1240,59 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
+                    sendError(exchange, 500, e.getMessage());
+                }
+            }
+        }
+    }
+    static class AsignarRecursosHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))
+                            .lines().collect(Collectors.joining("\n"));
+                    List<Map<String, Object>> assignments = gson.fromJson(body, List.class);
+
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        for (Map<String, Object> asig : assignments) {
+                            String token = (String) asig.get("token");
+                            int cId = ((Double) asig.get("chofer_id")).intValue();
+                            int vId = ((Double) asig.get("vehiculo_id")).intValue();
+
+                            String cNombre = "";
+                            String vNombre = "";
+
+                            // Obtener nombres
+                            try (PreparedStatement p1 = conn.prepareStatement("SELECT nombre FROM choferes WHERE id = ?")) {
+                                p1.setInt(1, cId);
+                                ResultSet rs1 = p1.executeQuery();
+                                if (rs1.next()) cNombre = rs1.getString("nombre");
+                            }
+                            try (PreparedStatement p2 = conn.prepareStatement("SELECT nombre FROM vehiculos WHERE id = ?")) {
+                                p2.setInt(1, vId);
+                                ResultSet rs2 = p2.executeQuery();
+                                if (rs2.next()) vNombre = rs2.getString("nombre");
+                            }
+
+                            String sql = "UPDATE rutas_generadas SET chofer_id = ?, vehiculo_id = ?, chofer_nombre = ?, vehiculo_nombre = ? WHERE token = ?";
+                            PreparedStatement pstmt = conn.prepareStatement(sql);
+                            pstmt.setInt(1, cId);
+                            pstmt.setInt(2, vId);
+                            pstmt.setString(3, cNombre);
+                            pstmt.setString(4, vNombre);
+                            pstmt.setString(5, token);
+                            pstmt.executeUpdate();
+                        }
+                    }
+                    sendResponse(exchange, 200, "{\"status\":\"ok\"}");
+                } catch (Exception e) {
+                    e.printStackTrace();
                     sendError(exchange, 500, e.getMessage());
                 }
             }
