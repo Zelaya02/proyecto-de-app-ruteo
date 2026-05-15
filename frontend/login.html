@@ -6,72 +6,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEXO | Acceso Corporativo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap"
         rel="stylesheet">
     <style>
-        :root {
-            --primary: #1c7efe;
-            --primary-light: #368af0;
-            --secondary: #F4A261;
-            --accent: #E76F51;
-            --bg: #f8fafc;
-            --card-bg: rgba(255, 255, 255, 0.75);
-            --text: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        }
-
-        body.dark-mode {
-            --bg: #075ba9;
-            --card-bg: rgba(5, 114, 169, 0.65);
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            --primary: #38bdf8;
-            --primary-light: #7dd3fc;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #0B2B40;
+            --primary-dark: #071e2c;
+            --primary-light: #1A4B5F;
+            --secondary: #C8A55A;
+            --secondary-dark: #A8863E;
+            --accent: #E8B86B;
+            --card-bg: rgba(18, 28, 36, 0.75);
+            --text: #F5F7FA;
+            --text-muted: #B0C4DE;
+            --border: rgba(200, 165, 90, 0.35);
+            --shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.4);
+            --overlay-color: rgba(0, 0, 0, 0.65);
+            --error-bg: rgba(180, 50, 50, 0.85);
+            --input-bg: rgba(255, 255, 255, 0.08);
+            --focus-glow: rgba(200, 165, 90, 0.4);
+        }
+
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg);
-            background-image:
-                radial-gradient(at 0% 0%, hsla(210, 100%, 93%, 1) 0, transparent 50%),
-                radial-gradient(at 50% 0%, hsla(21, 81%, 90%, 1) 0, transparent 50%),
-                radial-gradient(at 100% 0%, hsla(210, 100%, 93%, 1) 0, transparent 50%);
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: background 0.5s ease;
-            overflow: hidden;
+            position: relative;
+            background: #0a0f1e;
+            overflow-x: hidden;
         }
 
-        body.dark-mode {
-            background-image:
-                radial-gradient(at 0% 0%, hsla(210, 40%, 15%, 1) 0, transparent 50%),
-                radial-gradient(at 50% 0%, hsla(21, 40%, 15%, 1) 0, transparent 50%),
-                radial-gradient(at 100% 0%, hsla(210, 40%, 15%, 1) 0, transparent 50%);
+        /* Fondo con GIF animado + capa oscura + fallback */
+        .bg-gif {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('assets/img/fondologin.gif') center center / cover no-repeat fixed;
+            filter: brightness(0.45) contrast(1.1);
+            z-index: -2;
+            transition: opacity 0.5s;
+        }
+
+        /* Si el GIF falla, se muestra un color sólido oscuro */
+        .bg-fallback {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #0B2B40 0%, #071e2c 100%);
+            z-index: -3;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 40%, rgba(0, 0, 0, 0.5) 0%, var(--overlay-color) 100%);
+            z-index: -1;
+        }
+
+        /* Partículas flotantes */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(200, 165, 90, 0.25);
+            border-radius: 50%;
+            filter: blur(3px);
+            animation: floatParticle 12s infinite ease-in-out;
+        }
+
+        @keyframes floatParticle {
+            0% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 0.6;
+            }
+
+            80% {
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: translateY(-100px) translateX(40px) scale(0.5);
+                opacity: 0;
+            }
         }
 
         .login-container {
             width: 100%;
-            max-width: 440px;
+            max-width: 480px;
             padding: 20px;
-            animation: fadeIn 0.8s ease-out;
+            position: relative;
+            z-index: 2;
+            animation: fadeSlideUp 0.8s cubic-bezier(0.15, 0.85, 0.35, 1.05) forwards;
         }
 
-        @keyframes fadeIn {
+        @keyframes fadeSlideUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(45px);
             }
 
             to {
@@ -84,159 +144,224 @@
             background: var(--card-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 50px 40px;
-            border-radius: 24px;
+            border-radius: 42px;
+            padding: 52px 40px;
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
             text-align: center;
-            position: relative;
+            transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1), box-shadow 0.4s ease;
+        }
+
+        .login-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 30px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
         .brand-header {
-            margin-bottom: 40px;
+            margin-bottom: 38px;
+            animation: gentlePulse 2s infinite alternate;
+        }
+
+        @keyframes gentlePulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.95;
+            }
+
+            100% {
+                transform: scale(1.02);
+                opacity: 1;
+            }
         }
 
         .logo {
-            height: 80px;
+            height: 90px;
             margin-bottom: 20px;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-            transition: transform 0.3s ease;
+            filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.3));
+            transition: transform 0.3s ease, filter 0.3s;
         }
 
         .logo:hover {
-            transform: scale(1.05);
+            transform: scale(1.06) rotate(1deg);
+            filter: drop-shadow(0 10px 18px rgba(200, 165, 90, 0.4));
         }
 
         .login-card h1 {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 800;
-            color: var(--text);
             letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #FFF, var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
             margin-bottom: 8px;
         }
 
         .login-card p {
             color: var(--text-muted);
             font-size: 15px;
+            font-weight: 500;
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
             text-align: left;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--text);
-            padding-left: 4px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--secondary);
+            padding-left: 6px;
         }
 
         .input-wrapper {
             position: relative;
             display: flex;
             align-items: center;
+            transition: all 0.2s;
         }
 
         .input-wrapper i {
             position: absolute;
-            left: 16px;
+            left: 20px;
             color: var(--text-muted);
             font-size: 18px;
+            transition: color 0.25s, transform 0.2s;
+            z-index: 1;
         }
 
         .form-group input {
             width: 100%;
-            padding: 14px 16px 14px 48px;
-            background: transparent;
-            border: 2px solid var(--border);
-            border-radius: 14px;
-            font-size: 16px;
-            font-family: inherit;
+            padding: 16px 18px 16px 55px;
+            background: var(--input-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 50px;
+            font-size: 15px;
+            font-family: 'Inter', monospace;
+            font-weight: 500;
             color: var(--text);
             transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
         }
 
         .form-group input:focus {
-            border-color: var(--secondary);
             outline: none;
-            box-shadow: 0 0 0 4px rgba(244, 162, 97, 0.1);
-            background: var(--white);
+            border-color: var(--secondary);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 4px var(--focus-glow);
+            transform: scale(1.01);
+        }
+
+        .form-group input:focus+i {
+            color: var(--secondary);
+            transform: scale(1.1);
         }
 
         .btn-login {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white;
+            background: linear-gradient(95deg, var(--primary), var(--primary-light));
             border: none;
-            border-radius: 14px;
+            border-radius: 50px;
             font-size: 16px;
-            font-weight: 700;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-            box-shadow: 0 4px 12px rgba(30, 58, 95, 0.2);
+            gap: 14px;
+            margin-top: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn-login:hover::before {
+            left: 100%;
         }
 
         .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(30, 58, 95, 0.3);
-            filter: brightness(1.1);
+            transform: translateY(-3px);
+            filter: brightness(1.08);
+            box-shadow: 0 14px 24px -6px rgba(0, 0, 0, 0.4);
         }
 
         .btn-login:active {
-            transform: translateY(0);
+            transform: translateY(1px);
         }
 
         .btn-login:disabled {
             opacity: 0.7;
+            transform: none;
             cursor: not-allowed;
         }
 
         .error-msg {
-            background-color: #fee2e2;
-            color: #dc2626;
-            padding: 14px;
-            border-radius: 12px;
-            margin-bottom: 24px;
+            background: var(--error-bg);
+            backdrop-filter: blur(8px);
+            color: white;
+            padding: 14px 18px;
+            border-radius: 60px;
+            margin-bottom: 28px;
             display: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
-            border: 1px solid #fca5a5;
-            animation: shake 0.5s ease;
+            text-align: center;
+            border-left: 5px solid #ffb3b3;
+            animation: shakeError 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
         }
 
-        @keyframes shake {
+        @keyframes shakeError {
 
             0%,
             100% {
                 transform: translateX(0);
             }
 
-            25% {
-                transform: translateX(-5px);
+            20% {
+                transform: translateX(-8px);
             }
 
-            75% {
-                transform: translateX(5px);
+            40% {
+                transform: translateX(8px);
+            }
+
+            60% {
+                transform: translateX(-4px);
+            }
+
+            80% {
+                transform: translateX(4px);
             }
         }
 
         .loader {
             display: none;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 0.8s linear infinite;
+            border-top-color: var(--secondary);
+            animation: spin 0.7s linear infinite;
         }
 
         @keyframes spin {
@@ -246,27 +371,80 @@
         }
 
         .footer-info {
-            margin-top: 30px;
-            font-size: 13px;
+            margin-top: 40px;
+            font-size: 12px;
+            font-weight: 500;
             color: var(--text-muted);
             text-align: center;
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            transition: color 0.2s;
         }
 
         .footer-info a {
             color: var(--secondary);
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .footer-info a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--secondary);
+            transition: width 0.3s;
+        }
+
+        .footer-info a:hover::after {
+            width: 100%;
+        }
+
+        @media (max-width: 520px) {
+            .login-card {
+                padding: 38px 24px;
+            }
+
+            .logo {
+                height: 75px;
+            }
+
+            .login-card h1 {
+                font-size: 28px;
+            }
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(4);
+                opacity: 0;
+            }
         }
     </style>
 </head>
 
 <body>
+    <!-- Fondo GIF (fallback sólido si no carga) -->
+    <div class="bg-fallback"></div>
+    <div class="bg-gif" id="bgGif"></div>
+
+    <div class="particles" id="particlesContainer"></div>
+
     <div class="login-container">
         <div class="login-card">
             <div class="brand-header">
                 <img src="assets/img/LogoNexo.png" alt="NEXO" class="logo">
                 <h1>Bienvenido de nuevo</h1>
-                <p>Ingresa tus credenciales corporativas</p>
+                <p>Acceso seguro a la plataforma de ruteo</p>
             </div>
 
             <div id="errorMsg" class="error-msg">
@@ -275,10 +453,10 @@
 
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="username">Usuario</label>
+                    <label for="username">Usuario corporativo</label>
                     <div class="input-wrapper">
-                        <i class="far fa-user"></i>
-                        <input type="text" id="username" placeholder="Tu nombre de usuario" required>
+                        <i class="far fa-user-circle"></i>
+                        <input type="text" id="username" placeholder="usuario@nexo.com" autocomplete="off" required>
                     </div>
                 </div>
 
@@ -291,20 +469,52 @@
                 </div>
 
                 <button type="submit" class="btn-login" id="btnLogin">
-                    <span id="btnText">Iniciar Sesión</span>
+                    <span id="btnText">Ingresar al sistema</span>
                     <div id="loader" class="loader"></div>
                 </button>
             </form>
 
             <div class="footer-info">
-                NEXO Routing Platform &copy; 2026<br>
-                <a href="#">Soporte Técnico</a> &bull; <a href="#">Seguridad</a>
+                NEXO Routing Intelligence &copy; 2026<br>
+                <a href="#">Soporte técnico</a> &bull; <a href="#">Políticas de seguridad</a>
             </div>
         </div>
     </div>
 
     <script>
-        // Initialize Dark Mode from localStorage
+        // Verificar si el GIF carga, si no, ocultar la capa para que se vea el fallback
+        const bgGif = document.getElementById('bgGif');
+        const imgTest = new Image();
+        imgTest.src = 'assets/img/fondologin.gif';
+        imgTest.onload = () => {
+            // El GIF existe, no hacer nada
+            bgGif.style.opacity = '1';
+        };
+        imgTest.onerror = () => {
+            // Falló la carga, ocultar la capa del GIF (se verá el fondo sólido)
+            bgGif.style.display = 'none';
+            console.warn('No se pudo cargar el GIF de fondo. Verifica la ruta assets/img/fondologin.gif');
+        };
+
+        // Generar partículas flotantes
+        function createParticles() {
+            const container = document.getElementById('particlesContainer');
+            for (let i = 0; i < 45; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const size = Math.random() * 8 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 10}s`;
+                particle.style.animationDuration = `${8 + Math.random() * 10}s`;
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Modo oscuro heredado (opcional)
         (function initDarkMode() {
             const darkMode = localStorage.getItem('darkMode');
             if (darkMode === 'enabled') {
@@ -312,25 +522,54 @@
             }
         })();
 
+        // DOM Elements
         const form = document.getElementById('loginForm');
         const btnLogin = document.getElementById('btnLogin');
         const btnText = document.getElementById('btnText');
         const loader = document.getElementById('loader');
         const errorDiv = document.getElementById('errorMsg');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
 
+        // Ripple effect en botón
+        btnLogin.addEventListener('click', (e) => {
+            if (!btnLogin.disabled) {
+                const rect = btnLogin.getBoundingClientRect();
+                const ripple = document.createElement('span');
+                const diameter = Math.max(rect.width, rect.height);
+                const radius = diameter / 2;
+                ripple.style.width = ripple.style.height = `${diameter}px`;
+                ripple.style.position = 'absolute';
+                ripple.style.left = `${e.clientX - rect.left - radius}px`;
+                ripple.style.top = `${e.clientY - rect.top - radius}px`;
+                ripple.style.background = 'rgba(255,255,255,0.3)';
+                ripple.style.borderRadius = '50%';
+                ripple.style.transform = 'scale(0)';
+                ripple.style.transition = 'transform 0.5s ease-out';
+                ripple.style.pointerEvents = 'none';
+                btnLogin.style.position = 'relative';
+                btnLogin.style.overflow = 'hidden';
+                btnLogin.appendChild(ripple);
+                setTimeout(() => {
+                    ripple.style.transform = 'scale(4)';
+                    setTimeout(() => ripple.remove(), 500);
+                }, 10);
+            }
+        });
+
+        // Envío del formulario
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // UI Feedback
-            btnText.textContent = 'Verificando...';
+            btnText.textContent = 'Autenticando...';
             loader.style.display = 'block';
             btnLogin.disabled = true;
             errorDiv.style.display = 'none';
 
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            
-            // UTF-8 compatible Base64
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            // Codificación Base64 con UTF-8 (igual que antes)
             const utf8Bytes = new TextEncoder().encode(JSON.stringify({ username, password }));
             const authPayload = btoa(String.fromCharCode(...utf8Bytes));
 
@@ -347,9 +586,9 @@
                     localStorage.setItem('nexo_user', data.usuario);
                     localStorage.setItem('nexo_token', data.token);
 
-                    // Efecto de éxito antes de redirigir
                     btnText.textContent = 'Acceso concedido';
-                    btnLogin.style.background = '#2ecc71';
+                    btnLogin.style.background = 'linear-gradient(95deg, #1A4B5F, #0B2B40)';
+                    btnLogin.style.filter = 'brightness(1.1)';
 
                     setTimeout(() => {
                         window.location.href = 'index.html';
@@ -358,10 +597,11 @@
                     throw new Error(data.message || 'Credenciales inválidas');
                 }
             } catch (error) {
-                console.error('Error:', error);
+                console.error(error);
                 errorDiv.style.display = 'block';
-                document.getElementById('password').value = '';
-                btnText.textContent = 'Iniciar Sesión';
+                passwordInput.value = '';
+                btnText.textContent = 'Ingresar al sistema';
+                btnLogin.style.background = '';
             } finally {
                 loader.style.display = 'none';
                 btnLogin.disabled = false;
