@@ -13,20 +13,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #1E3A5F;
-            --secondary: #F4A261;
-            --bg: #f8fafc;
-            --white: #ffffff;
-            --text: #0f172a;
-            --border: #e2e8f0;
+            --primary: linear-gradient(135deg, #0B2B40 0%, #1A4B5F 100%);
+            --secondary: #C89D4A;
+            --bg: #C5D7ED;
+            --white: linear-gradient(135deg, rgba(200, 225, 245, 0.92) 0%, rgba(248, 238, 215, 0.88) 100%);
+            --text: #072130;
+            --border: rgba(200, 157, 74, 0.35);
+            --card-shadow: 0 10px 30px rgba(11, 43, 64, 0.08), 0 2px 8px rgba(200, 157, 74, 0.08);
         }
 
         body.dark-mode {
-            --bg: #0f172a;
-            --white: #1e293b;
-            --text: #f1f5f9;
-            --border: #334155;
-            --primary: #38bdf8;
+            --bg: #0B1120;
+            --white: #1A2332;
+            --text: #E2E8F0;
+            --border: #2D3A4E;
+            --primary: linear-gradient(135deg, #0F212E 0%, #1F4A60 100%);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
         }
 
         body {
@@ -35,6 +37,7 @@
             color: var(--text);
             margin: 0;
             padding: 0;
+            transition: background 0.25s, color 0.25s;
         }
 
         .header {
@@ -44,6 +47,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 2.5px solid var(--secondary);
+            box-shadow: 0 4px 20px rgba(11, 43, 64, 0.16);
         }
 
         .container {
@@ -54,10 +59,18 @@
 
         .card {
             background: var(--white);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 30px;
             border-radius: 20px;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            border: 1.5px solid var(--border);
+            box-shadow: var(--card-shadow);
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(11, 43, 64, 0.12);
         }
 
         .regla-item {

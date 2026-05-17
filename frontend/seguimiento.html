@@ -12,23 +12,25 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #1E3A5F;
-            --secondary: #F4A261;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f1c40f;
-            --bg: #f0f2f5;
-            --white: #ffffff;
-            --text-color: #1E3A5F;
-            --border: #eee;
+            --primary: linear-gradient(135deg, #0B2B40 0%, #1A4B5F 100%);
+            --secondary: #C89D4A;
+            --success: #2E7D32;
+            --danger: #C62828;
+            --warning: #F57C00;
+            --bg: #C5D7ED;
+            --white: linear-gradient(135deg, rgba(200, 225, 245, 0.92) 0%, rgba(248, 238, 215, 0.88) 100%);
+            --text-color: #072130;
+            --border: rgba(200, 157, 74, 0.35);
+            --card-shadow: 0 10px 30px rgba(11, 43, 64, 0.08), 0 2px 8px rgba(200, 157, 74, 0.08);
         }
 
         body.dark-mode {
-            --bg: #121212;
-            --white: #1e1e1e;
-            --text-color: #e0e0e0;
-            --border: #333;
-            --primary: #8FA2B0;
+            --bg: #0B1120;
+            --white: #1A2332;
+            --text-color: #E2E8F0;
+            --border: #2D3A4E;
+            --primary: linear-gradient(135deg, #0F212E 0%, #1F4A60 100%);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37,17 +39,18 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
             color: var(--text-color);
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
         }
 
         .header {
-            background: linear-gradient(135deg, #1E3A5F, #2c4a6e);
+            background: var(--primary);
             color: white;
             padding: 20px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-bottom: 2.5px solid var(--secondary);
+            box-shadow: 0 4px 20px rgba(11, 43, 64, 0.16);
         }
 
         .container {
@@ -72,24 +75,35 @@
             font-weight: 600;
             border: 1px solid var(--border);
             white-space: nowrap;
-            transition: all 0.3s;
+            transition: all 0.25s ease;
             display: flex;
             align-items: center;
             gap: 8px;
+            box-shadow: var(--card-shadow);
         }
 
         .tab.active {
             background: var(--secondary);
-            color: var(--primary);
+            color: white;
             border-color: var(--secondary);
+            box-shadow: 0 4px 12px rgba(200, 157, 74, 0.35);
         }
 
         .card {
             background: var(--white);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1.5px solid var(--border);
+            box-shadow: var(--card-shadow);
             margin-bottom: 30px;
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(11, 43, 64, 0.12);
         }
 
         table {
@@ -293,11 +307,21 @@
             const tab = document.getElementById(`tab-${movil}`);
             if(tab) tab.classList.add('active');
             
-            document.getElementById('tituloMovil').innerHTML = `<i class="fas fa-info-circle"></i> Entregas del Móvil #${movil}`;
-
             // Filter data
             const filtrados = allReportes.filter(r => r.movil === movil);
             const tbody = document.getElementById('tablaSeguimiento');
+            
+            const primerReporte = filtrados[0];
+            const choferNombre = (primerReporte && primerReporte.chofer) ? primerReporte.chofer : 'Sin chofer';
+            const vehiculoNombre = (primerReporte && primerReporte.vehiculo) ? primerReporte.vehiculo : 'Sin vehículo';
+            
+            document.getElementById('tituloMovil').innerHTML = `
+                <i class="fas fa-info-circle"></i> Entregas del Móvil #${movil}
+                <div style="font-size: 14px; font-weight: normal; color: var(--text-color); opacity: 0.8; margin-top: 8px; display: flex; gap: 15px; flex-wrap: wrap;">
+                    <span><i class="fas fa-user-tie" style="color: var(--secondary);"></i> <strong>Chofer:</strong> ${choferNombre}</span>
+                    <span><i class="fas fa-truck" style="color: var(--secondary);"></i> <strong>Vehículo:</strong> ${vehiculoNombre}</span>
+                </div>
+            `;
             
             tbody.innerHTML = filtrados.map(r => {
                 const statusClass = `status-${r.estado.toLowerCase()}`;

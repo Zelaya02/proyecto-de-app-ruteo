@@ -23,7 +23,7 @@ import com.ruteo.repository.UsuarioRepository;
 
 public class Main {
     private static final Gson gson = new Gson();
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/ruteo_db";
+    private static final String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db";
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = "Zelaya1103";
     private static final String ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; // Configura
@@ -673,15 +673,23 @@ public class Main {
 
                     // Rendimiento por móvil
                     String sqlRend = "SELECT r.movil_numero, " +
+                            "ch.nombre as chofer, " +
+                            "v.nombre as vehiculo, " +
                             "SUM(CASE WHEN e.estado = 'entregado' THEN 1 ELSE 0 END) as ent, " +
                             "COUNT(e.id) as tot " +
-                            "FROM rutas_generadas r JOIN entregas e ON r.token = e.ruta_token " +
-                            "WHERE " + dateFilter + " GROUP BY r.movil_numero";
+                            "FROM rutas_generadas r " +
+                            "JOIN entregas e ON r.token = e.ruta_token " +
+                            "LEFT JOIN choferes ch ON r.chofer_id = ch.id " +
+                            "LEFT JOIN vehiculos v ON r.vehiculo_id = v.id " +
+                            "WHERE " + dateFilter + " " +
+                            "GROUP BY r.movil_numero, ch.nombre, v.nombre";
                     ResultSet rsRend = stmt.executeQuery(sqlRend);
                     List<Map<String, Object>> rendimientos = new ArrayList<>();
                     while (rsRend.next()) {
                         Map<String, Object> rm = new HashMap<>();
                         rm.put("movil", rsRend.getInt("movil_numero"));
+                        rm.put("chofer", rsRend.getString("chofer"));
+                        rm.put("vehiculo", rsRend.getString("vehiculo"));
                         rm.put("entregados", rsRend.getInt("ent"));
                         rm.put("total", rsRend.getInt("tot"));
                         rendimientos.add(rm);
@@ -717,11 +725,14 @@ public class Main {
             setCORS(exchange);
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                    String sql = "SELECT e.id, c.nombre as cliente, e.estado, e.observacion, e.fecha_actualizacion, r.movil_numero "
+                    String sql = "SELECT e.id, c.nombre as cliente, e.estado, e.observacion, e.fecha_actualizacion, r.movil_numero, "
                             +
+                            "ch.nombre as chofer, v.nombre as vehiculo " +
                             "FROM entregas e " +
                             "JOIN clientes c ON e.cliente_id = c.id " +
                             "JOIN rutas_generadas r ON e.ruta_token = r.token " +
+                            "LEFT JOIN choferes ch ON r.chofer_id = ch.id " +
+                            "LEFT JOIN vehiculos v ON r.vehiculo_id = v.id " +
                             "WHERE e.estado != 'pendiente' " +
                             "ORDER BY e.fecha_actualizacion DESC LIMIT 50";
                     Statement stmt = conn.createStatement();
@@ -736,6 +747,8 @@ public class Main {
                         rep.put("observacion", rs.getString("observacion"));
                         rep.put("fecha", rs.getTimestamp("fecha_actualizacion").toString());
                         rep.put("movil", rs.getInt("movil_numero"));
+                        rep.put("chofer", rs.getString("chofer"));
+                        rep.put("vehiculo", rs.getString("vehiculo"));
                         reportes.add(rep);
                     }
                     sendResponse(exchange, 200, gson.toJson(reportes));
