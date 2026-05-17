@@ -167,6 +167,16 @@
         const categoriasBasicas = ['supermercado', 'minorista', 'mayorista / distribuidor'];
         let reglasCargadas = [];
 
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         // Helper para peticiones con autenticación
         async function fetchWithAuth(url, options = {}) {
             const token = localStorage.getItem('nexo_token');
@@ -220,20 +230,21 @@
 
             todas.sort((a,b) => a.categoria.localeCompare(b.categoria)).forEach(regla => {
                 const cat = regla.categoria.toLowerCase();
+                const catEscaped = escapeHtml(cat);
                 const div = document.createElement('div');
                 div.className = 'regla-item';
                 div.innerHTML = `
-                    <div class="categoria-name">${cat}</div>
+                    <div class="categoria-name">${catEscaped}</div>
                     <div>
                         <input type="number" value="${regla.limite_por_movil}" min="0" 
-                               id="limit-${cat}" placeholder="Sin límite">
+                               placeholder="Sin límite" style="width:100%;">
                     </div>
                     <div style="text-align: right; display: flex; align-items: center; gap: 10px; justify-content: flex-end;">
                         <label class="switch">
-                            <input type="checkbox" id="active-${cat}" ${regla.activo ? 'checked' : ''}>
+                            <input type="checkbox" ${regla.activo ? 'checked' : ''}>
                             <span class="slider"></span>
                         </label>
-                        <button onclick="eliminarReglaLocal('${cat}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;" title="Eliminar regla">
+                        <button onclick="eliminarReglaLocal('${catEscaped}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;" title="Eliminar regla">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -261,14 +272,26 @@
         async function guardarReglas() {
             // Recolectar todos los inputs actuales
             const items = document.querySelectorAll('.regla-item');
+            let hasNegative = false;
             const payload = Array.from(items).map(div => {
                 const cat = div.querySelector('.categoria-name').textContent;
+                const limitInput = div.querySelector('input[type="number"]');
+                const activeInput = div.querySelector('input[type="checkbox"]');
+                const limitVal = parseInt(limitInput.value) || 0;
+                if (limitVal < 0) {
+                    hasNegative = true;
+                }
                 return {
-                    categoria: cat,
-                    limite_por_movil: parseInt(document.getElementById(`limit-${cat}`).value) || 0,
-                    activo: document.getElementById(`active-${cat}`).checked
+                    categoria: cat.trim(),
+                    limite_por_movil: limitVal,
+                    activo: activeInput.checked
                 };
             });
+
+            if (hasNegative) {
+                alert("❌ El límite por móvil no puede ser negativo.");
+                return;
+            }
 
             try {
                 const res = await fetchWithAuth('/api/reglas', {

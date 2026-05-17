@@ -51,6 +51,7 @@ public class Main {
     }
 
     private static final UsuarioRepository usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
+    private static final Set<String> activeTokens = Collections.synchronizedSet(new HashSet<>());
 
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8080), 0);
@@ -548,6 +549,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM reglas_ruteo ORDER BY categoria";
@@ -574,6 +583,11 @@ public class Main {
                             String cat = (String) r.get("categoria");
                             int lim = ((Double) r.get("limite_por_movil")).intValue();
                             boolean act = (boolean) r.get("activo");
+
+                            if (lim < 0) {
+                                sendError(exchange, 400, "El limite por movil no puede ser negativo");
+                                return;
+                            }
 
                             String sql = "INSERT INTO reglas_ruteo (categoria, limite_por_movil, activo) " +
                                     "VALUES (?, ?, ?) ON CONFLICT (categoria) " +
@@ -784,6 +798,7 @@ public class Main {
 
                     if (usuario != null) {
                         String sessionToken = java.util.UUID.randomUUID().toString();
+                        activeTokens.add(sessionToken);
                         response.put("success", true);
                         response.put("message", "Login exitoso");
                         response.put("usuario", usuario.getNombre());
@@ -807,7 +822,20 @@ public class Main {
     private static void setCORS(HttpExchange exchange) {
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    }
+
+    private static boolean isAuthorized(HttpExchange exchange) {
+        List<String> authHeaders = exchange.getRequestHeaders().get("Authorization");
+        if (authHeaders == null || authHeaders.isEmpty()) {
+            return false;
+        }
+        String authHeader = authHeaders.get(0);
+        if (authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7).trim();
+            return activeTokens.contains(token);
+        }
+        return false;
     }
 
     private static void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
