@@ -638,6 +638,8 @@
                 grid.appendChild(col);
             });
             actualizarSelectsDisponibilidad();
+            habilitarBotonConfirmacion();
+            actualizarBotonesWhatsApp();
         }
 
         function escapeHtml(text) {
@@ -648,16 +650,33 @@
         }
 
         // ========== ASIGNACIÓN Y VALIDACIÓN ==========
+        let rutasActivas = false;
+
         function updateAsignacion(token, field, value) {
             asignaciones[token][field] = value;
-            // Actualizar badges y footers
+            // Actualizar badges
             const badge = document.getElementById(`badge-${token}`);
-            const footer = document.getElementById(`footer-${token}`);
             const isComplete = asignaciones[token].chofer_id && asignaciones[token].vehiculo_id;
             if (badge) badge.style.display = isComplete ? 'inline-block' : 'none';
-            if (footer) footer.style.display = isComplete ? 'block' : 'none';
+            
             actualizarSelectsDisponibilidad();
             habilitarBotonConfirmacion();
+            actualizarBotonesWhatsApp();
+        }
+
+        function actualizarBotonesWhatsApp() {
+            document.querySelectorAll('.movil-footer').forEach(footer => {
+                const token = footer.id.replace('footer-', '');
+                const isCompleteForThis = asignaciones[token]?.chofer_id && asignaciones[token]?.vehiculo_id;
+                
+                // Mostrar el footer SOLO si la ruta está completa Y el usuario ya confirmó (rutasActivas = true)
+                footer.style.display = (isCompleteForThis && rutasActivas) ? 'block' : 'none';
+                
+                const btn = footer.querySelector('.btn-wa');
+                if (btn) {
+                    btn.disabled = !rutasActivas;
+                }
+            });
         }
 
         function actualizarSelectsDisponibilidad() {
@@ -668,7 +687,7 @@
                 const token = select.dataset.token;
                 Array.from(select.options).forEach(opt => {
                     if (opt.value === '') return;
-                    const usedElsewhere = selectedChoferes.includes(opt.value) && opt.value !== asignaciones[token]?.chofer_id;
+                    const usedElsewhere = selectedChoferes.includes(opt.value) && opt.value != asignaciones[token]?.chofer_id;
                     opt.disabled = usedElsewhere;
                 });
             });
@@ -677,7 +696,7 @@
                 const token = select.dataset.token;
                 Array.from(select.options).forEach(opt => {
                     if (opt.value === '') return;
-                    const usedElsewhere = selectedVehiculos.includes(opt.value) && opt.value !== asignaciones[token]?.vehiculo_id;
+                    const usedElsewhere = selectedVehiculos.includes(opt.value) && opt.value != asignaciones[token]?.vehiculo_id;
                     opt.disabled = usedElsewhere;
                 });
             });
@@ -694,11 +713,17 @@
         // ========== GUARDAR ASIGNACIONES ==========
         async function guardarAsignaciones() {
             showLoader(true);
-            const payload = Object.entries(asignaciones).map(([token, data]) => ({
-                token,
-                chofer_id: parseInt(data.chofer_id),
-                vehiculo_id: parseInt(data.vehiculo_id)
-            }));
+            const payload = Object.entries(asignaciones).map(([token, data]) => {
+                const movil = rutasData.moviles.find(m => m.token === token);
+                return {
+                    token,
+                    chofer_id: parseInt(data.chofer_id),
+                    vehiculo_id: parseInt(data.vehiculo_id),
+                    clientes: movil ? movil.clientes : [],
+                    distancia_total: movil ? movil.distancia_total : 0,
+                    tiempo_estimado: movil ? movil.tiempo_estimado : 0
+                };
+            });
             try {
                 const response = await fetchWithAuth('/api/asignar-recursos', {
                     method: 'POST',
@@ -710,6 +735,10 @@
                     // Deshabilitar selects y transferencias
                     document.querySelectorAll('.sel-chofer, .sel-vehiculo').forEach(s => s.disabled = true);
                     document.querySelectorAll('.btn-transferir').forEach(b => b.style.display = 'none');
+                    
+                    // Activar botones de WhatsApp
+                    rutasActivas = true;
+                    actualizarBotonesWhatsApp();
                 } else {
                     throw new Error("Error al guardar");
                 }

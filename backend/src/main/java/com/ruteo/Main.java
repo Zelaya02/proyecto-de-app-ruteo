@@ -71,6 +71,8 @@ public class Main {
         server.createContext("/api/reglas", new ReglasHandler());
         server.createContext("/api/choferes", new ChoferesHandler());
         server.createContext("/api/vehiculos", new VehiculosHandler());
+        server.createContext("/api/kml/importar", new KmlImportHandler());
+        server.createContext("/api/kml/exportar", new KmlExportHandler());
 
         server.setExecutor(null);
         server.start();
@@ -1260,39 +1262,212 @@ public class Main {
                     List<Map<String, Object>> assignments = gson.fromJson(body, List.class);
 
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        for (Map<String, Object> asig : assignments) {
-                            String token = (String) asig.get("token");
-                            int cId = ((Double) asig.get("chofer_id")).intValue();
-                            int vId = ((Double) asig.get("vehiculo_id")).intValue();
+                        conn.setAutoCommit(false); // Usar transaccion
+                        try {
+                            for (Map<String, Object> asig : assignments) {
+                                String token = (String) asig.get("token");
+                                int cId = ((Double) asig.get("chofer_id")).intValue();
+                                int vId = ((Double) asig.get("vehiculo_id")).intValue();
 
-                            String cNombre = "";
-                            String vNombre = "";
+                                String cNombre = "";
+                                String vNombre = "";
 
-                            // Obtener nombres
-                            try (PreparedStatement p1 = conn.prepareStatement("SELECT nombre FROM choferes WHERE id = ?")) {
-                                p1.setInt(1, cId);
-                                ResultSet rs1 = p1.executeQuery();
-                                if (rs1.next()) cNombre = rs1.getString("nombre");
+                                // Obtener nombres
+                                try (PreparedStatement p1 = conn.prepareStatement("SELECT nombre FROM choferes WHERE id = ?")) {
+                                    p1.setInt(1, cId);
+                                    ResultSet rs1 = p1.executeQuery();
+                                    if (rs1.next()) cNombre = rs1.getString("nombre");
+                                }
+                                try (PreparedStatement p2 = conn.prepareStatement("SELECT nombre FROM vehiculos WHERE id = ?")) {
+                                    p2.setInt(1, vId);
+                                    ResultSet rs2 = p2.executeQuery();
+                                    if (rs2.next()) vNombre = rs2.getString("nombre");
+                                }
+
+                                // Si viene la lista de clientes (por cambios en el ruteo manual), actualizar clientes_json y entregas
+                                if (asig.containsKey("clientes")) {
+                                    List<Map<String, Object>> clientes = (List<Map<String, Object>>) asig.get("clientes");
+                                    double distTot = (Double) asig.getOrDefault("distancia_total", 0.0);
+                                    int tiempoEst = ((Double) asig.getOrDefault("tiempo_estimado", 0.0)).intValue();
+
+                                    String sqlUpdate = "UPDATE rutas_generadas SET chofer_id = ?, vehiculo_id = ?, chofer_nombre = ?, vehiculo_nombre = ?, clientes_json = ?, distancia_total = ?, tiempo_estimado = ? WHERE token = ?";
+                                    PreparedStatement pstmt = conn.prepareStatement(sqlUpdate);
+                                    pstmt.setInt(1, cId);
+                                    pstmt.setInt(2, vId);
+                                    pstmt.setString(3, cNombre);
+                                    pstmt.setString(4, vNombre);
+                                    pstmt.setString(5, gson.toJson(clientes));
+                                    pstmt.setDouble(6, distTot);
+                                    pstmt.setInt(7, tiempoEst);
+                                    pstmt.setString(8, token);
+                                    pstmt.executeUpdate();
+
+                                    // Actualizar entregas: Borrar anteriores y reinsertar según el nuevo orden/lista
+                                    try (PreparedStatement pDel = conn.prepareStatement("DELETE FROM entregas WHERE ruta_token = ?")) {
+                                        pDel.setString(1, token);
+                                        pDel.executeUpdate();
+                                    }
+                                    
+                                    String insertEntregas = "INSERT INTO entregas (ruta_token, cliente_id, estado, orden_en_ruta) VALUES (?, ?, 'pendiente', ?)";
+                                    try (PreparedStatement pIns = conn.prepareStatement(insertEntregas)) {
+                                        for (int i = 0; i < clientes.size(); i++) {
+                                            int clientId = ((Double) clientes.get(i).get("id")).intValue();
+                                            pIns.setString(1, token);
+                                            pIns.setInt(2, clientId);
+                                            pIns.setInt(3, i + 1);
+                                            pIns.addBatch();
+                                        }
+                                        pIns.executeBatch();
+                                    }
+                                } else {
+                                    // Solo actualizar recursos (formato antiguo o sin cambios de ruteo)
+                                    String sql = "UPDATE rutas_generadas SET chofer_id = ?, vehiculo_id = ?, chofer_nombre = ?, vehiculo_nombre = ? WHERE token = ?";
+                                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                                    pstmt.setInt(1, cId);
+                                    pstmt.setInt(2, vId);
+                                    pstmt.setString(3, cNombre);
+                                    pstmt.setString(4, vNombre);
+                                    pstmt.setString(5, token);
+                                    pstmt.executeUpdate();
+                                }
                             }
-                            try (PreparedStatement p2 = conn.prepareStatement("SELECT nombre FROM vehiculos WHERE id = ?")) {
-                                p2.setInt(1, vId);
-                                ResultSet rs2 = p2.executeQuery();
-                                if (rs2.next()) vNombre = rs2.getString("nombre");
-                            }
-
-                            String sql = "UPDATE rutas_generadas SET chofer_id = ?, vehiculo_id = ?, chofer_nombre = ?, vehiculo_nombre = ? WHERE token = ?";
-                            PreparedStatement pstmt = conn.prepareStatement(sql);
-                            pstmt.setInt(1, cId);
-                            pstmt.setInt(2, vId);
-                            pstmt.setString(3, cNombre);
-                            pstmt.setString(4, vNombre);
-                            pstmt.setString(5, token);
-                            pstmt.executeUpdate();
+                            conn.commit();
+                        } catch (Exception e) {
+                            conn.rollback();
+                            throw e;
                         }
                     }
                     sendResponse(exchange, 200, "{\"status\":\"ok\"}");
                 } catch (Exception e) {
                     e.printStackTrace();
+                    sendError(exchange, 500, e.getMessage());
+                }
+            }
+        }
+    }
+
+    static class KmlImportHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))
+                            .lines().collect(Collectors.joining("\n"));
+                    JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                    String url = json.has("url") ? json.get("url").getAsString() : "";
+                    
+                    if (url.isEmpty()) { sendError(exchange, 400, "URL requerida"); return; }
+                    
+                    if (url.contains("google.com/maps/d/")) {
+                        if (url.contains("mid=")) {
+                            String mid = url.split("mid=")[1].split("&")[0];
+                            url = "https://www.google.com/maps/d/u/0/kml?mid=" + mid + "&forcekml=1";
+                        }
+                    }
+
+                    HttpClient client = HttpClient.newHttpClient();
+                    HttpRequest request = HttpRequest.newBuilder().uri(java.net.URI.create(url)).build();
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                    if (response.statusCode() != 200) {
+                        sendError(exchange, 500, "Error al descargar KML: " + response.statusCode());
+                        return;
+                    }
+
+                    String kml = response.body();
+                    List<Map<String, String>> points = parseKml(kml);
+
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "INSERT INTO clientes (nombre, latitud, longitud, ciudad, tipo_cliente, activo) VALUES (?, ?, ?, ?, 'General', true)";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        for (Map<String, String> p : points) {
+                            double lat = Double.parseDouble(p.get("lat"));
+                            double lon = Double.parseDouble(p.get("lon"));
+                            pstmt.setString(1, p.get("name"));
+                            pstmt.setDouble(2, lat);
+                            pstmt.setDouble(3, lon);
+                            pstmt.setString(4, determinarCiudad(lat, lon));
+                            pstmt.addBatch();
+                        }
+                        pstmt.executeBatch();
+                    }
+                    sendResponse(exchange, 200, "{\"status\":\"ok\", \"imported\":" + points.size() + "}");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sendError(exchange, 500, e.getMessage());
+                }
+            }
+        }
+
+        private List<Map<String, String>> parseKml(String kml) {
+            List<Map<String, String>> points = new ArrayList<>();
+            try {
+                java.util.regex.Pattern p = java.util.regex.Pattern.compile("<Placemark>(.*?)</Placemark>", java.util.regex.Pattern.DOTALL);
+                java.util.regex.Matcher m = p.matcher(kml);
+                while (m.find()) {
+                    String content = m.group(1);
+                    String name = "Sin nombre";
+                    if (content.contains("<name>")) {
+                        name = content.split("<name>")[1].split("</name>")[0].replaceAll("<!\\[CDATA\\[(.*)\\]\\]>", "$1");
+                    }
+                    if (content.contains("<coordinates>")) {
+                        String coords = content.split("<coordinates>")[1].split("</coordinates>")[0].trim();
+                        String[] parts = coords.split(",");
+                        if (parts.length >= 2) {
+                            Map<String, String> point = new HashMap<>();
+                            point.put("name", name);
+                            point.put("lon", parts[0].trim());
+                            point.put("lat", parts[1].trim());
+                            points.add(point);
+                        }
+                    }
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+            return points;
+        }
+    }
+
+    static class KmlExportHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            setCORS(exchange);
+            if ("GET".equals(exchange.getRequestMethod())) {
+                try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                    String sql = "SELECT nombre, latitud, longitud FROM clientes WHERE activo = true";
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery(sql);
+
+                    StringBuilder kml = new StringBuilder();
+                    kml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+                    kml.append("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+                    kml.append("<Document>\n");
+                    kml.append("  <name>Clientes Ruteo</name>\n");
+
+                    while (rs.next()) {
+                        kml.append("  <Placemark>\n");
+                        kml.append("    <name>").append(rs.getString("nombre")).append("</name>\n");
+                        kml.append("    <Point>\n");
+                        kml.append("      <coordinates>").append(rs.getDouble("longitud")).append(",").append(rs.getDouble("latitud")).append(",0</coordinates>\n");
+                        kml.append("    </Point>\n");
+                        kml.append("  </Placemark>\n");
+                    }
+
+                    kml.append("</Document>\n");
+                    kml.append("</kml>");
+
+                    byte[] resp = kml.toString().getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().set("Content-Type", "application/vnd.google-earth.kml+xml");
+                    exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"clientes_exportados.kml\"");
+                    exchange.sendResponseHeaders(200, resp.length);
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(resp);
+                    os.close();
+                } catch (Exception e) {
                     sendError(exchange, 500, e.getMessage());
                 }
             }
