@@ -15,6 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
@@ -723,10 +724,7 @@
         async function generarRutasFinal(asignaciones) {
             let seleccionados = clientes.filter(c => c.seleccionado).map(c => c.id);
             let numM = parseInt(document.getElementById('numMoviles').value) || 1;
-            let btn = document.getElementById('btnGenerar');
-            let originalHtml = btn.innerHTML;
-            btn.innerHTML = '<span class="truck-loader"><i class="fas fa-truck"></i> Optimizando rutas... <i class="fas fa-spinner fa-spin"></i></span>';
-            btn.disabled = true;
+            mostrarLoader("Optimizando y generando rutas... por favor espere");
             try {
                 let response = await fetchWithAuth('/api/generar-rutas', {
                     method: 'POST',
@@ -737,7 +735,7 @@
                 localStorage.setItem('rutasGeneradas', JSON.stringify(data));
                 window.open('resultados.html', '_blank');
             } catch (e) { alert("Error al generar rutas"); }
-            finally { btn.innerHTML = originalHtml; btn.disabled = false; }
+            finally { ocultarLoader(); }
         }
 
         // KML functions
