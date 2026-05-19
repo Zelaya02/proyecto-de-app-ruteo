@@ -4,7 +4,7 @@ import java.util.List;
 
 public class CreacionDB {
     public static void main(String[] args) {
-        int port = 5000; 
+        int port = 5432; 
         String dbName = "ruteo_db";
         String user = "postgres";
         String pass = "Zelaya1103";

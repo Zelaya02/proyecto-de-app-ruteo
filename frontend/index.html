@@ -537,9 +537,9 @@
                         </div>
                     </div>
                 </div>
-                <div style="margin-top:20px;">
-                    <button class="btn-secondary-outline" onclick="window.location.href='reglas.html'">Gestionar reglas
-                        avanzadas</button>
+                <div style="margin-top:20px; display:flex; gap:12px;">
+                    <button class="btn-secondary-outline" onclick="window.location.href='reglas.html'">Gestionar reglas avanzadas</button>
+                    <button class="btn-primary" onclick="abrirModalTransportes()" style="padding:10px 20px;"><i class="fas fa-truck-pickup"></i> Gestión de Transportes</button>
                 </div>
             </div>
         </div>
@@ -632,6 +632,56 @@
         </div>
     </div>
 
+    <!-- MODAL DE TRANSPORTES (CHOFERES Y VEHICULOS) -->
+    <div id="modalTransportes" class="modal-overlay">
+        <div class="modal-container" style="max-width:800px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2><i class="fas fa-truck-pickup"></i> Gestión de Transportes</h2>
+                <button class="btn-icon" onclick="cerrarModalTransportes()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:20px; border-bottom:1.5px solid var(--border-light); padding-bottom:10px;">
+                <button id="btnTabChoferes" class="btn-glass" style="background:var(--primary-main); border-color:var(--primary-main);" onclick="cambiarTabTransporte('choferes')"><i class="fas fa-id-card"></i> Choferes</button>
+                <button id="btnTabVehiculos" class="btn-glass" style="color:var(--text-light); border-color:var(--border-light);" onclick="cambiarTabTransporte('vehiculos')"><i class="fas fa-truck"></i> Vehículos</button>
+            </div>
+
+            <!-- Panel Choferes -->
+            <div id="panelGestionChoferes">
+                <form id="formChofer" onsubmit="guardarChofer(event)" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:20px; background:rgba(0,0,0,0.02); padding:15px; border-radius:15px;">
+                    <input type="hidden" id="choferId">
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Nombre y Apellido</label><input type="text" id="choferNombre" class="control-input" required></div>
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Teléfono/Celular</label><input type="text" id="choferTelefono" class="control-input"></div>
+                    <button type="submit" class="btn-primary" style="padding:12px 20px;"><i class="fas fa-save"></i> Guardar</button>
+                    <button type="button" class="btn-secondary-outline" onclick="resetFormChofer()" style="padding:12px;"><i class="fas fa-eraser"></i></button>
+                </form>
+                <div class="table-wrapper" style="max-height:300px;">
+                    <table class="client-table">
+                        <thead><tr><th>Nombre</th><th>Teléfono</th><th style="width:100px;">Acciones</th></tr></thead>
+                        <tbody id="tbodyChoferes"><tr><td colspan="3">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel Vehículos -->
+            <div id="panelGestionVehiculos" style="display:none;">
+                <form id="formVehiculo" onsubmit="guardarVehiculo(event)" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:20px; background:rgba(0,0,0,0.02); padding:15px; border-radius:15px;">
+                    <input type="hidden" id="vehiculoId">
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Modelo/Marca</label><input type="text" id="vehiculoNombre" class="control-input" required></div>
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Chapa/Patente</label><input type="text" id="vehiculoChapa" class="control-input"></div>
+                    <button type="submit" class="btn-primary" style="padding:12px 20px;"><i class="fas fa-save"></i> Guardar</button>
+                    <button type="button" class="btn-secondary-outline" onclick="resetFormVehiculo()" style="padding:12px;"><i class="fas fa-eraser"></i></button>
+                </form>
+                <div class="table-wrapper" style="max-height:300px;">
+                    <table class="client-table">
+                        <thead><tr><th>Vehículo</th><th>Chapa</th><th style="width:100px;">Acciones</th></tr></thead>
+                        <tbody id="tbodyVehiculos"><tr><td colspan="3">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <script>
         // ========== VARIABLES GLOBALES ==========
         let clientes = [];
@@ -695,7 +745,16 @@
         }
 
         function renderFila(c) {
-            return `<tr><td style="padding-left:20px;"><input type="checkbox" class="checkbox-cliente" data-id="${c.id}" ${c.seleccionado ? 'checked' : ''} onchange="toggleCliente(${c.id})"></td><td><strong>${escapeHtml(c.nombre)}</strong><br><span class="badge-tag"><i class="fas fa-tag"></i> ${c.tipo_cliente || 'minorista/gastronómico'}</span><small style="display:block; color:var(--text-muted-light);">${c.direccion || 'Gran Asunción'}</small></td><td><button class="btn-icon" onclick="editarCliente(${c.id})"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="eliminarCliente(${c.id})" style="color:var(--danger);"><i class="fas fa-trash"></i></button></td></tr>`;
+            return `<tr><td style="padding-left:20px;"><input type="checkbox" class="checkbox-cliente" data-id="${c.id}" ${c.seleccionado ? 'checked' : ''} onchange="toggleCliente(${c.id})"></td><td><strong>${escapeHtml(c.nombre)}</strong><br><span class="badge-tag"><i class="fas fa-tag"></i> ${c.tipo_cliente || 'minorista/gastronómico'}</span><small style="display:block; color:var(--text-muted-light);">${c.direccion || 'Gran Asunción'}</small></td><td><button class="btn-icon" onclick="editarCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="copiarUrlCliente(${c.id})" title="Copiar URL"><i class="fas fa-link"></i></button><button class="btn-icon" onclick="eliminarCliente(${c.id})" style="color:var(--danger);" title="Eliminar"><i class="fas fa-trash"></i></button></td></tr>`;
+        }
+        
+        function copiarUrlCliente(id) { 
+            let c = clientes.find(c => c.id === id); 
+            if (!c) return; 
+            let url = c.url_google || `https://maps.google.com/?q=${c.latitud},${c.longitud}`; 
+            navigator.clipboard.writeText(url)
+                .then(() => alert('URL (' + url + ') copiada al portapapeles'))
+                .catch(() => window.prompt('Copia esta URL manualmente:', url)); 
         }
 
         function registrarToggle(nom, abierto) { abierto ? gruposAbiertos.add(nom) : gruposAbiertos.delete(nom); }
@@ -748,6 +807,118 @@
         function parsearKml(kmlText) { let parser = new DOMParser(); let doc = parser.parseFromString(kmlText, 'text/xml'); let placemarks = doc.querySelectorAll('Placemark'); kmzPlacemarks = []; placemarks.forEach(pm => { let nombre = pm.querySelector('name')?.textContent?.trim() || 'Sin nombre'; let point = pm.querySelector('Point coordinates') || pm.querySelector('coordinates'); if (point) { let coords = point.textContent.trim().split(','); if (coords.length >= 2) { let lon = parseFloat(coords[0]), lat = parseFloat(coords[1]); if (!isNaN(lat) && !isNaN(lon)) kmzPlacemarks.push({ nombre, lat, lon }); } } }); mostrarPreviewKmz(); }
         function mostrarPreviewKmz() { let nombres = new Set(clientes.map(c => c.nombre.toLowerCase())); let nuevos = kmzPlacemarks.filter(p => !nombres.has(p.nombre.toLowerCase())); document.getElementById('kmzDropzone').style.display = 'none'; document.getElementById('kmzPreviewArea').style.display = 'block'; document.getElementById('kmzPreviewArea').innerHTML = `<p style="color:var(--accent-gold); font-weight:600;">✅ ${nuevos.length} clientes nuevos detectados.</p>`; document.getElementById('btnImportarFinal').style.display = nuevos.length > 0 ? 'block' : 'none'; }
         async function importarKmz() { let nombres = new Set(clientes.map(c => c.nombre.toLowerCase())); let nuevos = kmzPlacemarks.filter(p => !nombres.has(p.nombre.toLowerCase())); for (let p of nuevos) { await fetchWithAuth('/api/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: p.nombre, latitud: p.lat, longitud: p.lon, tipo_cliente: 'minorista/gastronómico' }) }); } alert(`Importados ${nuevos.length} clientes`); cerrarModalKml(); cargarClientes(); }
+
+        // ================= GESTION DE TRANSPORTES (CHOFERES Y VEHICULOS) =================
+        let transportesData = { choferes: [], vehiculos: [] };
+        
+        function abrirModalTransportes() { 
+            document.getElementById('modalTransportes').style.display = 'flex'; 
+            cargarTransportes(); 
+        }
+        function cerrarModalTransportes() { document.getElementById('modalTransportes').style.display = 'none'; }
+        
+        function cambiarTabTransporte(tab) {
+            document.getElementById('panelGestionChoferes').style.display = tab === 'choferes' ? 'block' : 'none';
+            document.getElementById('panelGestionVehiculos').style.display = tab === 'vehiculos' ? 'block' : 'none';
+            document.getElementById('btnTabChoferes').style.background = tab === 'choferes' ? 'var(--primary-main)' : 'rgba(255,255,255,0.1)';
+            document.getElementById('btnTabChoferes').style.color = tab === 'choferes' ? 'white' : 'var(--text-light)';
+            document.getElementById('btnTabVehiculos').style.background = tab === 'vehiculos' ? 'var(--primary-main)' : 'rgba(255,255,255,0.1)';
+            document.getElementById('btnTabVehiculos').style.color = tab === 'vehiculos' ? 'white' : 'var(--text-light)';
+        }
+
+        async function cargarTransportes() {
+            try {
+                let resC = await fetchWithAuth('/api/choferes');
+                transportesData.choferes = await resC.json();
+                
+                let resV = await fetchWithAuth('/api/vehiculos');
+                transportesData.vehiculos = await resV.json();
+                
+                renderTablasTransportes();
+            } catch (e) {
+                console.error("Error al cargar transportes", e);
+            }
+        }
+
+        function renderTablasTransportes() {
+            // Choferes
+            const tbC = document.getElementById('tbodyChoferes');
+            if (transportesData.choferes.length === 0) tbC.innerHTML = '<tr><td colspan="3">No hay choferes.</td></tr>';
+            else tbC.innerHTML = transportesData.choferes.map(c => 
+                `<tr>
+                    <td><strong>${escapeHtml(c.nombre)}</strong></td>
+                    <td>${escapeHtml(c.telefono || '-')}</td>
+                    <td>
+                        <button class="btn-icon" onclick="editarChofer(${c.id}, '${escapeHtml(c.nombre)}', '${escapeHtml(c.telefono || '')}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" onclick="eliminarChofer(${c.id})" style="color:var(--danger);" title="Inhabilitar"><i class="fas fa-ban"></i></button>
+                    </td>
+                </tr>`
+            ).join('');
+
+            // Vehiculos
+            const tbV = document.getElementById('tbodyVehiculos');
+            if (transportesData.vehiculos.length === 0) tbV.innerHTML = '<tr><td colspan="3">No hay vehículos.</td></tr>';
+            else tbV.innerHTML = transportesData.vehiculos.map(v => 
+                `<tr>
+                    <td><strong>${escapeHtml(v.nombre)}</strong></td>
+                    <td><span class="badge-tag">${escapeHtml(v.chapa || '-')}</span></td>
+                    <td>
+                        <button class="btn-icon" onclick="editarVehiculo(${v.id}, '${escapeHtml(v.nombre)}', '${escapeHtml(v.chapa || '')}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" onclick="eliminarVehiculo(${v.id})" style="color:var(--danger);" title="Inhabilitar"><i class="fas fa-ban"></i></button>
+                    </td>
+                </tr>`
+            ).join('');
+        }
+
+        // Choferes CRUD
+        function resetFormChofer() { document.getElementById('formChofer').reset(); document.getElementById('choferId').value = ''; }
+        function editarChofer(id, nombre, tel) { 
+            document.getElementById('choferId').value = id; 
+            document.getElementById('choferNombre').value = nombre; 
+            document.getElementById('choferTelefono').value = tel; 
+        }
+        async function guardarChofer(e) { 
+            e.preventDefault(); 
+            let id = document.getElementById('choferId').value; 
+            let payload = { nombre: document.getElementById('choferNombre').value, telefono: document.getElementById('choferTelefono').value };
+            let method = 'POST';
+            if (id) { payload.id = parseInt(id); method = 'PUT'; }
+            
+            await fetchWithAuth('/api/choferes', { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            resetFormChofer();
+            cargarTransportes();
+        }
+        async function eliminarChofer(id) { 
+            if (confirm('¿Inhabilitar a este chofer? Ya no aparecerá para asignar pero las estadísticas se conservan.')) { 
+                await fetchWithAuth(`/api/choferes?id=${id}`, { method: 'DELETE' }); 
+                cargarTransportes(); 
+            } 
+        }
+
+        // Vehiculos CRUD
+        function resetFormVehiculo() { document.getElementById('formVehiculo').reset(); document.getElementById('vehiculoId').value = ''; }
+        function editarVehiculo(id, nombre, chapa) { 
+            document.getElementById('vehiculoId').value = id; 
+            document.getElementById('vehiculoNombre').value = nombre; 
+            document.getElementById('vehiculoChapa').value = chapa; 
+        }
+        async function guardarVehiculo(e) { 
+            e.preventDefault(); 
+            let id = document.getElementById('vehiculoId').value; 
+            let payload = { nombre: document.getElementById('vehiculoNombre').value, chapa: document.getElementById('vehiculoChapa').value };
+            let method = 'POST';
+            if (id) { payload.id = parseInt(id); method = 'PUT'; }
+            
+            await fetchWithAuth('/api/vehiculos', { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            resetFormVehiculo();
+            cargarTransportes();
+        }
+        async function eliminarVehiculo(id) { 
+            if (confirm('¿Inhabilitar a este vehículo? Ya no aparecerá para asignar pero las estadísticas se conservan.')) { 
+                await fetchWithAuth(`/api/vehiculos?id=${id}`, { method: 'DELETE' }); 
+                cargarTransportes(); 
+            } 
+        }
 
         function logout() { localStorage.clear(); window.location.href = 'login.html'; }
 

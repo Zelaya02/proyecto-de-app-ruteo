@@ -23,16 +23,11 @@ import com.ruteo.repository.UsuarioRepository;
 
 public class Main {
     private static final Gson gson = new Gson();
-    private static final String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db";
+    private static String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db"; // se auto-detecta al inicio
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = "Zelaya1103";
     private static final String ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; // Configura
-                                                                                                                                                                      // aquí
-                                                                                                                                                                      // tu
-                                                                                                                                                                      // API
-                                                                                                                                                                      // Key
-                                                                                                                                                                      // de
-                                                                                                                                                                      // OpenRouteService
+                                                                                                                                                                   // OpenRouteService
     private static final String FRONTEND_DIR = "../frontend";
 
     // Modelos de Reglas
@@ -50,10 +45,32 @@ public class Main {
         }
     }
 
-    private static final UsuarioRepository usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
+    private static UsuarioRepository usuarioRepo; // se inicializa después de auto-detectar puerto
     private static final Set<String> activeTokens = Collections.synchronizedSet(new HashSet<>());
 
+    /** Detecta el puerto PostgreSQL disponible (prueba 5000 primero, luego 5432). */
+    private static String detectDbUrl() {
+        String[] candidatos = {
+            "jdbc:postgresql://localhost:5000/ruteo_db",
+            "jdbc:postgresql://localhost:5432/ruteo_db"
+        };
+        for (String url : candidatos) {
+            try (Connection c = DriverManager.getConnection(url, DB_USER, DB_PASSWORD)) {
+                System.out.println("✅ Conectado a PostgreSQL en: " + url);
+                return url;
+            } catch (SQLException e) {
+                System.out.println("⚠️  Puerto no disponible: " + url + " (" + e.getMessage().split("\n")[0] + ")");
+            }
+        }
+        System.err.println("❌ No se pudo conectar a PostgreSQL en ningún puerto conocido.");
+        return candidatos[candidatos.length - 1]; // fallback
+    }
+
     public static void main(String[] args) throws IOException {
+        // Auto-detección del puerto de PostgreSQL
+        DB_URL = detectDbUrl();
+        usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
+
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8080), 0);
 
         // Archivos estaticos
@@ -139,6 +156,7 @@ public class Main {
                         cliente.put("latitud", rs.getDouble("latitud"));
                         cliente.put("longitud", rs.getDouble("longitud"));
                         cliente.put("cadena", rs.getString("cadena"));
+                        cliente.put("url_google", rs.getString("url_google"));
                         cliente.put("seleccionado", false);
                         clientes.add(cliente);
                     }
@@ -1227,6 +1245,27 @@ public class Main {
                 } catch (Exception e) {
                     sendError(exchange, 500, e.getMessage());
                 }
+            } else if ("PUT".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+                    Map<String, Object> req = gson.fromJson(body, Map.class);
+                    int id = ((Double) req.get("id")).intValue();
+                    String nombre = (String) req.get("nombre");
+                    String telefono = (String) req.get("telefono");
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "UPDATE choferes SET nombre = ?, telefono = ? WHERE id = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setString(1, nombre);
+                        pstmt.setString(2, telefono);
+                        pstmt.setInt(3, id);
+                        pstmt.executeUpdate();
+                        sendResponse(exchange, 200, "{\"status\":\"updated\"}");
+                    }
+                } catch (Exception e) {
+                    sendError(exchange, 500, e.getMessage());
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
             }
         }
     }
@@ -1285,6 +1324,27 @@ public class Main {
                 } catch (Exception e) {
                     sendError(exchange, 500, e.getMessage());
                 }
+            } else if ("PUT".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+                    Map<String, Object> req = gson.fromJson(body, Map.class);
+                    int id = ((Double) req.get("id")).intValue();
+                    String nombre = (String) req.get("nombre");
+                    String chapa = (String) req.get("chapa");
+                    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                        String sql = "UPDATE vehiculos SET nombre = ?, chapa = ? WHERE id = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setString(1, nombre);
+                        pstmt.setString(2, chapa);
+                        pstmt.setInt(3, id);
+                        pstmt.executeUpdate();
+                        sendResponse(exchange, 200, "{\"status\":\"updated\"}");
+                    }
+                } catch (Exception e) {
+                    sendError(exchange, 500, e.getMessage());
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
             }
         }
     }
