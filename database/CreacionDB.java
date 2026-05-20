@@ -11,6 +11,14 @@ public class CreacionDB {
         
         System.out.println("Iniciando creacion de Base de Datos...");
 
+        for (int p : new int[]{5000, 5432}) {
+            try (Connection test = DriverManager.getConnection("jdbc:postgresql://localhost:" + p + "/postgres", user, pass)) {
+                port = p;
+                System.out.println("✅ Puerto detectado: " + port);
+                break;
+            } catch (Exception e) {}
+        }
+
         try {
             String rootUrl = "jdbc:postgresql://localhost:" + port + "/postgres";
             try (Connection rootConn = DriverManager.getConnection(rootUrl, user, pass);
@@ -32,7 +40,7 @@ public class CreacionDB {
                 dbStmt.executeUpdate("CREATE TABLE choferes (id SERIAL PRIMARY KEY, nombre TEXT, telefono TEXT, activo BOOLEAN DEFAULT TRUE)");
                 dbStmt.executeUpdate("CREATE TABLE vehiculos (id SERIAL PRIMARY KEY, nombre TEXT, chapa TEXT, activo BOOLEAN DEFAULT TRUE)");
                 
-                dbStmt.executeUpdate("CREATE TABLE rutas_generadas (token TEXT PRIMARY KEY, movil_numero INTEGER, chofer_id INTEGER REFERENCES choferes(id), vehiculo_id INTEGER REFERENCES vehiculos(id), clientes_json TEXT, distancia_total DOUBLE PRECISION, tiempo_estimado INTEGER, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+                dbStmt.executeUpdate("CREATE TABLE rutas_generadas (token TEXT PRIMARY KEY, movil_numero INTEGER, chofer_id INTEGER REFERENCES choferes(id), vehiculo_id INTEGER REFERENCES vehiculos(id), chofer_nombre TEXT, vehiculo_nombre TEXT, clientes_json TEXT, distancia_total DOUBLE PRECISION, tiempo_estimado INTEGER, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
                 dbStmt.executeUpdate("CREATE TABLE entregas (id SERIAL PRIMARY KEY, ruta_token TEXT REFERENCES rutas_generadas(token), cliente_id INTEGER REFERENCES clientes(id), estado TEXT, observacion TEXT, orden_en_ruta INTEGER, fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
                 dbStmt.executeUpdate("CREATE TABLE reglas_ruteo (id SERIAL PRIMARY KEY, categoria TEXT UNIQUE, limite_por_movil INTEGER, activo BOOLEAN DEFAULT TRUE)");
                 
@@ -59,8 +67,8 @@ public class CreacionDB {
 
                     // --- DATOS DE PRUEBA PARA ESTADISTICAS ---
                     System.out.println("Migrando datos de ejemplo para estadisticas...");
-                    dbStmt.executeUpdate("INSERT INTO rutas_generadas (token, movil_numero, clientes_json, distancia_total, tiempo_estimado) " +
-                                       "VALUES ('TOKEN-PROCESADO', 1, '[]', 25.4, 60)");
+                    dbStmt.executeUpdate("INSERT INTO rutas_generadas (token, movil_numero, chofer_nombre, vehiculo_nombre, clientes_json, distancia_total, tiempo_estimado) " +
+                                       "VALUES ('TOKEN-PROCESADO', 1, 'Sin asignar', 'Sin asignar', '[]', 25.4, 60)");
                     
                     for (int i = 1; i <= 10; i++) {
                         String estado = (i % 4 == 0) ? "rechazado" : "entregado";

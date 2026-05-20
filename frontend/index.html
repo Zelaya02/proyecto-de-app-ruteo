@@ -527,9 +527,9 @@
                         </select>
                     </div>
                     <div>
-                        <label>📍 Punto de inicio</label>
-                        <input type="text" id="puntoInicio" class="control-input" value="Base Central - San Lorenzo">
-                    </div>
+    <label>📍 Punto de inicio (Google Maps URL)</label>
+    <input type="url" id="puntoInicio" class="control-input" placeholder="https://maps.google.com/?q=lat,lon">
+</div>
                     <div>
                         <label>📌 Aplicar reglas</label>
                         <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
@@ -668,6 +668,7 @@
                     <input type="hidden" id="vehiculoId">
                     <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Modelo/Marca</label><input type="text" id="vehiculoNombre" class="control-input" required></div>
                     <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Chapa/Patente</label><input type="text" id="vehiculoChapa" class="control-input"></div>
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Tipo de Vehículo</label><select id="vehiculoTipo" class="control-input"><option value="camion mediano">Camión Mediano</option><option value="grande">Grande</option><option value="motocarga">Motocarga</option><option value="personal">Personal</option></select></div>
                     <button type="submit" class="btn-primary" style="padding:12px 20px;"><i class="fas fa-save"></i> Guardar</button>
                     <button type="button" class="btn-secondary-outline" onclick="resetFormVehiculo()" style="padding:12px;"><i class="fas fa-eraser"></i></button>
                 </form>
@@ -745,7 +746,7 @@
         }
 
         function renderFila(c) {
-            return `<tr><td style="padding-left:20px;"><input type="checkbox" class="checkbox-cliente" data-id="${c.id}" ${c.seleccionado ? 'checked' : ''} onchange="toggleCliente(${c.id})"></td><td><strong>${escapeHtml(c.nombre)}</strong><br><span class="badge-tag"><i class="fas fa-tag"></i> ${c.tipo_cliente || 'minorista/gastronómico'}</span><small style="display:block; color:var(--text-muted-light);">${c.direccion || 'Gran Asunción'}</small></td><td><button class="btn-icon" onclick="editarCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="copiarUrlCliente(${c.id})" title="Copiar URL"><i class="fas fa-link"></i></button><button class="btn-icon" onclick="eliminarCliente(${c.id})" style="color:var(--danger);" title="Eliminar"><i class="fas fa-trash"></i></button></td></tr>`;
+            return `<tr><td style="padding-left:20px;"><input type="checkbox" class="checkbox-cliente" data-id="${c.id}" ${c.seleccionado ? 'checked' : ''} onchange="toggleCliente(${c.id})"></td><td><strong>${escapeHtml(c.nombre)}</strong><br><span class="badge-tag"><i class="fas fa-tag"></i> ${c.tipo_cliente || 'minorista/gastronómico'}</span><small style="display:block; color:var(--text-muted-light);">${c.direccion || 'Gran Asunción'}</small></td><td style="white-space: nowrap;"><div style="display: flex; gap: 8px; align-items: center;"><button class="btn-icon" onclick="editarCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="copiarUrlCliente(${c.id})" title="Copiar URL"><i class="fas fa-link"></i></button><button class="btn-icon" onclick="eliminarCliente(${c.id})" style="color:var(--danger);" title="Eliminar"><i class="fas fa-trash"></i></button></div></td></tr>`;
         }
         
         function copiarUrlCliente(id) { 
@@ -765,7 +766,32 @@
         function actualizarContadores() { document.getElementById('seleccionados').innerText = clientes.filter(c => c.seleccionado).length; document.getElementById('totalClientes').innerText = clientes.length; }
         function escapeHtml(t) { if (!t) return ''; const div = document.createElement('div'); div.textContent = t; return div.innerHTML; }
 
-        function toggleConfig() { let p = document.getElementById('panelConfig'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; }
+        function toggleConfig() {
+    let p = document.getElementById('panelConfig');
+    const wasHidden = p.style.display === 'none' || p.style.display === '';
+    p.style.display = wasHidden ? 'block' : 'none';
+    // If we are closing the panel (it was visible), save config
+    if (!wasHidden) {
+        // Save punto inicio URL
+        const url = document.getElementById('puntoInicio').value.trim();
+        if (url) localStorage.setItem('puntoInicioUrl', url);
+        else localStorage.removeItem('puntoInicioUrl');
+        // Save prioridad
+        const prioridad = document.getElementById('prioridadTipo').value;
+        localStorage.setItem('prioridadTipo', prioridad);
+        // Save usar reglas checkbox
+        const usar = document.getElementById('usarReglas').checked;
+        localStorage.setItem('usarReglas', usar ? '1' : '0');
+    } else {
+        // If opening, load saved values
+        const savedUrl = localStorage.getItem('puntoInicioUrl') || '';
+        document.getElementById('puntoInicio').value = savedUrl;
+        const savedPrioridad = localStorage.getItem('prioridadTipo') || 'ninguna';
+        document.getElementById('prioridadTipo').value = savedPrioridad;
+        const savedUsar = localStorage.getItem('usarReglas');
+        document.getElementById('usarReglas').checked = savedUsar === '1';
+    }
+}
         function toggleDarkMode(isDark) { if (isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); }
         if (localStorage.getItem('darkMode') === 'enabled') { document.body.classList.add('dark-mode'); if (document.getElementById('darkModeToggle')) document.getElementById('darkModeToggle').checked = true; }
 
