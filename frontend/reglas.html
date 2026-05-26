@@ -11,22 +11,25 @@
     <title>NEXO | Configuración de Reglas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
     <style>
         :root {
-            --primary: #1E3A5F;
-            --secondary: #F4A261;
-            --bg: #f8fafc;
-            --white: #ffffff;
-            --text: #0f172a;
-            --border: #e2e8f0;
+            --primary: linear-gradient(135deg, #0B2B40 0%, #1A4B5F 100%);
+            --secondary: #C89D4A;
+            --bg: #C5D7ED;
+            --white: linear-gradient(135deg, rgba(200, 225, 245, 0.92) 0%, rgba(248, 238, 215, 0.88) 100%);
+            --text: #072130;
+            --border: rgba(200, 157, 74, 0.35);
+            --card-shadow: 0 10px 30px rgba(11, 43, 64, 0.08), 0 2px 8px rgba(200, 157, 74, 0.08);
         }
 
         body.dark-mode {
-            --bg: #0f172a;
-            --white: #1e293b;
-            --text: #f1f5f9;
-            --border: #334155;
-            --primary: #38bdf8;
+            --bg: #0B1120;
+            --white: #1A2332;
+            --text: #E2E8F0;
+            --border: #2D3A4E;
+            --primary: linear-gradient(135deg, #0F212E 0%, #1F4A60 100%);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
         }
 
         body {
@@ -35,6 +38,7 @@
             color: var(--text);
             margin: 0;
             padding: 0;
+            transition: background 0.25s, color 0.25s;
         }
 
         .header {
@@ -44,6 +48,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 2.5px solid var(--secondary);
+            box-shadow: 0 4px 20px rgba(11, 43, 64, 0.16);
         }
 
         .container {
@@ -54,10 +60,18 @@
 
         .card {
             background: var(--white);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 30px;
             border-radius: 20px;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            border: 1.5px solid var(--border);
+            box-shadow: var(--card-shadow);
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(11, 43, 64, 0.12);
         }
 
         .regla-item {
@@ -164,8 +178,18 @@
     </div>
 
     <script>
-        const categoriasBasicas = ['supermercado', 'minorista', 'mayorista / distribuidor'];
+        const categoriasBasicas = ['supermercado', 'minorista/gastronómico', 'mayorista / distribuidor'];
         let reglasCargadas = [];
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
         // Helper para peticiones con autenticación
         async function fetchWithAuth(url, options = {}) {
@@ -183,7 +207,7 @@
 
         async function cargarReglas() {
             try {
-                const res = await fetchWithAuth('http://localhost:8080/api/reglas');
+                const res = await fetchWithAuth('/api/reglas');
                 reglasCargadas = await res.json();
                 renderReglas();
             } catch (e) {
@@ -220,20 +244,21 @@
 
             todas.sort((a,b) => a.categoria.localeCompare(b.categoria)).forEach(regla => {
                 const cat = regla.categoria.toLowerCase();
+                const catEscaped = escapeHtml(cat);
                 const div = document.createElement('div');
                 div.className = 'regla-item';
                 div.innerHTML = `
-                    <div class="categoria-name">${cat}</div>
+                    <div class="categoria-name">${catEscaped}</div>
                     <div>
                         <input type="number" value="${regla.limite_por_movil}" min="0" 
-                               id="limit-${cat}" placeholder="Sin límite">
+                               placeholder="Sin límite" style="width:100%;">
                     </div>
                     <div style="text-align: right; display: flex; align-items: center; gap: 10px; justify-content: flex-end;">
                         <label class="switch">
-                            <input type="checkbox" id="active-${cat}" ${regla.activo ? 'checked' : ''}>
+                            <input type="checkbox" ${regla.activo ? 'checked' : ''}>
                             <span class="slider"></span>
                         </label>
-                        <button onclick="eliminarReglaLocal('${cat}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;" title="Eliminar regla">
+                        <button onclick="eliminarReglaLocal('${catEscaped}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;" title="Eliminar regla">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -245,7 +270,7 @@
         async function eliminarReglaLocal(cat) {
             if (confirm(`¿Eliminar la regla para la categoría "${cat}"?`)) {
                 try {
-                    const res = await fetchWithAuth(`http://localhost:8080/api/reglas?categoria=${encodeURIComponent(cat)}`, {
+                    const res = await fetchWithAuth(`/api/reglas?categoria=${encodeURIComponent(cat)}`, {
                         method: 'DELETE'
                     });
                     if (res.ok) {
@@ -259,19 +284,31 @@
         }
 
         async function guardarReglas() {
-            // Recolectar todos los inputs actuales
             const items = document.querySelectorAll('.regla-item');
+            let hasNegative = false;
             const payload = Array.from(items).map(div => {
                 const cat = div.querySelector('.categoria-name').textContent;
+                const limitInput = div.querySelector('input[type="number"]');
+                const activeInput = div.querySelector('input[type="checkbox"]');
+                const limitVal = parseInt(limitInput.value) || 0;
+                if (limitVal < 0) {
+                    hasNegative = true;
+                }
                 return {
-                    categoria: cat,
-                    limite_por_movil: parseInt(document.getElementById(`limit-${cat}`).value) || 0,
-                    activo: document.getElementById(`active-${cat}`).checked
+                    categoria: cat.trim(),
+                    limite_por_movil: limitVal,
+                    activo: activeInput.checked
                 };
             });
 
+            if (hasNegative) {
+                alert("❌ El límite por móvil no puede ser negativo.");
+                return;
+            }
+
+            mostrarLoader("Guardando reglas de ruteo...");
             try {
-                const res = await fetchWithAuth('http://localhost:8080/api/reglas', {
+                const res = await fetchWithAuth('/api/reglas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -282,16 +319,62 @@
                 }
             } catch (e) {
                 alert('❌ Error al guardar las reglas.');
+            } finally {
+                ocultarLoader();
             }
         }
 
-        cargarReglas();
+        function mostrarLoader(texto = "Optimizando rutas... por favor espere") {
+            const overlay = document.getElementById('loadingOverlay');
+            const textEl = document.getElementById('loadingText');
+            if (textEl) textEl.innerText = texto;
+            if (overlay) overlay.classList.add('active');
+        }
+
+        function ocultarLoader() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        // Cargar reglas automáticamente al iniciar la página
+        document.addEventListener('DOMContentLoaded', cargarReglas);
     </script>
+
     <div style="text-align: center; margin-top: 20px;">
         <button class="btn-outline" onclick="addCategoria()" style="border: 2px dashed var(--primary); padding: 10px 20px; border-radius: 10px; cursor: pointer; background: transparent; color: var(--primary); font-weight: 600;">
             <i class="fas fa-plus"></i> Agregar Nueva Categoría
         </button>
     </div>
 
+    <!-- PANTALLA DE CARGA GENERAL (CELESTE & DORADO GLASS CON CAMIÓN ANIMADO) -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader">
+            <div class="truckWrapper">
+                <div class="truckBody">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 198 93" class="trucksvg">
+                        <path stroke-width="3" stroke="#282828" fill="#F83D3D" d="M135 22.5H177.264C178.295 22.5 179.22 23.133 179.594 24.0939L192.33 56.8443C192.442 57.1332 192.5 57.4404 192.5 57.7504V89C192.5 90.3807 191.381 91.5 190 91.5H135C133.619 91.5 132.5 90.3807 132.5 89V25C132.5 23.6193 133.619 22.5 135 22.5Z"></path>
+                        <path stroke-width="3" stroke="#282828" fill="#7D7C7C" d="M146 33.5H181.741C182.779 33.5 183.709 34.1415 184.078 35.112L190.538 52.112C191.16 53.748 189.951 55.5 188.201 55.5H146C144.619 55.5 143.5 54.3807 143.5 53V36C143.5 34.6193 144.619 33.5 146 33.5Z"></path>
+                        <path stroke-width="2" stroke="#282828" fill="#282828" d="M150 65C150 65.39 149.763 65.8656 149.127 66.2893C148.499 66.7083 147.573 67 146.5 67C145.427 67 144.501 66.7083 143.873 66.2893C143.237 65.8656 143 65.39 143 65C143 64.61 143.237 64.1344 143.873 63.7107C144.501 63.2917 145.427 63 146.5 63C147.573 63 148.499 63.2917 149.127 63.7107C149.763 64.1344 150 64.61 150 65Z"></path>
+                        <rect stroke-width="2" stroke="#282828" fill="#FFFCAB" rx="1" height="7" width="5" y="63" x="187"></rect>
+                        <rect stroke-width="2" stroke="#282828" fill="#282828" rx="1" height="11" width="4" y="81" x="193"></rect>
+                        <rect stroke-width="3" stroke="#282828" fill="#DFDFDF" rx="2.5" height="90" width="121" y="1.5" x="6.5"></rect>
+                        <rect stroke-width="2" stroke="#282828" fill="#DFDFDF" rx="2" height="4" width="6" y="84" x="1"></rect>
+                    </svg>
+                </div>
+                <div class="truckTires">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" class="tiresvg">
+                        <circle stroke-width="3" stroke="#282828" fill="#282828" r="13.5" cy="15" cx="15"></circle>
+                        <circle fill="#DFDFDF" r="7" cy="15" cx="15"></circle>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" class="tiresvg">
+                        <circle stroke-width="3" stroke="#282828" fill="#282828" r="13.5" cy="15" cx="15"></circle>
+                        <circle fill="#DFDFDF" r="7" cy="15" cx="15"></circle>
+                    </svg>
+                </div>
+                <div class="road"></div>
+            </div>
+        </div>
+        <div class="loading-text" id="loadingText">Optimizando rutas... por favor espere</div>
+    </div>
 </body>
 </html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        if (!localStorage.getItem('nexo_token')) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <title>NEXO - Gestión de Rutas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1E3A5F;
+            --secondary: #F4A261;
+            --bg: #f0f2f5;
+            --white: #ffffff;
+            --border: #e0e0e0;
+        }
+
+        body.dark-mode {
+            --bg: #121212;
+            --white: #1e1e1e;
+            --border: #333;
+            --primary: #8FA2B0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1E3A5F, #2c4a6e);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+
+        /* Grid Layout */
+        .rutas-grid {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .movil-col {
+            min-width: 350px;
+            max-width: 350px;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            border-top: 5px solid var(--secondary);
+        }
+
+        .movil-header {
+            padding: 15px;
+            background: rgba(30, 58, 95, 0.05);
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .movil-header h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .movil-stats {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .clientes-lista {
+            padding: 10px;
+            flex-grow: 1;
+            min-height: 100px;
+        }
+
+        .cliente-card {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            position: relative;
+            cursor: grab;
+            transition: transform 0.2s;
+        }
+
+        .cliente-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .cliente-card .numero {
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .cliente-card .nombre {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .cliente-card .distancia {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .btn-transferir {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--secondary);
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .btn-transferir:hover {
+            opacity: 1;
+        }
+
+        .movil-footer {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .btn-wa {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Modal Transferencia */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 15px;
+            width: 300px;
+            text-align: center;
+        }
+
+        .modal-content select {
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-color);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .asignacion-panel {
+            padding: 15px;
+            background: #fff8f0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .asignacion-panel select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 13px;
+        }
+
+        .asignacion-panel label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: -5px;
+        }
+
+        .btn-confirmar-todo {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .btn-confirmar-todo:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .badge-asignado {
+            background: #25D366;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>
+            <img src="assets/img/LogoNexo.png" alt="NEXO"
+                style="height: 35px; vertical-align: middle; margin-right: 10px;">
+            Gestión de Rutas
+        </h1>
+        <button onclick="window.close()"
+            style="background:none; border:1px solid white; color:white; padding:5px 15px; border-radius:5px; cursor:pointer;">
+            <i class="fas fa-times"></i> Salir
+        </button>
+    </div>
+
+    <div class="container">
+        <div id="rutasGrid" class="rutas-grid">
+            <!-- Se carga dinámicamente -->
+        </div>
+
+        <div id="panelAcciones" style="text-align: center; margin-top: 30px; display:none;">
+            <div style="margin-bottom: 20px; color: #666;">
+                <p><i class="fas fa-info-circle"></i> Debe asignar un chofer y móvil único a cada ruta antes de finalizar.</p>
+            </div>
+            <button id="btnFinalizarAsignacion" class="btn-confirmar-todo" onclick="guardarAsignaciones()" disabled>
+                <i class="fas fa-check-double"></i> CONFIRMAR ASIGNACIONES Y ACTIVAR RUTAS
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal para Transferir Cliente -->
+    <div id="modalTransfer" class="modal">
+        <div class="modal-content">
+            <h3>Transferir Cliente</h3>
+            <p id="transferClienteNombre" style="font-size: 14px; margin-top: 5px; color: #666;"></p>
+            <select id="selectMovilDestino"></select>
+            <button class="btn-primary" onclick="confirmarTransferencia()">Transferir Ahora</button>
+            <button onclick="cerrarModal()"
+                style="background:none; border:none; color:#666; margin-top:10px; cursor:pointer;">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        let rutasData = JSON.parse(localStorage.getItem('rutasGeneradas') || '{}');
+        let choferesDisponibles = [];
+        let vehiculosDisponibles = [];
+        let asignaciones = {}; // {token: {chofer_id, vehiculo_id}}
+
+        // Initialize Dark Mode from localStorage
+        (function initDarkMode() {
+            const darkMode = localStorage.getItem('darkMode');
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+            }
+        })();
+
+        async function cargarRecursos() {
+            try {
+                const [resC, resV] = await Promise.all([
+                    fetchWithAuth('/api/choferes'),
+                    fetchWithAuth('/api/vehiculos')
+                ]);
+                choferesDisponibles = await resC.json();
+                vehiculosDisponibles = await resV.json();
+                renderRutas();
+            } catch (error) {
+                console.error("Error cargando recursos:", error);
+            }
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('nexo_token');
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            return fetch(url, { ...options, headers });
+        }
+
+        function renderRutas() {
+            const grid = document.getElementById('rutasGrid');
+            grid.innerHTML = '';
+
+            if (!rutasData.moviles) return;
+            document.getElementById('panelAcciones').style.display = 'block';
+
+            rutasData.moviles.forEach((movil, mIdx) => {
+                const col = document.createElement('div');
+                col.className = 'movil-col';
+                
+                const token = movil.token;
+                if (!asignaciones[token]) asignaciones[token] = { 
+                    chofer_id: movil.chofer_id || '', 
+                    vehiculo_id: movil.vehiculo_id || '' 
+                };
+
+                col.innerHTML = `
+                    <div class="movil-header">
+                        <h2>Ruta ${mIdx + 1} <span id="badge-${token}" class="badge-asignado" style="display:none;">Asignado</span></h2>
+                        <div class="movil-stats">
+                            <span><i class="fas fa-box"></i> ${movil.clientes.length}</span>
+                            <span><i class="fas fa-road"></i> ${movil.distancia_total} km</span>
+                        </div>
+                    </div>
+                    
+                    <div class="asignacion-panel">
+                        <label>Chofer Responsable</label>
+                        <select onchange="updateAsignacion('${token}', 'chofer_id', this.value)" class="sel-chofer" data-token="${token}">
+                            <option value="">-- Seleccionar Chofer --</option>
+                            ${choferesDisponibles.map(c => `<option value="${c.id}" ${asignaciones[token].chofer_id == c.id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+                        </select>
+                        
+                        <label>Móvil / Vehículo</label>
+                        <select onchange="updateAsignacion('${token}', 'vehiculo_id', this.value)" class="sel-vehiculo" data-token="${token}">
+                            <option value="">-- Seleccionar Móvil --</option>
+                            ${vehiculosDisponibles.map(v => `<option value="${v.id}" ${asignaciones[token].vehiculo_id == v.id ? 'selected' : ''}>${v.nombre} (${v.chapa})</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="clientes-lista">
+                        ${movil.clientes.map((c, cIdx) => `
+                            <div class="cliente-card">
+                                <span class="numero">${cIdx + 1}</span>
+                                <span class="nombre">${c.nombre}</span>
+                                <span class="distancia">Hacia sig: ${cIdx === movil.clientes.length - 1 ? 'FIN' : c.distancia_siguiente + ' km'}</span>
+                                <button class="btn-transferir" onclick="abrirTransfer(${mIdx}, ${cIdx})" title="Enviar a otro móvil">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="movil-footer" style="display:none;" id="footer-${token}">
+                        <button class="btn-wa" onclick="enviarWhatsApp(${mIdx})">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(col);
+            });
+            validarDisponibilidad();
+        }
+
+        function updateAsignacion(token, field, value) {
+            asignaciones[token][field] = value;
+            validarDisponibilidad();
+        }
+
+        function validarDisponibilidad() {
+            const selectedChoferes = Object.values(asignaciones).map(a => a.chofer_id).filter(id => id !== '');
+            const selectedVehiculos = Object.values(asignaciones).map(a => a.vehiculo_id).filter(id => id !== '');
+
+            // Deshabilitar opciones ya seleccionadas en otros selects
+            document.querySelectorAll('.sel-chofer').forEach(select => {
+                const currentToken = select.dataset.token;
+                const currentValue = select.value;
+                Array.from(select.options).forEach(opt => {
+                    if (opt.value === '') return;
+                    const isUsedElsewhere = selectedChoferes.includes(opt.value) && opt.value !== asignaciones[currentToken].chofer_id;
+                    opt.disabled = isUsedElsewhere;
+                });
+            });
+
+            document.querySelectorAll('.sel-vehiculo').forEach(select => {
+                const currentToken = select.dataset.token;
+                const currentValue = select.value;
+                Array.from(select.options).forEach(opt => {
+                    if (opt.value === '') return;
+                    const isUsedElsewhere = selectedVehiculos.includes(opt.value) && opt.value !== asignaciones[currentToken].vehiculo_id;
+                    opt.disabled = isUsedElsewhere;
+                });
+            });
+
+            // Verificar si todo está asignado
+            const todasAsignadas = rutasData.moviles.every(m => 
+                asignaciones[m.token].chofer_id !== '' && 
+                asignaciones[m.token].vehiculo_id !== ''
+            );
+
+            document.getElementById('btnFinalizarAsignacion').disabled = !todasAsignadas;
+        }
+
+        async function guardarAsignaciones() {
+            const payload = Object.entries(asignaciones).map(([token, data]) => ({
+                token,
+                chofer_id: parseInt(data.chofer_id),
+                vehiculo_id: parseInt(data.vehiculo_id)
+            }));
+
+            try {
+                const res = await fetchWithAuth('/api/asignar-recursos', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert("✅ Recursos asignados correctamente. Rutas activadas.");
+                    document.getElementById('btnFinalizarAsignacion').style.display = 'none';
+                    
+                    // Mostrar badges y footers
+                    Object.keys(asignaciones).forEach(token => {
+                        const badge = document.getElementById(`badge-${token}`);
+                        const footer = document.getElementById(`footer-${token}`);
+                        if (badge) badge.style.display = 'inline';
+                        if (footer) footer.style.display = 'block';
+                    });
+                    
+                    // Deshabilitar selects y ocultar transferencias
+                    document.querySelectorAll('select').forEach(s => s.disabled = true);
+                    document.querySelectorAll('.btn-transferir').forEach(b => b.style.display = 'none');
+                } else {
+                    throw new Error("Error al guardar");
+                }
+            } catch (error) {
+                alert("❌ Error al confirmar: " + error.message);
+            }
+        }
+
+        // --- Lógica de Transferencia ---
+        function abrirTransfer(mIdx, cIdx) {
+            movilOrigenIdx = mIdx;
+            clienteEnTransferencia = cIdx;
+            
+            const cliente = rutasData.moviles[mIdx].clientes[cIdx];
+            const targetMovil = prompt(`Mover cliente "${cliente.nombre}" a la ruta número (1 a ${rutasData.moviles.length}):`);
+            
+            if (targetMovil) {
+                const targetIdx = parseInt(targetMovil) - 1;
+                if (targetIdx >= 0 && targetIdx < rutasData.moviles.length && targetIdx !== mIdx) {
+                    const clienteObj = rutasData.moviles[mIdx].clientes.splice(cIdx, 1)[0];
+                    rutasData.moviles[targetIdx].clientes.push(clienteObj);
+                    
+                    // Recalcular distancias
+                    recalcularRutas();
+                    localStorage.setItem('rutasGeneradas', JSON.stringify(rutasData));
+                    renderRutas();
+                } else if (targetIdx !== mIdx) {
+                    alert("Número de ruta inválido.");
+                }
+            }
+        }
+
+        function recalcularRutas() {
+            rutasData.moviles.forEach(m => {
+                let distTotal = 0;
+                m.clientes.forEach((c, idx) => {
+                    if (idx < m.clientes.length - 1) {
+                        const next = m.clientes[idx + 1];
+                        const d = haversine(c.latitud, c.longitud, next.latitud, next.longitud);
+                        c.distancia_siguiente = Math.round(d * 100.0) / 100.0;
+                        distTotal += d;
+                    } else {
+                        c.distancia_siguiente = 0;
+                    }
+                });
+                m.distancia_total = Math.round(distTotal * 100.0) / 100.0;
+            });
+        }
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function generarMensajeWA(movil) {
+            const token = movil.token;
+            const asig = asignaciones[token] || {};
+            
+            // Buscar nombres de chofer y móvil
+            const choferObj = choferesDisponibles.find(c => c.id == asig.chofer_id);
+            const vehiculoObj = vehiculosDisponibles.find(v => v.id == asig.vehiculo_id);
+            
+            const choferNombre = choferObj ? choferObj.nombre : "S/A";
+            const vehiculoNombre = vehiculoObj ? vehiculoObj.nombre : "S/A";
+
+            const link = `http://${window.location.hostname}:8080/ruta.html?token=${token}`;
+            
+            let msg = "NEXO - RUTA DE ENTREGAS\n";
+            msg += "--------------------------\n";
+            msg += "CHOFER: " + choferNombre + "\n";
+            msg += "MOVIL: " + vehiculoNombre + "\n";
+            msg += "--------------------------\n\n";
+            
+            movil.clientes.forEach((c, index) => {
+                msg += (index + 1) + ". " + c.nombre + "\n";
+                msg += "Ubicacion: https://www.google.com/maps?q=" + c.latitud + "," + c.longitud + "\n";
+                msg += "--------------------------\n\n";
+            });
+            
+            msg += "VER MAPA INTERACTIVO:\n" + link;
+            
+            return encodeURIComponent(msg);
+        }
+
+        function enviarWhatsApp(idx) {
+            const movil = rutasData.moviles[idx];
+            window.open(`https://api.whatsapp.com/send?text=${generarMensajeWA(movil)}`, '_blank');
+        }
+
+        cargarRecursos();
+    </script>
+</body>
+
+</html>

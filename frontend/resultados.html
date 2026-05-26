@@ -9,126 +9,287 @@
             window.location.href = 'login.html';
         }
     </script>
-    <title>NEXO - Gestión de Rutas</title>
+    <title>NEXO - Gestión de Rutas | Dashboard Inteligente</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary: #1E3A5F;
-            --secondary: #F4A261;
-            --bg: #f0f2f5;
-            --white: #ffffff;
-            --border: #e0e0e0;
-        }
-
-        body.dark-mode {
-            --bg: #121212;
-            --white: #1e1e1e;
-            --border: #333;
-            --primary: #8FA2B0;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--primary);
-            transition: all 0.3s ease;
+        :root {
+            --primary-dark: #0B2B40;
+            --primary: #1A4B5F;
+            --secondary: #F5B041;
+            --secondary-dark: #E67E22;
+            --bg-light: #F5F7FB;
+            --card-white: #FFFFFF;
+            --text-dark: #1E2A3A;
+            --text-muted: #5A6E7A;
+            --border-light: #E2E8F0;
+            --success: #27AE60;
+            --danger: #E74C3C;
+            --whatsapp: #25D366;
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --transition: all 0.2s ease;
         }
 
+        body.dark-mode {
+            --bg-light: #0F172A;
+            --card-white: #1E293B;
+            --text-dark: #F1F5F9;
+            --text-muted: #94A3B8;
+            --border-light: #334155;
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Header Moderno */
         .header {
-            background: linear-gradient(135deg, #1E3A5F, #2c4a6e);
-            color: white;
-            padding: 20px 30px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            padding: 20px 32px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: var(--secondary);
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: white;
+        }
+
+        .btn-close-glass {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-close-glass:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* Contenedor principal */
         .container {
-            max-width: 98%;
-            margin: 20px auto;
-            padding: 0 10px;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 28px 24px;
         }
 
-        /* Grid Layout */
+        /* Grid de columnas (rutas) */
         .rutas-grid {
             display: flex;
             overflow-x: auto;
-            gap: 20px;
-            padding-bottom: 20px;
-            align-items: flex-start;
+            gap: 24px;
+            padding-bottom: 24px;
+            align-items: stretch;
+            scroll-behavior: smooth;
         }
 
+        .rutas-grid::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .rutas-grid::-webkit-scrollbar-track {
+            background: var(--border-light);
+            border-radius: 10px;
+        }
+
+        .rutas-grid::-webkit-scrollbar-thumb {
+            background: var(--secondary);
+            border-radius: 10px;
+        }
+
+        /* Tarjeta de móvil */
         .movil-col {
-            min-width: 350px;
-            max-width: 350px;
-            background: var(--white);
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            min-width: 360px;
+            max-width: 360px;
+            background: var(--card-white);
+            border-radius: 28px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
             display: flex;
             flex-direction: column;
-            border-top: 5px solid var(--secondary);
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(2px);
+            animation: fadeSlideUp 0.4s ease-out;
         }
 
+        .movil-col:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-md);
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cabecera de la tarjeta */
         .movil-header {
-            padding: 15px;
-            background: rgba(30, 58, 95, 0.05);
-            border-bottom: 1px solid var(--border);
-            text-align: center;
+            padding: 20px;
+            background: linear-gradient(120deg, rgba(245, 176, 65, 0.08), transparent);
+            border-bottom: 1px solid var(--border-light);
+            border-radius: 28px 28px 0 0;
         }
 
         .movil-header h2 {
-            font-size: 18px;
-            margin-bottom: 5px;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .badge-asignado {
+            background: var(--success);
+            color: white;
+            font-size: 10px;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-weight: 600;
         }
 
         .movil-stats {
-            font-size: 12px;
-            color: #666;
             display: flex;
-            justify-content: center;
-            gap: 10px;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
+        /* Panel de asignación */
+        .asignacion-panel {
+            padding: 16px 20px;
+            background: rgba(245, 176, 65, 0.05);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .asignacion-panel label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: -6px;
+        }
+
+        .asignacion-panel select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            background: var(--card-white);
+            color: var(--text-dark);
+            font-family: 'Inter', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .asignacion-panel select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 2px rgba(245, 176, 65, 0.2);
+        }
+
+        /* Lista de clientes */
         .clientes-lista {
-            padding: 10px;
+            padding: 16px;
             flex-grow: 1;
-            min-height: 100px;
+            max-height: 460px;
+            overflow-y: auto;
         }
 
         .cliente-card {
-            background: var(--bg);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border);
+            background: var(--bg-light);
+            padding: 14px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
             position: relative;
             cursor: grab;
-            transition: transform 0.2s;
+            animation: fadeIn 0.3s;
+        }
+
+        .cliente-card:active {
+            cursor: grabbing;
         }
 
         .cliente-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: translateX(4px);
+            border-left: 3px solid var(--secondary);
+            box-shadow: var(--shadow-sm);
         }
 
         .cliente-card .numero {
             background: var(--primary);
             color: white;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            border-radius: 12px;
             display: inline-flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             font-size: 12px;
-            font-weight: bold;
-            margin-right: 8px;
+            font-weight: 700;
+            margin-right: 10px;
         }
 
         .cliente-card .nombre {
@@ -139,50 +300,98 @@
         .cliente-card .distancia {
             display: block;
             font-size: 11px;
-            color: #888;
-            margin-top: 4px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            margin-left: 36px;
         }
 
         .btn-transferir {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.05);
             border: none;
-            color: var(--secondary);
+            border-radius: 30px;
+            width: 32px;
+            height: 32px;
+            color: var(--secondary-dark);
             cursor: pointer;
-            font-size: 14px;
-            opacity: 0.6;
-            transition: opacity 0.2s;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-transferir:hover {
-            opacity: 1;
+            background: rgba(245, 176, 65, 0.2);
+            transform: scale(1.1);
         }
 
+        /* Footer de tarjeta */
         .movil-footer {
-            padding: 15px;
-            border-top: 1px solid var(--border);
-            text-align: center;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-light);
         }
 
         .btn-wa {
-            background: #25D366;
+            background: var(--whatsapp);
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
+            padding: 10px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 13px;
             width: 100%;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             gap: 8px;
+            cursor: pointer;
+            transition: var(--transition);
         }
 
-        /* Modal Transferencia */
+        .btn-wa:hover {
+            background: #128C7E;
+            transform: scale(1.02);
+        }
+
+        /* Panel acciones finales */
+        .panel-acciones {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: var(--card-white);
+            border-radius: 28px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+            animation: fadeSlideUp 0.5s;
+        }
+
+        .btn-confirmar-todo {
+            background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+            border: none;
+            padding: 14px 32px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+        }
+
+        .btn-confirmar-todo:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-confirmar-todo:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(230, 126, 34, 0.4);
+        }
+
+        /* Modal de transferencia */
         .modal {
             display: none;
             position: fixed;
@@ -190,57 +399,89 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
             justify-content: center;
             align-items: center;
         }
 
         .modal-content {
-            background: var(--white);
-            padding: 25px;
-            border-radius: 15px;
-            width: 300px;
+            background: var(--card-white);
+            border-radius: 32px;
+            padding: 28px;
+            width: 340px;
             text-align: center;
+            animation: fadeSlideUp 0.3s;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 12px;
         }
 
         .modal-content select {
             width: 100%;
-            padding: 10px;
-            margin: 15px 0;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text-color);
+            padding: 12px;
+            margin: 16px 0;
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-light);
         }
 
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
+        /* Estilos de carga */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 3000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+            color: white;
+            font-weight: 600;
         }
 
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            height: 10px;
-            width: 8px;
+        .truck-loader {
+            font-size: 48px;
+            animation: truckPulse 1.2s infinite ease;
         }
 
-        ::-webkit-scrollbar-track {
-            background: #eee;
+        @keyframes truckPulse {
+            0% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: translateX(10px) scale(1.1);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 5px;
-        }
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #bbb;
+            .movil-col {
+                min-width: 320px;
+            }
+
+            .header {
+                padding: 16px;
+            }
         }
     </style>
 </head>
@@ -248,192 +489,378 @@
 <body>
 
     <div class="header">
-        <h1>
-            <img src="assets/img/LogoNexo.png" alt="NEXO"
-                style="height: 35px; vertical-align: middle; margin-right: 10px;">
-            Gestión de Rutas
-        </h1>
-        <button onclick="window.close()"
-            style="background:none; border:1px solid white; color:white; padding:5px 15px; border-radius:5px; cursor:pointer;">
-            <i class="fas fa-times"></i> Salir
+        <div class="logo-area">
+            <div class="logo-icon"><i class="fas fa-route"></i></div>
+            <h1><i class="fas fa-truck-fast" style="color: #F5B041; margin-right: 8px;"></i> NEXO · Gestión de Rutas
+            </h1>
+        </div>
+        <button class="btn-close-glass" onclick="window.close()">
+            <i class="fas fa-times"></i> Cerrar
         </button>
     </div>
 
     <div class="container">
         <div id="rutasGrid" class="rutas-grid">
-            <!-- Se carga dinámicamente -->
+            <!-- Se llena dinámicamente -->
         </div>
 
-        <div style="text-align: center; margin-top: 30px;">
-            <button class="btn-primary" onclick="enviarTodas()"
-                style="width: auto; padding: 15px 30px; font-weight: bold; background: #25D366;">
-                <i class="fab fa-whatsapp"></i> ENVIAR TODAS LAS RUTAS A LOS CHOFERES
+        <div id="panelAcciones" class="panel-acciones" style="display: none;">
+            <div style="margin-bottom: 16px; color: var(--text-muted);">
+                <i class="fas fa-clipboard-list"></i> Asigna un chofer y un móvil a cada ruta para activar las entregas.
+            </div>
+            <button id="btnFinalizarAsignacion" class="btn-confirmar-todo" onclick="guardarAsignaciones()" disabled>
+                <i class="fas fa-check-circle"></i> CONFIRMAR Y ACTIVAR RUTAS
             </button>
         </div>
     </div>
 
-    <!-- Modal para Transferir Cliente -->
+    <!-- Modal Transferencia -->
     <div id="modalTransfer" class="modal">
         <div class="modal-content">
-            <h3>Transferir Cliente</h3>
-            <p id="transferClienteNombre" style="font-size: 14px; margin-top: 5px; color: #666;"></p>
+            <i class="fas fa-exchange-alt" style="font-size: 32px; color: var(--secondary); margin-bottom: 10px;"></i>
+            <h3>Mover Cliente</h3>
+            <p id="transferClienteNombre" style="font-size: 14px; margin-bottom: 12px;"></p>
             <select id="selectMovilDestino"></select>
-            <button class="btn-primary" onclick="confirmarTransferencia()">Transferir Ahora</button>
+            <button class="btn-confirmar-todo" style="width:100%; margin-top: 8px;"
+                onclick="confirmarTransferencia()">Transferir</button>
             <button onclick="cerrarModal()"
-                style="background:none; border:none; color:#666; margin-top:10px; cursor:pointer;">Cancelar</button>
+                style="background:none; border:none; color: var(--text-muted); margin-top: 12px; cursor:pointer;">Cancelar</button>
         </div>
     </div>
 
     <script>
+        // ========== DATOS GLOBALES ==========
         let rutasData = JSON.parse(localStorage.getItem('rutasGeneradas') || '{}');
-        let clienteEnTransferencia = null;
-        let movilOrigenIdx = null;
+        let choferesDisponibles = [];
+        let vehiculosDisponibles = [];
+        let asignaciones = {};          // { token: { chofer_id, vehiculo_id } }
+        let movilOrigenIdx = null, clienteEnTransferencia = null;
 
-        // Initialize Dark Mode from localStorage
-        (function initDarkMode() {
-            const darkMode = localStorage.getItem('darkMode');
-            if (darkMode === 'enabled') {
-                document.body.classList.add('dark-mode');
+        // ========== FUNCIONES DE AUTENTICACIÓN ==========
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('nexo_token');
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            const response = await fetch(url, { ...options, headers });
+            if (response.status === 401) {
+                alert("Sesión expirada. Redirigiendo...");
+                window.location.href = 'login.html';
             }
-        })();
+            return response;
+        }
 
+        // ========== CARGAR RECURSOS ==========
+        async function cargarRecursos() {
+            showLoader(true);
+            try {
+                const [resC, resV] = await Promise.all([
+                    fetchWithAuth('/api/choferes'),
+                    fetchWithAuth('/api/vehiculos')
+                ]);
+                choferesDisponibles = await resC.json();
+                vehiculosDisponibles = await resV.json();
+                renderRutas();
+            } catch (error) {
+                console.error(error);
+                alert("Error al cargar recursos. Usando datos de prueba.");
+                choferesDisponibles = [{ id: 1, nombre: "Carlos Gomez" }, { id: 2, nombre: "Lucia Fernandez" }];
+                vehiculosDisponibles = [{ id: 1, nombre: "Fiat Strada", chapa: "ABC123" }, { id: 2, nombre: "Mercedes Sprinter", chapa: "XYZ789" }];
+                renderRutas();
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // ========== RENDER PRINCIPAL ==========
         function renderRutas() {
             const grid = document.getElementById('rutasGrid');
             grid.innerHTML = '';
 
-            if (!rutasData.moviles) return;
+            if (!rutasData.moviles || rutasData.moviles.length === 0) {
+                grid.innerHTML = '<div style="padding: 40px; text-align: center; width:100%;">⚠️ No hay rutas generadas. Volvé al panel principal.</div>';
+                return;
+            }
 
-            rutasData.moviles.forEach((movil, mIdx) => {
+            document.getElementById('panelAcciones').style.display = 'block';
+
+            rutasData.moviles.forEach((movil, idx) => {
+                const token = movil.token;
+                if (!asignaciones[token]) {
+                    asignaciones[token] = {
+                        chofer_id: movil.chofer_id || '',
+                        vehiculo_id: movil.vehiculo_id || ''
+                    };
+                }
+
                 const col = document.createElement('div');
                 col.className = 'movil-col';
-
+                col.setAttribute('data-token', token);
                 col.innerHTML = `
-                    <div class="movil-header">
-                        <h2>Móvil #${movil.movil}</h2>
-                        <div class="movil-stats">
-                            <span><i class="fas fa-box"></i> ${movil.clientes.length}</span>
-                            <span><i class="fas fa-road"></i> ${movil.distancia_total} km</span>
+                <div class="movil-header">
+                    <h2>
+                        Móvil ${idx + 1}
+                        <span id="badge-${token}" class="badge-asignado" style="display:${asignaciones[token].chofer_id && asignaciones[token].vehiculo_id ? 'inline-block' : 'none'}">✓ Asignado</span>
+                    </h2>
+                    <div class="movil-stats">
+                        <span><i class="fas fa-box"></i> ${movil.clientes.length} clientes</span>
+                        <span><i class="fas fa-road"></i> ${movil.distancia_total} km</span>
+                    </div>
+                </div>
+                <div class="asignacion-panel">
+                    <label><i class="fas fa-user-tie"></i> Chofer</label>
+                    <select class="sel-chofer" data-token="${token}" onchange="updateAsignacion('${token}', 'chofer_id', this.value)">
+                        <option value="">-- Seleccionar --</option>
+                        ${choferesDisponibles.map(c => `<option value="${c.id}" ${asignaciones[token].chofer_id == c.id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+                    </select>
+                    <label><i class="fas fa-truck"></i> Vehículo</label>
+                    <select class="sel-vehiculo" data-token="${token}" onchange="updateAsignacion('${token}', 'vehiculo_id', this.value)">
+                        <option value="">-- Seleccionar --</option>
+                        ${vehiculosDisponibles.map(v => `<option value="${v.id}" ${asignaciones[token].vehiculo_id == v.id ? 'selected' : ''}>${v.nombre} (${v.chapa})</option>`).join('')}
+                    </select>
+                </div>
+                <div class="clientes-lista" id="clientesList-${token}">
+                    ${movil.clientes.map((c, cidx) => `
+                        <div class="cliente-card" draggable="true" data-movil-idx="${idx}" data-cliente-idx="${cidx}">
+                            <span class="numero">${cidx + 1}</span>
+                            <span class="nombre">${escapeHtml(c.nombre)}</span>
+                            <span class="distancia"><i class="fas fa-arrow-right"></i> ${cidx === movil.clientes.length - 1 ? 'Destino final' : c.distancia_siguiente + ' km al siguiente'}</span>
+                            <button class="btn-transferir" onclick="abrirTransfer(${idx}, ${cidx})" title="Mover a otro móvil"><i class="fas fa-arrows-alt"></i></button>
                         </div>
-                    </div>
-                    <div class="clientes-lista">
-                        ${movil.clientes.map((c, cIdx) => `
-                            <div class="cliente-card">
-                                <span class="numero">${cIdx + 1}</span>
-                                <span class="nombre">${c.nombre}</span>
-                                <span class="distancia">Hacia sig: ${cIdx === movil.clientes.length - 1 ? 'FIN' : c.distancia_siguiente + ' km'}</span>
-                                <button class="btn-transferir" onclick="abrirTransfer(${mIdx}, ${cIdx})" title="Enviar a otro móvil">
-                                    <i class="fas fa-exchange-alt"></i>
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="movil-footer">
-                        <button class="btn-wa" onclick="enviarWhatsApp(${mIdx})">
-                            <i class="fab fa-whatsapp"></i> WhatsApp
-                        </button>
-                    </div>
-                `;
+                    `).join('')}
+                </div>
+                <div class="movil-footer" id="footer-${token}" style="display: ${asignaciones[token].chofer_id && asignaciones[token].vehiculo_id ? 'block' : 'none'};">
+                    <button class="btn-wa" onclick="enviarWhatsApp(${idx})"><i class="fab fa-whatsapp"></i> Enviar ruta por WhatsApp</button>
+                </div>
+            `;
                 grid.appendChild(col);
+            });
+            actualizarSelectsDisponibilidad();
+            habilitarBotonConfirmacion();
+            actualizarBotonesWhatsApp();
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ========== ASIGNACIÓN Y VALIDACIÓN ==========
+        let rutasActivas = false;
+
+        function updateAsignacion(token, field, value) {
+            asignaciones[token][field] = value;
+            // Actualizar badges
+            const badge = document.getElementById(`badge-${token}`);
+            const isComplete = asignaciones[token].chofer_id && asignaciones[token].vehiculo_id;
+            if (badge) badge.style.display = isComplete ? 'inline-block' : 'none';
+            
+            actualizarSelectsDisponibilidad();
+            habilitarBotonConfirmacion();
+            actualizarBotonesWhatsApp();
+        }
+
+        function actualizarBotonesWhatsApp() {
+            document.querySelectorAll('.movil-footer').forEach(footer => {
+                const token = footer.id.replace('footer-', '');
+                const isCompleteForThis = asignaciones[token]?.chofer_id && asignaciones[token]?.vehiculo_id;
+                
+                // Mostrar el footer SOLO si la ruta está completa Y el usuario ya confirmó (rutasActivas = true)
+                footer.style.display = (isCompleteForThis && rutasActivas) ? 'block' : 'none';
+                
+                const btn = footer.querySelector('.btn-wa');
+                if (btn) {
+                    btn.disabled = !rutasActivas;
+                }
             });
         }
 
-        function abrirTransfer(mIdx, cIdx) {
-            movilOrigenIdx = mIdx;
-            clienteEnTransferencia = rutasData.moviles[mIdx].clientes[cIdx];
+        function actualizarSelectsDisponibilidad() {
+            const selectedChoferes = Object.values(asignaciones).map(a => a.chofer_id).filter(id => id !== '');
+            const selectedVehiculos = Object.values(asignaciones).map(a => a.vehiculo_id).filter(id => id !== '');
 
-            document.getElementById('transferClienteNombre').textContent = clienteEnTransferencia.nombre;
+            document.querySelectorAll('.sel-chofer').forEach(select => {
+                const token = select.dataset.token;
+                Array.from(select.options).forEach(opt => {
+                    if (opt.value === '') return;
+                    const usedElsewhere = selectedChoferes.includes(opt.value) && opt.value != asignaciones[token]?.chofer_id;
+                    opt.disabled = usedElsewhere;
+                });
+            });
+
+            document.querySelectorAll('.sel-vehiculo').forEach(select => {
+                const token = select.dataset.token;
+                Array.from(select.options).forEach(opt => {
+                    if (opt.value === '') return;
+                    const usedElsewhere = selectedVehiculos.includes(opt.value) && opt.value != asignaciones[token]?.vehiculo_id;
+                    opt.disabled = usedElsewhere;
+                });
+            });
+        }
+
+        function habilitarBotonConfirmacion() {
+            const todasAsignadas = rutasData.moviles.every(m =>
+                asignaciones[m.token]?.chofer_id && asignaciones[m.token]?.vehiculo_id
+            );
+            const btn = document.getElementById('btnFinalizarAsignacion');
+            if (btn) btn.disabled = !todasAsignadas;
+        }
+
+        // ========== GUARDAR ASIGNACIONES ==========
+        async function guardarAsignaciones() {
+            showLoader(true);
+            const payload = Object.entries(asignaciones).map(([token, data]) => {
+                const movil = rutasData.moviles.find(m => m.token === token);
+                return {
+                    token,
+                    chofer_id: parseInt(data.chofer_id),
+                    vehiculo_id: parseInt(data.vehiculo_id),
+                    clientes: movil ? movil.clientes : [],
+                    distancia_total: movil ? movil.distancia_total : 0,
+                    tiempo_estimado: movil ? movil.tiempo_estimado : 0
+                };
+            });
+            try {
+                const response = await fetchWithAuth('/api/asignar-recursos', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    alert("✅ Asignaciones guardadas. Las rutas están activas.");
+                    document.getElementById('btnFinalizarAsignacion').disabled = true;
+                    // Deshabilitar selects y transferencias
+                    document.querySelectorAll('.sel-chofer, .sel-vehiculo').forEach(s => s.disabled = true);
+                    document.querySelectorAll('.btn-transferir').forEach(b => b.style.display = 'none');
+                    
+                    // Activar botones de WhatsApp
+                    rutasActivas = true;
+                    actualizarBotonesWhatsApp();
+                } else {
+                    throw new Error("Error al guardar");
+                }
+            } catch (error) {
+                alert("❌ No se pudo confirmar: " + error.message);
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // ========== TRANSFERENCIA DE CLIENTES ==========
+        function abrirTransfer(movilIdx, clienteIdx) {
+            movilOrigenIdx = movilIdx;
+            clienteEnTransferencia = clienteIdx;
+            const cliente = rutasData.moviles[movilIdx].clientes[clienteIdx];
+            document.getElementById('transferClienteNombre').innerText = cliente.nombre;
 
             const select = document.getElementById('selectMovilDestino');
             select.innerHTML = '';
-            rutasData.moviles.forEach((m, idx) => {
-                if (idx !== mIdx) {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.textContent = `Móvil #${m.movil}`;
-                    select.appendChild(opt);
+            rutasData.moviles.forEach((_, idx) => {
+                if (idx !== movilOrigenIdx) {
+                    const option = document.createElement('option');
+                    option.value = idx;
+                    option.textContent = `Móvil ${idx + 1}`;
+                    select.appendChild(option);
                 }
             });
-
             document.getElementById('modalTransfer').style.display = 'flex';
         }
 
-        function cerrarModal() {
-            document.getElementById('modalTransfer').style.display = 'none';
-        }
-
         function confirmarTransferencia() {
-            const destIdx = parseInt(document.getElementById('selectMovilDestino').value);
+            const destinoIdx = parseInt(document.getElementById('selectMovilDestino').value);
+            if (isNaN(destinoIdx)) return;
 
-            // Remover de origen
-            rutasData.moviles[movilOrigenIdx].clientes = rutasData.moviles[movilOrigenIdx].clientes.filter(c => c.id !== clienteEnTransferencia.id);
-
-            // Agregar a destino
-            rutasData.moviles[destIdx].clientes.push(clienteEnTransferencia);
-
-            // Recalcular estadísticas básicas (opcional, simplificado)
-            recalcularRutas();
-
-            cerrarModal();
-            renderRutas();
-
-            // Guardar cambios localmente
+            const cliente = rutasData.moviles[movilOrigenIdx].clientes.splice(clienteEnTransferencia, 1)[0];
+            rutasData.moviles[destinoIdx].clientes.push(cliente);
+            recalcularDistancias();
             localStorage.setItem('rutasGeneradas', JSON.stringify(rutasData));
+            renderRutas();
+            cerrarModal();
         }
 
-        function recalcularRutas() {
-            rutasData.moviles.forEach(m => {
-                let distTotal = 0;
-                m.clientes.forEach((c, idx) => {
-                    if (idx < m.clientes.length - 1) {
-                        const next = m.clientes[idx + 1];
-                        const d = haversine(c.latitud, c.longitud, next.latitud, next.longitud);
-                        c.distancia_siguiente = Math.round(d * 100.0) / 100.0;
-                        distTotal += d;
+        function recalcularDistancias() {
+            rutasData.moviles.forEach(movil => {
+                let totalDist = 0;
+                movil.clientes.forEach((c, idx) => {
+                    if (idx < movil.clientes.length - 1) {
+                        const next = movil.clientes[idx + 1];
+                        const dist = haversine(c.latitud, c.longitud, next.latitud, next.longitud);
+                        c.distancia_siguiente = Math.round(dist * 100) / 100;
+                        totalDist += dist;
                     } else {
                         c.distancia_siguiente = 0;
                     }
                 });
-                m.distancia_total = Math.round(distTotal * 100.0) / 100.0;
+                movil.distancia_total = Math.round(totalDist * 100) / 100;
             });
         }
 
         function haversine(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radio de la Tierra en km
+            const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            const a = Math.sin(dLat / 2) ** 2 +
                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+                Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        function generarMensajeWA(movil) {
-            const link = `http://localhost:8080/ruta.html?token=${movil.token}`;
+        function cerrarModal() {
+            document.getElementById('modalTransfer').style.display = 'none';
+            movilOrigenIdx = null;
+            clienteEnTransferencia = null;
+        }
 
-            let listaClientesTxt = "";
-            movil.clientes.forEach((c, index) => {
-                const mapsUrl = `https://www.google.com/maps?q=${c.latitud},${c.longitud}`;
-                listaClientesTxt += `${index + 1}. *${c.nombre}*\n📍 ${mapsUrl}\n\n`;
+        // ========== WHATSAPP ==========
+        function enviarWhatsApp(movilIdx) {
+            const movil = rutasData.moviles[movilIdx];
+            const token = movil.token;
+            const asig = asignaciones[token] || {};
+            const chofer = choferesDisponibles.find(c => c.id == asig.chofer_id);
+            const vehiculo = vehiculosDisponibles.find(v => v.id == asig.vehiculo_id);
+
+            let mensaje = `🚚 *NEXO - RUTA ${movilIdx + 1}* 🚚\n`;
+            mensaje += `👤 Chofer: ${chofer?.nombre || 'No asignado'}\n`;
+            mensaje += `🚛 Móvil: ${vehiculo?.nombre || 'No asignado'} (${vehiculo?.chapa || ''})\n`;
+            mensaje += `📦 Clientes: ${movil.clientes.length}\n`;
+            mensaje += `📍 Distancia total: ${movil.distancia_total} km\n`;
+            mensaje += `─────────────────────\n\n`;
+            movil.clientes.forEach((c, i) => {
+                mensaje += `${i + 1}. ${c.nombre}\n`;
+                mensaje += `   📍 https://maps.google.com/?q=${c.latitud},${c.longitud}\n\n`;
             });
-
-            return encodeURIComponent(`📦 *NEXO - Tu ruta de hoy* 📦\n\n🚚 *Móvil ${movil.movil}*\n📋 Total Clientes: ${movil.clientes.length}\n\n${listaClientesTxt}🔗 *Acceder al Sistema de Chofer:* ${link}`);
+            mensaje += `🔗 Seguimiento en tiempo real: http://${window.location.hostname}:8080/ruta.html?token=${token}`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`, '_blank');
         }
 
-        function enviarWhatsApp(idx) {
-            const movil = rutasData.moviles[idx];
-            window.open(`https://api.whatsapp.com/send?text=${generarMensajeWA(movil)}`, '_blank');
+        // ========== LOADER ==========
+        function showLoader(show) {
+            let loader = document.getElementById('globalLoader');
+            if (show) {
+                if (!loader) {
+                    loader = document.createElement('div');
+                    loader.id = 'globalLoader';
+                    loader.className = 'loader-overlay';
+                    loader.innerHTML = `<div class="truck-loader"><i class="fas fa-truck-fast"></i></div><div>Cargando rutas inteligentes...</div>`;
+                    document.body.appendChild(loader);
+                }
+            } else {
+                if (loader) loader.remove();
+            }
         }
 
-        function enviarTodas() {
-            rutasData.moviles.forEach((m, idx) => {
-                setTimeout(() => {
-                    window.open(`https://api.whatsapp.com/send?text=${generarMensajeWA(m)}`, '_blank');
-                }, idx * 500);
-            });
-        }
+        // ========== DARK MODE ==========
+        (function initDarkMode() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+            }
+        })();
 
-        renderRutas();
+        // ========== INICIO ==========
+        cargarRecursos();
     </script>
 </body>
 

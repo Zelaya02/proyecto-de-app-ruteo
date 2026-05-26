@@ -10,7 +10,13 @@
         }
     </script>
     <title>NEXO - Panel de Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -18,241 +24,431 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
-        }
-
+        /* ========== PALETA REFINADA Y ELEGANTE (CELESTE & DORADO) ========== */
         :root {
-            --bg-color: #f0f2f5;
-            --text-color: #1E3A5F;
-            --primary: #1E3A5F;
-            --secondary: #F4A261;
-            --card-bg: white;
-            --header-gradient: linear-gradient(135deg, #1E3A5F, #2c4a6e);
-            --border-color: #e0e0e0;
-            --input-bg: white;
-            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            --group-header-bg: #f8f9fa;
-            --group-content-bg: white;
-            --group-text-color: #1E3A5F;
+            --bg-light: #C5D7ED;
+            --card-light: linear-gradient(135deg, rgba(200, 225, 245, 0.92) 0%, rgba(248, 238, 215, 0.88) 100%);
+            --card-shadow: 0 10px 30px rgba(11, 43, 64, 0.08), 0 2px 8px rgba(200, 157, 74, 0.08);
+            --card-border: 1.5px solid rgba(200, 157, 74, 0.35);
+            --text-light: #072130;
+            --text-muted-light: #2A485C;
+            --border-light: rgba(200, 157, 74, 0.3);
+            --primary-dark: #0B2B40;
+            --primary-main: #1A4B5F;
+            --accent-gold: #C89D4A;
+            --accent-orange: #E67E22;
+            --success: #2E7D32;
+            --danger: #C62828;
+            --warning: #F57C00;
+            
+            /* Additions for Light Theme Depth */
+            --input-bg: rgba(225, 238, 248, 0.75);
+            --table-th-bg: linear-gradient(90deg, rgba(26, 75, 95, 0.12) 0%, rgba(200, 157, 74, 0.08) 100%);
+            --summary-bg: linear-gradient(90deg, rgba(200, 225, 245, 0.85) 0%, rgba(248, 238, 215, 0.8) 100%);
+            --summary-hover: linear-gradient(90deg, rgba(200, 157, 74, 0.18) 0%, rgba(26, 75, 95, 0.1) 100%);
+            --summary-border: 1.5px solid rgba(200, 157, 74, 0.35);
+            --counter-bg: linear-gradient(135deg, rgba(200, 157, 74, 0.18) 0%, rgba(200, 225, 245, 0.15) 100%);
+            --counter-border: 1.5px solid rgba(200, 157, 74, 0.45);
         }
 
         body.dark-mode {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --primary: #38bdf8;
-            --secondary: #F4A261;
-            --card-bg: #1e1e1e;
-            --header-gradient: linear-gradient(135deg, #0a192f, #112240);
-            --border-color: #333;
-            --input-bg: #2d2d2d;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            --group-header-bg: #b3e5fc;
-            --group-content-bg: #e1f5fe;
-            --group-text-color: #01579b;
+            --bg-light: #0B1120;
+            --card-light: #1A2332;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+            --card-border: 1px solid #2D3A4E;
+            --text-light: #E2E8F0;
+            --text-muted-light: #94A3B8;
+            --border-light: #2D3A4E;
+            --primary-dark: #0F212E;
+            --primary-main: #1F4A60;
+            --accent-gold: #C89D4A;
+            --accent-orange: #D45B0A;
+            
+            /* Additions for Dark Theme */
+            --input-bg: #0F172A;
+            --table-th-bg: rgba(255, 255, 255, 0.02);
+            --summary-bg: rgba(255, 255, 255, 0.03);
+            --summary-hover: rgba(255, 255, 255, 0.06);
+            --summary-border: 1px solid #2D3A4E;
+            --counter-bg: rgba(200, 157, 74, 0.08);
+            --counter-border: 1px solid rgba(200, 157, 74, 0.25);
         }
 
-        /* Header */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-light);
+            transition: background 0.25s, color 0.25s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes truckMove {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        /* Header refinado */
         .header {
-            background: var(--header-gradient);
-            color: white;
-            padding: 20px 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-main) 100%);
+            padding: 20px 40px;
+            box-shadow: 0 4px 20px rgba(11, 43, 64, 0.16);
+            border-bottom: 2.5px solid var(--accent-gold);
         }
 
-        .header h1 {
-            font-size: 28px;
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 12px;
-        }
-
-        .header h1 i {
-            font-size: 32px;
-            color: #F4A261;
-        }
-
-        .header p {
-            margin-top: 8px;
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        /* Contenedor principal */
-        .container {
-            max-width: 95%;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-
-        /* Panel de controles */
-        .controles {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-            display: flex;
             flex-wrap: wrap;
             gap: 20px;
-            align-items: center;
-            justify-content: space-between;
         }
 
-        .busqueda {
-            flex: 2;
-            min-width: 250px;
-        }
-
-        .busqueda label {
-            font-weight: 600;
-            color: #1E3A5F;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        .busqueda input {
-            width: 100%;
-            padding: 10px 15px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 14px;
-            background: var(--input-bg);
-            color: var(--text-color);
-            transition: all 0.3s;
-        }
-
-        .busqueda input:focus {
-            outline: none;
-            border-color: #F4A261;
-        }
-
-        .contadores {
-            background: #FFF3E0;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .contadores span {
-            font-size: 24px;
-            font-weight: bold;
-            color: #F4A261;
-        }
-
-        .botones-accion {
+        .logo-area {
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: var(--accent-gold);
+            transition: transform 0.3s;
+        }
+
+        .logo-area:hover .logo-icon {
+            transform: rotate(4deg) scale(1.02);
+        }
+
+        .logo-area h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.3px;
+        }
+
+        .logo-area p {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 18px;
+            border-radius: 36px;
+            color: white;
+            font-weight: 500;
+            font-size: 13px;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            transition: all 0.2s;
         }
 
-        .btn-primary {
-            background: #F4A261;
-            color: #1E3A5F;
-        }
-
-        .btn-primary:hover {
-            background: #e8852a;
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.2);
             transform: translateY(-2px);
         }
 
-        .btn-secondary {
-            background: #1E3A5F;
+        .btn-logout {
+            background: rgba(200, 60, 40, 0.8);
+            border-color: rgba(255, 80, 60, 0.3);
+        }
+
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 28px 32px;
+        }
+
+        /* Tarjetas más elegantes */
+        .card-glass {
+            background: var(--card-light);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 28px;
+            padding: 20px 28px;
+            margin-bottom: 24px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.25s ease;
+            border: var(--card-border);
+        }
+
+        .card-glass:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(11, 43, 64, 0.08);
+        }
+        
+        body.dark-mode .card-glass:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 24px;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: var(--text-muted-light);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .control-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border-light);
+            border-radius: 20px;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-light);
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .control-input:focus {
+            outline: none;
+            border-color: var(--primary-main);
+            box-shadow: 0 0 0 3px rgba(26, 75, 95, 0.15);
+            background: #FFFFFF;
+        }
+
+        .counter-card {
+            background: var(--counter-bg);
+            border-radius: 20px;
+            padding: 8px 20px;
+            text-align: center;
+            min-width: 180px;
+            border: var(--counter-border);
+            transition: all 0.25s ease;
+        }
+
+        .counter-number {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent-gold);
+            line-height: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(115deg, var(--accent-gold), var(--accent-orange));
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 700;
             color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .btn-secondary:hover {
-            background: #2c4a6e;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
         }
 
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #1E3A5F;
-            color: #1E3A5F;
+        .btn-secondary-outline {
+            background: var(--card-light);
+            border: 1.5px solid var(--border-light);
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
         }
 
-        .btn-outline:hover {
-            background: #1E3A5F;
+        .btn-secondary-outline:hover {
+            background: var(--primary-main);
+            border-color: var(--primary-main);
             color: white;
+            box-shadow: 0 4px 10px rgba(26, 75, 95, 0.15);
         }
 
         /* Tabla */
-        .tabla-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            overflow-x: auto;
-            box-shadow: var(--shadow);
+        .table-wrapper {
+            background: var(--card-light);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 28px;
+            overflow: auto;
+            border: var(--card-border);
+            box-shadow: var(--card-shadow);
         }
 
-        table {
+        .client-table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        th {
-            background: #1E3A5F;
-            color: white;
-            padding: 15px;
-            text-align: left;
+        .client-table th {
+            background: var(--table-th-bg);
+            padding: 16px 20px;
+            font-size: 13px;
             font-weight: 600;
+            text-align: left;
+            color: var(--text-muted-light);
+            border-bottom: 1.5px solid var(--border-light);
         }
 
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--border-color);
+        .client-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-light);
         }
 
-        tr:hover {
-            background: var(--bg-color);
-            filter: brightness(1.05);
+        .badge-tag {
+            background: rgba(200, 157, 74, 0.15);
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--accent-gold);
         }
 
-        .checkbox-cliente {
-            width: 20px;
-            height: 20px;
+        .btn-icon {
+            background: transparent;
+            border: none;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 40px;
+            color: var(--text-muted-light);
+            transition: 0.2s;
         }
 
-        .badge {
-            background: #c40505;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
+        .btn-icon:hover {
+            background: rgba(200, 157, 74, 0.15);
+            color: var(--accent-gold);
         }
 
-        /* Footer */
+        details summary {
+            background: var(--summary-bg);
+            padding: 14px 20px;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            border-radius: 20px;
+            border: var(--summary-border);
+            transition: all 0.2s ease;
+        }
+
+        details summary:hover {
+            background: var(--summary-hover);
+            box-shadow: 0 4px 12px rgba(200, 157, 74, 0.08);
+        }
+
+        /* Modales */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-container {
+            background: var(--card-light);
+            border-radius: 36px;
+            padding: 32px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow: auto;
+            border: 1px solid var(--border-light);
+        }
+
         .footer {
             text-align: center;
-            padding: 20px;
-            color: #666;
+            margin-top: 40px;
+            padding: 24px;
             font-size: 12px;
+            color: var(--text-muted-light);
+            border-top: 1px solid var(--border-light);
+        }
+
+        .truck-loader {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            animation: truckMove 1s ease-in-out infinite;
+        }
+
+        @keyframes truckMove {
+            0% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(8px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
         }
 
         @media (max-width: 768px) {
-            .controles {
-                flex-direction: column;
-                align-items: stretch;
+            .main-container {
+                padding: 16px;
             }
 
-            th,
-            td {
-                font-size: 12px;
-                padding: 8px;
+            .controls-row {
+                flex-direction: column;
             }
         }
     </style>
@@ -260,694 +456,547 @@
 
 <body>
 
-    <div class="header"
-        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
-        <div>
-            <h1 style="display:flex; align-items:center;">
-                <img src="assets/img/LogoNexo.png" alt="NEXO"
-                    style="height: 40px; margin-right: 15px; border-radius: 8px;">
-                Ruteo Inteligente
-            </h1>
-            <p>Gestión de rutas para PyMEs de reparto - Gran Asunción</p>
-        </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-            <button class="btn btn-outline" onclick="window.location.href='estadisticas.html'"
-                style="color:white; border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.1);">
-                <i class="fas fa-chart-bar"></i> Estadísticas
-            </button>
-            <button class="btn btn-outline" onclick="window.location.href='seguimiento.html'"
-                style="color:#2ecc71; border-color:rgba(46, 204, 113, 0.3); background:rgba(46, 204, 113, 0.1);">
-                <i class="fas fa-eye"></i> Estado de Entregas
-            </button>
-            <button class="btn btn-outline" onclick="toggleConfig()"
-                style="color:white; border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.1);">
-                <i class="fas fa-cog"></i> Configuraciones
-            </button>
-            <button class="btn btn-secondary" onclick="logout()" style="background:#e74c3c;">
-                <i class="fas fa-sign-out-alt"></i> Salir
-            </button>
-            <a href="https://www.google.com/maps/d/viewer?mid=1QD8ZONKwo2HGKci8IL_QoxaHPZf2tkI" target="_blank"
-                class="btn btn-secondary" style="text-decoration:none;">
-                <i class="fas fa-map-marked-alt"></i> Ver Mapa
-            </a>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fas fa-truck-fast"></i></div>
+                <div>
+                    <h1>NEXO</h1>
+                    <p>Ruteo Inteligente · Logística Eficiente</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-glass" onclick="window.location.href='estadisticas.html'"><i
+                        class="fas fa-chart-line"></i> Estadísticas</button>
+                <button class="btn-glass" onclick="window.location.href='seguimiento.html'"><i
+                        class="fas fa-check-circle"></i> Estado Entregas</button>
+                <button class="btn-glass" onclick="toggleConfig()"><i class="fas fa-sliders-h"></i> Configurar</button>
+                <button class="btn-glass" onclick="abrirModalKml()"><i class="fas fa-exchange-alt"></i>
+                    Importar/Exportar KML</button>
+                <a href="https://www.google.com/maps/d/viewer?mid=1QD8ZONKwo2HGKci8IL_QoxaHPZf2tkI" target="_blank"
+                    class="btn-glass"><i class="fas fa-globe-americas"></i> Ver Mapa</a>
+                <button class="btn-glass btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i>
+                    Salir</button>
+            </div>
         </div>
     </div>
 
-    <div class="container">
-        <!-- Panel de controles -->
-        <div class="controles">
-            <div class="busqueda">
-                <label><i class="fas fa-search"></i> Buscar cliente</label>
-                <input type="text" id="buscador" placeholder="Escribe el nombre...">
+    <div class="main-container">
+        <div class="card-glass fade-in">
+            <div class="controls-row">
+                <div class="control-group" style="flex:2;">
+                    <label><i class="fas fa-search"></i> Buscar cliente</label>
+                    <input type="text" id="buscador" class="control-input" placeholder="Escribí el nombre...">
+                </div>
+                <div class="counter-card">
+                    <div class="counter-number" id="seleccionados">0</div>
+                    <div>clientes seleccionados</div>
+                    <div style="font-size:11px;" id="totalClientes">0 total</div>
+                </div>
+                <div>
+                    <button class="btn-secondary-outline" onclick="seleccionarTodos(true)"><i
+                            class="fas fa-check-double"></i> Todos</button>
+                    <button class="btn-secondary-outline" onclick="seleccionarTodos(false)" style="margin-left:8px;"><i
+                            class="fas fa-times"></i> Limpiar</button>
+                </div>
+                <div class="control-group" style="max-width:180px;">
+                    <label><i class="fas fa-truck"></i> Móviles</label>
+                    <input type="number" id="numMoviles" value="3" min="1" max="20" class="control-input">
+                </div>
+                <button class="btn-primary" id="btnGenerar" onclick="generarRutas()"><i class="fas fa-route"></i>
+                    Generar rutas</button>
             </div>
+        </div>
 
-            <div class="contadores">
-                <i class="fas fa-users"></i>
-                <span id="totalClientes">0</span> total |
-                <i class="fas fa-check-square"></i>
-                <span id="seleccionados">0</span> seleccionados
-            </div>
-
-            <div class="botones-accion">
-                <button class="btn btn-secondary" onclick="abrirModalCliente()">
-                    <i class="fas fa-plus"></i> Añadir Cliente
-                </button>
-                <details style="position:relative; z-index:100;">
-                    <summary class="btn btn-outline" style="list-style:none; cursor:pointer;">
-                        <i class="fas fa-filter"></i> Filtros rápidos <i class="fas fa-chevron-down"
-                            style="font-size:10px; margin-left:5px;"></i>
-                    </summary>
-                    <div
-                        style="position:absolute; top:100%; right:0; background:white; border:1px solid #ddd; padding:10px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:8px; min-width:220px; margin-top:5px;">
-                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox"
-                                onchange="filtrarPorTipo('minorista/gastronómico', this.checked)"> Minorista /
-                            Gastronómico</label>
-                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox"
-                                onchange="filtrarPorTipo('supermercado', this.checked)"> Supermercados</label>
-                        <label style="cursor:pointer; display:flex; gap:8px; align-items:center;"><input type="checkbox"
-                                 onchange="filtrarPorTipo('mayorista / distribuidor', this.checked)"> Mayoristas / Distribuidores</label>
-                        <hr style="border:none; border-top:1px solid #eee;">
-                        <button class="btn btn-outline" style="padding: 4px 8px; font-size:12px; width:100%;"
-                            onclick="document.querySelectorAll('details input[type=checkbox]').forEach(cb => { cb.checked = false; filtrarPorTipo('', false); }); tiposFiltro.clear(); aplicarFiltros();">Limpiar
-                            filtros</button>
+        <div id="panelConfig" style="display:none;">
+            <div class="card-glass" style="border-left:4px solid var(--accent-gold);">
+                <div style="display:flex; justify-content:space-between;">
+                    <h3><i class="fas fa-cog"></i> Ajustes</h3>
+                    <label style="display:flex; align-items:center; gap:8px;">🌙 Modo oscuro <input type="checkbox"
+                            id="darkModeToggle" onchange="toggleDarkMode(this.checked)"></label>
+                </div>
+                <hr style="margin:12px 0; border-color:var(--border-light);">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px;">
+                    <div>
+                        <label>🚀 Prioridad</label>
+                        <select id="prioridadTipo" class="control-input">
+                            <option value="ninguna">Sin prioridad</option>
+                            <option value="supermercado">Supermercados primero</option>
+                            <option value="mayorista / distribuidor">Mayoristas primero</option>
+                            <option value="minorista/gastronómico">Minoristas primero</option>
+                        </select>
                     </div>
-                </details>
-            </div>
-        </div>
-
-        <!-- Configuración de móviles -->
-        <div class="controles"
-            style="margin-top: -10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
-                <div>
-                    <label style="display:block; font-size:12px; margin-bottom:2px;"><i class="fas fa-truck"></i>
-                        Móviles disponibles</label>
-                    <input type="number" id="numMoviles" value="3" min="1" max="20"
-                        style="width: 80px; padding: 8px; border-radius: 8px; border: 2px solid #e0e0e0;">
-                </div>
-                <div>
-                    <label style="display:block; font-size:12px; margin-bottom:2px;"><i class="fas fa-sort"></i> Ordenar
-                        por</label>
-                    <select id="ordenarPor" onchange="aplicarFiltros()"
-                        style="padding: 8px; border-radius: 8px; border: 2px solid #e0e0e0; min-width: 150px;">
-                        <option value="recientes">Recientemente Agregados</option>
-                        <option value="abecedario">Abecedario (A - Z)</option>
-                    </select>
-                </div>
-            </div>
-            <button class="btn btn-primary" id="btnGenerar" onclick="generarRutas()" style="margin-top: auto;">
-                <i class="fas fa-route"></i> GENERAR RUTAS ÓPTIMAS
-            </button>
-        </div>
-
-        <!-- Panel de Configuraciones (Oculto por defecto) -->
-        <div id="panelConfig"
-            style="display:none; background: var(--card-bg); border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: var(--shadow); border: 2px solid #F4A261;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="color:var(--text-color); margin:0; display:flex; align-items:center; gap:10px;">
-                    <i class="fas fa-sliders-h"></i> Ajustes de Ruteo
-                </h3>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label style="font-weight:600; cursor:pointer;" for="darkModeToggle">🌙 Modo Oscuro</label>
-                    <input type="checkbox" id="darkModeToggle" style="width:20px; height:20px; cursor:pointer;"
-                        onchange="toggleDarkMode(this.checked)">
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
-                <div class="config-card">
-                    <h4><i class="fas fa-tasks"></i> Reglas de Ruteo</h4>
-                    <p style="font-size:12px; color:#666; margin-bottom:10px;">Configura límites de clientes por móvil y
-                        categorías.</p>
-                    <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" id="usarReglas" checked style="width:18px; height:18px; cursor:pointer;">
-                        <label for="usarReglas" style="font-weight:600; cursor:pointer; font-size: 14px;">Aplicar reglas
-                            en ruteo</label>
+                    <div>
+    <label>📍 Punto de inicio (Google Maps URL)</label>
+    <input type="url" id="puntoInicio" class="control-input" placeholder="https://maps.google.com/?q=lat,lon">
+</div>
+                    <div>
+                        <label>📌 Aplicar reglas</label>
+                        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                            <input type="checkbox" id="usarReglas" checked> <span>Restricciones por tipo</span>
+                        </div>
                     </div>
-                    <button class="btn btn-secondary" onclick="window.location.href='reglas.html'"
-                        style="width:100%; padding:8px;">
-                        Gestionar Reglas
-                    </button>
                 </div>
-                <div>
-                    <label style="display:block; font-weight:600; margin-bottom:8px;">🚀 Prioridad de Entrega</label>
-                    <select id="prioridadTipo"
-                        style="width:100%; padding:10px; border-radius:8px; border:2px solid #ddd;">
-                        <option value="ninguna">Sin prioridad específica</option>
-                        <option value="supermercado">Supermercados primero</option>
-                        <option value="mayorista / distribuidor">Mayoristas / Distribuidores primero</option>
-                        <option value="minorista/gastronómico">Minoristas primero</option>
-                    </select>
-                    <small style="color:#666; margin-top:5px; display:block;">Los clientes del tipo elegido se visitarán
-                        al inicio de la ruta.</small>
-                </div>
-                <div>
-                    <label style="display:block; font-weight:600; margin-bottom:8px;">📍 Punto de Inicio</label>
-                    <input type="text" id="puntoInicio" value="Base Central - San Lorenzo"
-                        style="width:100%; padding:10px; border-radius:8px; background:var(--input-bg); border:1px solid #ddd; color:var(--text-color);">
+                <div style="margin-top:20px; display:flex; gap:12px;">
+                    <button class="btn-secondary-outline" onclick="window.location.href='reglas.html'">Gestionar reglas avanzadas</button>
+                    <button class="btn-primary" onclick="abrirModalTransportes()" style="padding:10px 20px;"><i class="fas fa-truck-pickup"></i> Gestión de Transportes</button>
                 </div>
             </div>
         </div>
-        <div class="tabla-container">
-            <table id="tablaClientes">
+
+        <div class="table-wrapper fade-in">
+            <table class="client-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px;"><input type="checkbox" id="checkboxTodo" onclick="toggleAll()"></th>
-                        <th>Nombre del Cliente y Dirección</th>
-                        <th style="width: 100px;">Acciones</th>
+                        <th style="width:40px;"><input type="checkbox" id="checkboxTodo" onclick="toggleAll()"></th>
+                        <th>Cliente / Sucursal</th>
+                        <th style="width:100px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="cuerpoTabla">
                     <tr>
-                        <td colspan="2" style="text-align: center;">Cargando clientes...</td>
+                        <td colspan="3" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i>
+                            Cargando clientes...</td>
                     </tr>
                 </tbody>
             </table>
         </div>
+        <div class="footer"><i class="fas fa-charging-station"></i> Datos sincronizados · NEXO Ruteo Inteligente</div>
+    </div>
 
-        <div class="footer">
-            <i class="fas fa-clock"></i> Datos actualizados | NEXO - Sistema de Ruteo Inteligente
+    <!-- MODALES -->
+    <div id="modalKml" class="modal-overlay">
+        <div class="modal-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2><i class="fas fa-exchange-alt"></i> Importar / Exportar KML</h2>
+                <button class="btn-icon" onclick="cerrarModalKml()"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="background: rgba(0,0,0,0.02); padding:20px; border-radius:30px; margin-bottom:20px;">
+                <h4 style="margin-bottom:10px;"><i class="fas fa-cloud-download-alt"></i> Importar desde Google / My
+                    Maps</h4>
+                <div id="kmzDropzone"
+                    style="border:2px dashed var(--accent-gold); border-radius:30px; padding:20px; text-align:center; margin-bottom:15px; cursor:pointer;"
+                    onclick="document.getElementById('kmzFileInput').click()"
+                    ondragover="event.preventDefault(); this.style.background='rgba(200,157,74,0.1)'"
+                    ondragleave="this.style.background='transparent'" ondrop="onKmzDrop(event)">
+                    <i class="fas fa-file-upload" style="font-size:32px; color:var(--accent-gold);"></i>
+                    <p style="font-size:13px;">Subir archivo .kmz o .kml</p>
+                </div>
+                <input type="file" id="kmzFileInput" accept=".kmz,.kml" style="display:none"
+                    onchange="onKmzFileSelected(this.files[0])">
+                <div
+                    style="background:var(--card-light); padding:15px; border-radius:20px; border:1px solid var(--border-light); margin-top:12px;">
+                    <label style="font-size:12px; font-weight:600;">O pegar link de My Maps:</label>
+                    <div style="display:flex; gap:8px; margin-top:6px;">
+                        <input type="text" id="kmlUrlInput" class="control-input"
+                            placeholder="https://www.google.com/maps/d/..." style="padding:10px;">
+                        <button class="btn-primary" onclick="importarKmlUrl()" style="padding:10px 18px;"><i
+                                class="fas fa-link"></i></button>
+                    </div>
+                </div>
+                <div id="kmzPreviewArea" style="display:none; margin-top:15px;"></div>
+                <button class="btn-primary" id="btnImportarFinal" onclick="importarKmz()"
+                    style="display:none; width:100%; margin-top:15px; border-radius:30px;">Confirmar
+                    Importación</button>
+            </div>
+            <div style="background: rgba(0,0,0,0.02); padding:20px; border-radius:30px;">
+                <h4><i class="fas fa-file-export"></i> Exportar Clientes</h4>
+                <p style="font-size:12px; margin-bottom:12px;">Descarga la lista actual de clientes en formato KML.</p>
+                <button class="btn-primary" onclick="exportarKml()"
+                    style="background:var(--primary-main); width:100%;">Descargar KML</button>
+            </div>
+            <div style="margin-top:20px; text-align:right;"><button class="btn-secondary-outline"
+                    onclick="cerrarModalKml()">Cerrar</button></div>
         </div>
     </div>
 
-    <!-- Modal Añadir/Editar Cliente -->
-    <div id="modalCliente"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
-        <div
-            style="background:var(--card-bg); color:var(--text-color); padding:30px; border-radius:12px; width:450px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-            <h2 id="modalTitulo" style="margin-bottom:20px; color:var(--text-color);"><i class="fas fa-user-plus"></i> Añadir
-                Cliente</h2>
+    <div id="modalCliente" class="modal-overlay">
+        <div class="modal-container">
+            <h2 id="modalTitulo"><i class="fas fa-user-plus"></i> Añadir Cliente</h2>
             <form id="formCliente" onsubmit="guardarCliente(event)">
                 <input type="hidden" id="clienteId">
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600;">Nombre del Cliente</label>
-                    <input type="text" id="clienteNombre" required
-                        style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600;">Tipo de Cliente</label>
-                    <select id="clienteTipo" required
-                        style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
-                        <option value="minorista/gastronómico">Minorista / Gastronómico</option>
+                <div style="margin-bottom:15px;"><label>Nombre</label><input type="text" id="clienteNombre"
+                        class="control-input" required></div>
+                <div style="margin-bottom:15px;"><label>Tipo</label><select id="clienteTipo" class="control-input">
+                        <option value="minorista/gastronómico">Minorista</option>
                         <option value="supermercado">Supermercado</option>
-                        <option value="mayorista / distribuidor">Mayorista / Distribuidor</option>
-                    </select>
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600;">URL Google Maps
-                        (Ubicación)</label>
-                    <input type="url" id="clienteUrl" placeholder="https://www.google.com/maps/..."
-                        style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
-                    <small style="color:#666;">Se extraerán las coordenadas y ciudad automáticamente.</small>
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600;">Agrupar en Cadena / Grupo</label>
-                    <select id="clienteCadena" onchange="verificarNuevoGrupo(this.value)"
-                        style="width:100%; padding:10px; border:2px solid #ddd; border-radius:8px;">
-                        <option value="">✨ Auto-detección del sistema</option>
-                        <option value="NINGUNO">🚫 Ninguno (Mantener individual)</option>
-                        <!-- Grupos existentes -->
-                        <optgroup label="Grupos actuales" id="optgroupExistentes"></optgroup>
-                        <option value="NUEVO">➕ Crear nuevo grupo personalizado...</option>
-                    </select>
-                    <div id="nuevoGrupoContainer" style="margin-top:10px; display:none;">
-                        <input type="text" id="nuevoGrupoNombre" placeholder="Escribe el nombre del nuevo grupo..."
-                            style="width:100%; padding:10px; border:2px solid #F4A261; border-radius:8px; outline:none;">
-                    </div>
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button type="button" class="btn btn-outline" onclick="cerrarModalCliente()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar Cliente</button>
-                </div>
+                        <option value="mayorista / distribuidor">Mayorista</option>
+                    </select></div>
+                <div style="margin-bottom:20px;"><label>URL Google Maps</label><input type="url" id="clienteUrl"
+                        class="control-input" placeholder="https://..."><small
+                        style="color:var(--text-muted-light);">Extraerá coordenadas</small></div>
+                <div style="display:flex; gap:12px; justify-content:flex-end;"><button type="button"
+                        class="btn-secondary-outline" onclick="cerrarModalCliente()">Cancelar</button><button
+                        type="submit" class="btn-primary">Guardar</button></div>
             </form>
         </div>
     </div>
 
+    <!-- MODAL DE TRANSPORTES (CHOFERES Y VEHICULOS) -->
+    <div id="modalTransportes" class="modal-overlay">
+        <div class="modal-container" style="max-width:800px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2><i class="fas fa-truck-pickup"></i> Gestión de Transportes</h2>
+                <button class="btn-icon" onclick="cerrarModalTransportes()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:20px; border-bottom:1.5px solid var(--border-light); padding-bottom:10px;">
+                <button id="btnTabChoferes" class="btn-glass" style="background:var(--primary-main); border-color:var(--primary-main);" onclick="cambiarTabTransporte('choferes')"><i class="fas fa-id-card"></i> Choferes</button>
+                <button id="btnTabVehiculos" class="btn-glass" style="color:var(--text-light); border-color:var(--border-light);" onclick="cambiarTabTransporte('vehiculos')"><i class="fas fa-truck"></i> Vehículos</button>
+            </div>
+
+            <!-- Panel Choferes -->
+            <div id="panelGestionChoferes">
+                <form id="formChofer" onsubmit="guardarChofer(event)" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:20px; background:rgba(0,0,0,0.02); padding:15px; border-radius:15px;">
+                    <input type="hidden" id="choferId">
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Nombre y Apellido</label><input type="text" id="choferNombre" class="control-input" required></div>
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Teléfono/Celular</label><input type="text" id="choferTelefono" class="control-input"></div>
+                    <button type="submit" class="btn-primary" style="padding:12px 20px;"><i class="fas fa-save"></i> Guardar</button>
+                    <button type="button" class="btn-secondary-outline" onclick="resetFormChofer()" style="padding:12px;"><i class="fas fa-eraser"></i></button>
+                </form>
+                <div class="table-wrapper" style="max-height:300px;">
+                    <table class="client-table">
+                        <thead><tr><th>Nombre</th><th>Teléfono</th><th style="width:100px;">Acciones</th></tr></thead>
+                        <tbody id="tbodyChoferes"><tr><td colspan="3">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel Vehículos -->
+            <div id="panelGestionVehiculos" style="display:none;">
+                <form id="formVehiculo" onsubmit="guardarVehiculo(event)" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:20px; background:rgba(0,0,0,0.02); padding:15px; border-radius:15px;">
+                    <input type="hidden" id="vehiculoId">
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Modelo/Marca</label><input type="text" id="vehiculoNombre" class="control-input" required></div>
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Chapa/Patente</label><input type="text" id="vehiculoChapa" class="control-input"></div>
+                    <div style="flex:1;"><label style="font-size:12px; font-weight:600;">Tipo de Vehículo</label><select id="vehiculoTipo" class="control-input"><option value="camion mediano">Camión Mediano</option><option value="grande">Grande</option><option value="motocarga">Motocarga</option><option value="personal">Personal</option></select></div>
+                    <button type="submit" class="btn-primary" style="padding:12px 20px;"><i class="fas fa-save"></i> Guardar</button>
+                    <button type="button" class="btn-secondary-outline" onclick="resetFormVehiculo()" style="padding:12px;"><i class="fas fa-eraser"></i></button>
+                </form>
+                <div class="table-wrapper" style="max-height:300px;">
+                    <table class="client-table">
+                        <thead><tr><th>Vehículo</th><th>Chapa</th><th style="width:100px;">Acciones</th></tr></thead>
+                        <tbody id="tbodyVehiculos"><tr><td colspan="3">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <script>
-        // --- TEMPORIZADOR DE INACTIVIDAD (5 MINUTOS) ---
-        let inactivityTimer;
-        function resetTimer() {
-            clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => {
-                localStorage.removeItem('nexo_user');
-                localStorage.removeItem('nexo_token');
-                alert("Sesión expirada por inactividad.");
-                window.location.href = 'login.html';
-            }, 5 * 60 * 1000);
-        }
-
-        document.addEventListener('mousemove', resetTimer);
-        document.addEventListener('keypress', resetTimer);
-        document.addEventListener('click', resetTimer);
-        document.addEventListener('scroll', resetTimer);
-        resetTimer();
-
-        // Variables globales
+        // ========== VARIABLES GLOBALES ==========
         let clientes = [];
         let clientesFiltrados = [];
         let tiposFiltro = new Set();
-        let gruposAbiertos = new Set(); // Para recordar qué acordeones están abiertos
+        let gruposAbiertos = new Set();
+        let kmzPlacemarks = [];
 
-        // Helper para peticiones con autenticación
         async function fetchWithAuth(url, options = {}) {
             const token = localStorage.getItem('nexo_token');
             if (!options.headers) options.headers = {};
             options.headers['Authorization'] = `Bearer ${token}`;
-
             const response = await fetch(url, options);
-            if (response.status === 401) {
-                alert("Sesión expirada o no válida. Por favor, inicie sesión de nuevo.");
-                window.location.href = 'login.html';
-            }
+            if (response.status === 401) { alert("Sesión expirada"); window.location.href = 'login.html'; }
             return response;
         }
 
-        // ========== OBTENER CLIENTES DEL BACKEND ==========
         async function cargarClientes() {
             try {
-                const response = await fetchWithAuth('http://localhost:8080/api/clientes');
-                if (!response.ok) throw new Error('Error al cargar clientes');
+                const response = await fetchWithAuth('/api/clientes');
+                if (!response.ok) throw new Error();
                 clientes = await response.json();
+                clientes.forEach(c => { if (c.seleccionado === undefined) c.seleccionado = false; });
                 aplicarFiltros();
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('cuerpoTabla').innerHTML = `
-                <tr><td colspan="3" style="text-align: center; color: red;">
-                    ❌ Error al conectar con el servidor. ¿El backend está corriendo en puerto 8080?
-                </td></tr>
-            `;
+                document.getElementById('cuerpoTabla').innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--danger);">❌ Error de conexión</td></tr>`;
             }
         }
 
         function aplicarFiltros() {
             const termino = document.getElementById('buscador').value.toLowerCase();
-            const orden = document.getElementById('ordenarPor').value;
-
-            clientesFiltrados = clientes.filter(c => {
-                const matchNombre = c.nombre.toLowerCase().includes(termino);
-                const matchTipo = tiposFiltro.size === 0 || tiposFiltro.has(c.tipo_cliente);
-                return matchNombre && matchTipo;
-            });
-
-            // Aplicar ordenación
-            if (orden === 'abecedario') {
-                clientesFiltrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
-            } else if (orden === 'recientes') {
-                clientesFiltrados.sort((a, b) => b.id - a.id);
-            }
-
+            clientesFiltrados = clientes.filter(c => c.nombre.toLowerCase().includes(termino) && (tiposFiltro.size === 0 || tiposFiltro.has(c.tipo_cliente)));
             actualizarTabla();
             actualizarContadores();
         }
 
-        // Búsqueda en tiempo real
-        document.getElementById('buscador').addEventListener('input', function (e) {
-            aplicarFiltros();
-        });
-
-        // Mostrar tabla con agrupación por cadenas
         function actualizarTabla() {
             const tbody = document.getElementById('cuerpoTabla');
-            if (clientesFiltrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No se encontraron clientes</td></tr>';
-                document.getElementById('checkboxTodo').checked = false;
-                return;
-            }
-
-            // Lógica de agrupación por cadenas
-            const cadenas = {};
-            const individuales = [];
-            const nombresCadenasAuto = ['superseis', 'stock', 'box', 'casa rica', 'punto carne', 'ahorrazo', 'salemma', 'real', 'areté', 'gran via', 'biggie'];
-
-            clientesFiltrados.forEach(cliente => {
-                let cadenaFinal = null;
-
-                if (cliente.cadena === 'NINGUNO') {
-                    cadenaFinal = null; // Forzar individual
-                } else if (cliente.cadena && cliente.cadena !== '') {
-                    cadenaFinal = cliente.cadena.toLowerCase(); // Manual
-                } else {
-                    // Auto-detección
-                    let nombreBuscado = cliente.nombre.toLowerCase();
-                    cadenaFinal = nombresCadenasAuto.find(c => nombreBuscado.includes(c));
-                }
-
-                if (cadenaFinal) {
-                    if (!cadenas[cadenaFinal]) cadenas[cadenaFinal] = [];
-                    cadenas[cadenaFinal].push(cliente);
-                } else {
-                    individuales.push(cliente);
-                }
-            });
-
-            let html = '';
-
-            // Ordenar nombres de cadenas alfabéticamente
-            const listaCadenasOrdenadas = Object.keys(cadenas).sort((a, b) => a.localeCompare(b));
-
-            // Renderizar Cadenas (Acordeones)
-            listaCadenasOrdenadas.forEach(nombreCadena => {
-                const lista = cadenas[nombreCadena];
-                lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-                const todosSeleccionados = lista.every(c => c.seleccionado);
-                const cantidadSeleccionados = lista.filter(c => c.seleccionado).length;
-                const estaAbierto = gruposAbiertos.has(nombreCadena);
-
-                html += `
-                <tr style="background: var(--group-header-bg);">
-                    <td colspan="3" style="padding: 0;">
-                        <details style="width: 100%;" ${estaAbierto ? 'open' : ''} ontoggle="registrarToggle('${nombreCadena}', this.open)">
-                            <summary style="padding: 15px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; font-weight: bold; color: var(--group-text-color); border-bottom: 1px solid var(--border-color);">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="checkbox" style="width:18px; height:18px;" ${todosSeleccionados ? 'checked' : ''} 
-                                        onclick="event.stopPropagation(); toggleGrupo('${nombreCadena}', this.checked)">
-                                    <i class="fas fa-store"></i> ${nombreCadena.toUpperCase()} 
-                                    <span class="badge" style="background:var(--primary); color:white;">${lista.length} sucursales</span>
-                                </div>
-                                <div style="font-size: 12px; color: #666;">
-                                    ${cantidadSeleccionados} seleccionados <i class="fas fa-chevron-down" style="margin-left:10px;"></i>
-                                </div>
-                            </summary>
-                            <div style="background: var(--group-content-bg); border-left: 4px solid #F4A261;">
-                                <table style="width: 100%; margin: 0;">
-                                    ${lista.map(c => renderFilaCliente(c)).join('')}
-                                </table>
-                            </div>
-                        </details>
-                    </td>
-                </tr>`;
-            });
-
-            // Renderizar Clientes Individuales (ya vienen ordenados por aplicarFiltros)
-            individuales.forEach(cliente => {
-                html += renderFilaCliente(cliente);
-            });
-
-            tbody.innerHTML = html;
-            document.getElementById('checkboxTodo').checked = clientesFiltrados.length > 0 && clientesFiltrados.every(c => c.seleccionado);
-        }
-
-        function renderFilaCliente(cliente) {
-            return `
-            <tr>
-                <td style="width: 50px;"><input type="checkbox" class="checkbox-cliente" data-id="${cliente.id}" ${cliente.seleccionado ? 'checked' : ''} onchange="toggleCliente(${cliente.id})"></td>
-                <td><strong>${escapeHtml(cliente.nombre)}</strong><br>
-                    <small class="badge" style="background:#e8f0fe; color:#1E3A5F; margin-top:5px; display:inline-block;"><i class="fas fa-map-marker-alt"></i> ${cliente.direccion || 'Gran Asunción'}</small>
-                    <small class="badge" style="background:#fff3e0; color:#e67e22; margin-top:5px; margin-left:5px; display:inline-block; border: 1px solid #ffeaa7;"><i class="fas fa-tag"></i> ${cliente.tipo_cliente || 'minorista/gastronómico'}</small>
-                </td>
-                <td>
-                    <button class="btn btn-outline" style="padding:5px 10px; font-size:12px;" onclick="editarCliente(${cliente.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-outline" style="padding:5px 10px; font-size:12px; color: #e74c3c; border-color: #e74c3c;" onclick="eliminarCliente(${cliente.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>`;
-        }
-
-        function toggleGrupo(nombreCadena, seleccionar) {
+            if (!clientesFiltrados.length) { tbody.innerHTML = '<tr><td colspan="3">No hay clientes</td></tr>'; return; }
+            const cadenas = {}, individuales = [];
+            const nombresAuto = ['superseis', 'stock', 'box', 'casa rica', 'punto carne', 'ahorrazo', 'salemma', 'real', 'areté', 'gran via', 'biggie'];
             clientesFiltrados.forEach(c => {
-                const cadenaC = c.cadena ? c.cadena.toLowerCase() : '';
-                const nombreC = c.nombre.toLowerCase();
-                if (cadenaC === nombreCadena.toLowerCase() || nombreC.includes(nombreCadena.toLowerCase())) {
-                    c.seleccionado = seleccionar;
+                let cad = c.cadena && c.cadena !== 'NINGUNO' ? c.cadena.toLowerCase() : null;
+                if (!cad) {
+                    const match = nombresAuto.find(n => c.nombre.toLowerCase().includes(n));
+                    if (match) cad = match;
                 }
+                if (cad) { if (!cadenas[cad]) cadenas[cad] = []; cadenas[cad].push(c); }
+                else individuales.push(c);
             });
-            actualizarTabla();
-            actualizarContadores();
+            let html = '';
+            Object.keys(cadenas).sort().forEach(nom => {
+                const lista = cadenas[nom];
+                const todosSel = lista.every(c => c.seleccionado);
+                const selCount = lista.filter(c => c.seleccionado).length;
+                const abierto = gruposAbiertos.has(nom);
+                html += `<tr style="background:rgba(0,0,0,0.02);"><td colspan="3" style="padding:0;"><details ${abierto ? 'open' : ''} ontoggle="registrarToggle('${nom}',this.open)"><summary style="padding:15px; cursor:pointer; display:flex; justify-content:space-between;"><div><input type="checkbox" ${todosSel ? 'checked' : ''} onclick="event.stopPropagation(); toggleGrupo('${nom}',this.checked)"> <i class="fas fa-store"></i> ${nom.toUpperCase()} <span class="badge-tag">${lista.length}</span></div><div>${selCount} seleccionados <i class="fas fa-chevron-down"></i></div></summary><table style="width:100%">${lista.map(c => renderFila(c)).join('')}</table></details></td></tr>`;
+            });
+            individuales.forEach(c => html += renderFila(c));
+            tbody.innerHTML = html;
         }
 
-        function actualizarContadores() {
-            const total = clientesFiltrados.length;
-            const seleccionados = clientes.filter(c => c.seleccionado).length;
-            document.getElementById('totalClientes').textContent = total;
-            document.getElementById('seleccionados').textContent = seleccionados;
+        function renderFila(c) {
+            return `<tr><td style="padding-left:20px;"><input type="checkbox" class="checkbox-cliente" data-id="${c.id}" ${c.seleccionado ? 'checked' : ''} onchange="toggleCliente(${c.id})"></td><td><strong>${escapeHtml(c.nombre)}</strong><br><span class="badge-tag"><i class="fas fa-tag"></i> ${c.tipo_cliente || 'minorista/gastronómico'}</span><small style="display:block; color:var(--text-muted-light);">${c.direccion || 'Gran Asunción'}</small></td><td style="white-space: nowrap;"><div style="display: flex; gap: 8px; align-items: center;"><button class="btn-icon" onclick="editarCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="copiarUrlCliente(${c.id})" title="Copiar URL"><i class="fas fa-link"></i></button><button class="btn-icon" onclick="eliminarCliente(${c.id})" style="color:var(--danger);" title="Eliminar"><i class="fas fa-trash"></i></button></div></td></tr>`;
+        }
+        
+        function copiarUrlCliente(id) { 
+            let c = clientes.find(c => c.id === id); 
+            if (!c) return; 
+            let url = c.url_google || `https://maps.google.com/?q=${c.latitud},${c.longitud}`; 
+            navigator.clipboard.writeText(url)
+                .then(() => alert('URL (' + url + ') copiada al portapapeles'))
+                .catch(() => window.prompt('Copia esta URL manualmente:', url)); 
         }
 
-        function toggleCliente(id) {
-            const cliente = clientes.find(c => c.id === id);
-            if (cliente) cliente.seleccionado = !cliente.seleccionado;
-            actualizarTabla();
-            actualizarContadores();
-        }
-
-        function seleccionarTodos(seleccionar) {
-            clientesFiltrados.forEach(c => c.seleccionado = seleccionar);
-            actualizarTabla();
-            actualizarContadores();
-        }
-
-        function filtrarPorTipo(tipo, activo) {
-            if (tipo === '') return; // Limpiar filtros call
-            if (activo) {
-                tiposFiltro.add(tipo);
-            } else {
-                tiposFiltro.delete(tipo);
-            }
-            aplicarFiltros();
-        }
-
-        function toggleAll() {
-            const seleccionar = document.getElementById('checkboxTodo').checked;
-            seleccionarTodos(seleccionar);
-        }
-
-        function registrarToggle(nombre, abierto) {
-            if (abierto) gruposAbiertos.add(nombre);
-            else gruposAbiertos.delete(nombre);
-        }
-
-        // Búsqueda en tiempo real
-        document.getElementById('buscador').addEventListener('input', function (e) {
-            const termino = e.target.value.toLowerCase();
-            clientesFiltrados = clientes.filter(c => c.nombre.toLowerCase().includes(termino));
-            actualizarTabla();
-        });
+        function registrarToggle(nom, abierto) { abierto ? gruposAbiertos.add(nom) : gruposAbiertos.delete(nom); }
+        function toggleGrupo(nom, sel) { clientes.forEach(c => { if ((c.cadena && c.cadena.toLowerCase() === nom) || c.nombre.toLowerCase().includes(nom)) c.seleccionado = sel; }); actualizarTabla(); actualizarContadores(); }
+        function toggleCliente(id) { let c = clientes.find(c => c.id === id); if (c) c.seleccionado = !c.seleccionado; actualizarTabla(); actualizarContadores(); }
+        function seleccionarTodos(val) { clientes.forEach(c => c.seleccionado = val); actualizarTabla(); actualizarContadores(); }
+        function toggleAll() { seleccionarTodos(document.getElementById('checkboxTodo').checked); }
+        function actualizarContadores() { document.getElementById('seleccionados').innerText = clientes.filter(c => c.seleccionado).length; document.getElementById('totalClientes').innerText = clientes.length; }
+        function escapeHtml(t) { if (!t) return ''; const div = document.createElement('div'); div.textContent = t; return div.innerHTML; }
 
         function toggleConfig() {
-            const panel = document.getElementById('panelConfig');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    let p = document.getElementById('panelConfig');
+    const wasHidden = p.style.display === 'none' || p.style.display === '';
+    p.style.display = wasHidden ? 'block' : 'none';
+    // If we are closing the panel (it was visible), save config
+    if (!wasHidden) {
+        // Save punto inicio URL
+        const url = document.getElementById('puntoInicio').value.trim();
+        if (url) localStorage.setItem('puntoInicioUrl', url);
+        else localStorage.removeItem('puntoInicioUrl');
+        // Save prioridad
+        const prioridad = document.getElementById('prioridadTipo').value;
+        localStorage.setItem('prioridadTipo', prioridad);
+        // Save usar reglas checkbox
+        const usar = document.getElementById('usarReglas').checked;
+        localStorage.setItem('usarReglas', usar ? '1' : '0');
+    } else {
+        // If opening, load saved values
+        const savedUrl = localStorage.getItem('puntoInicioUrl') || '';
+        document.getElementById('puntoInicio').value = savedUrl;
+        const savedPrioridad = localStorage.getItem('prioridadTipo') || 'ninguna';
+        document.getElementById('prioridadTipo').value = savedPrioridad;
+        const savedUsar = localStorage.getItem('usarReglas');
+        document.getElementById('usarReglas').checked = savedUsar === '1';
+    }
+}
+        function toggleDarkMode(isDark) { if (isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); }
+        if (localStorage.getItem('darkMode') === 'enabled') { document.body.classList.add('dark-mode'); if (document.getElementById('darkModeToggle')) document.getElementById('darkModeToggle').checked = true; }
+
+        function abrirModalCliente() { document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-user-plus"></i> Añadir Cliente'; document.getElementById('clienteId').value = ''; document.getElementById('formCliente').reset(); document.getElementById('modalCliente').style.display = 'flex'; }
+        function cerrarModalCliente() { document.getElementById('modalCliente').style.display = 'none'; }
+        function editarCliente(id) { let c = clientes.find(c => c.id === id); if (!c) return; document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Cliente'; document.getElementById('clienteId').value = c.id; document.getElementById('clienteNombre').value = c.nombre; document.getElementById('clienteTipo').value = c.tipo_cliente || 'minorista/gastronómico'; document.getElementById('modalCliente').style.display = 'flex'; }
+        async function guardarCliente(e) { e.preventDefault(); let id = document.getElementById('clienteId').value; let nombre = document.getElementById('clienteNombre').value; let tipo = document.getElementById('clienteTipo').value; let url = document.getElementById('clienteUrl').value; let method = id ? 'PUT' : 'POST'; let payload = { nombre, tipo_cliente: tipo, url }; if (id) payload.id = parseInt(id); try { let res = await fetchWithAuth('/api/clientes', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(); cerrarModalCliente(); cargarClientes(); } catch (e) { alert('Error al guardar'); } }
+        async function eliminarCliente(id) { if (confirm('¿Eliminar?')) { await fetchWithAuth(`/api/clientes?id=${id}`, { method: 'DELETE' }); cargarClientes(); } }
+
+        function generarRutas() {
+            if (clientes.filter(c => c.seleccionado).length === 0) return alert("Seleccioná clientes");
+            generarRutasFinal([]);
         }
 
-        // Generar rutas
-        async function generarRutas() {
-            const seleccionados = clientes.filter(c => c.seleccionado).map(c => c.id);
-
-            if (seleccionados.length === 0) {
-                alert('❌ Seleccione al menos un cliente');
-                return;
-            }
-
-            const numMoviles = parseInt(document.getElementById('numMoviles').value);
-            const prioridad = document.getElementById('prioridadTipo').value;
-
-            if (isNaN(numMoviles) || numMoviles < 1) {
-                alert('Ingrese un número válido de móviles');
-                return;
-            }
-
-            // Mostrar loading
-            const btn = document.getElementById('btnGenerar');
-            const textoOriginal = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando rutas...';
-            btn.disabled = true;
-
-            const usarReglas = document.getElementById('usarReglas').checked;
-
+        async function generarRutasFinal(asignaciones) {
+            let seleccionados = clientes.filter(c => c.seleccionado).map(c => c.id);
+            let numM = parseInt(document.getElementById('numMoviles').value) || 1;
+            mostrarLoader("Optimizando y generando rutas... por favor espere");
             try {
-                const response = await fetchWithAuth('http://localhost:8080/api/generar-rutas', {
+                let response = await fetchWithAuth('/api/generar-rutas', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        cliente_ids: seleccionados,
-                        num_moviles: numMoviles,
-                        prioridad: prioridad,
-                        usar_reglas: usarReglas,
-                        punto_inicio: document.getElementById('puntoInicio').value
-                    })
+                    body: JSON.stringify({ cliente_ids: seleccionados, num_moviles: numM, prioridad: document.getElementById('prioridadTipo').value, punto_inicio: document.getElementById('puntoInicio').value, usar_reglas: document.getElementById('usarReglas').checked, asignaciones: asignaciones })
                 });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || 'Error desconocido en el servidor');
-                }
-
-                const data = await response.json();
-
-                // Guardar en localStorage para pasar a la siguiente página
+                if (!response.ok) throw new Error();
+                let data = await response.json();
                 localStorage.setItem('rutasGeneradas', JSON.stringify(data));
-
-                // Abrir resultados en nueva pestaña
                 window.open('resultados.html', '_blank');
-
-            } catch (error) {
-                console.error(error);
-                alert('❌ Error: ' + error.message + '. Asegúrese de que el backend esté corriendo en el puerto 8080.');
-            } finally {
-                btn.innerHTML = textoOriginal;
-                btn.disabled = false;
-            }
+            } catch (e) { alert("Error al generar rutas"); }
+            finally { ocultarLoader(); }
         }
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        // KML functions
+        function abrirModalKml() { kmzPlacemarks = []; document.getElementById('kmzFileInput').value = ''; document.getElementById('kmlUrlInput').value = ''; document.getElementById('kmzDropzone').style.display = 'block'; document.getElementById('kmzPreviewArea').style.display = 'none'; document.getElementById('btnImportarFinal').style.display = 'none'; document.getElementById('modalKml').style.display = 'flex'; }
+        function cerrarModalKml() { document.getElementById('modalKml').style.display = 'none'; }
+        async function importarKmlUrl() { const url = document.getElementById('kmlUrlInput').value; if (!url) return alert("Ingresá un link válido"); const btn = event.currentTarget; const originalIcon = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; try { const res = await fetchWithAuth('/api/kml/importar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) }); if (!res.ok) throw new Error(); const data = await res.json(); alert(`✅ Importación finalizada: ${data.imported} clientes agregados.`); cerrarModalKml(); cargarClientes(); } catch (e) { alert("Error al importar desde el link. Asegurate que el mapa sea público."); } finally { btn.innerHTML = originalIcon; btn.disabled = false; } }
+        function exportarKml() { window.location.href = '/api/kml/exportar'; }
+        function onKmzDrop(e) { e.preventDefault(); let file = e.dataTransfer.files[0]; if (file) onKmzFileSelected(file); }
+        async function onKmzFileSelected(file) { if (!file) return; try { let kmlText; if (file.name.endsWith('.kmz')) { let zip = await JSZip.loadAsync(file); let kmlFile = Object.values(zip.files).find(f => f.name.endsWith('.kml')); if (!kmlFile) throw new Error(); kmlText = await kmlFile.async('text'); } else kmlText = await file.text(); parsearKml(kmlText); } catch (e) { alert('Error al leer archivo'); } }
+        function parsearKml(kmlText) { let parser = new DOMParser(); let doc = parser.parseFromString(kmlText, 'text/xml'); let placemarks = doc.querySelectorAll('Placemark'); kmzPlacemarks = []; placemarks.forEach(pm => { let nombre = pm.querySelector('name')?.textContent?.trim() || 'Sin nombre'; let point = pm.querySelector('Point coordinates') || pm.querySelector('coordinates'); if (point) { let coords = point.textContent.trim().split(','); if (coords.length >= 2) { let lon = parseFloat(coords[0]), lat = parseFloat(coords[1]); if (!isNaN(lat) && !isNaN(lon)) kmzPlacemarks.push({ nombre, lat, lon }); } } }); mostrarPreviewKmz(); }
+        function mostrarPreviewKmz() { let nombres = new Set(clientes.map(c => c.nombre.toLowerCase())); let nuevos = kmzPlacemarks.filter(p => !nombres.has(p.nombre.toLowerCase())); document.getElementById('kmzDropzone').style.display = 'none'; document.getElementById('kmzPreviewArea').style.display = 'block'; document.getElementById('kmzPreviewArea').innerHTML = `<p style="color:var(--accent-gold); font-weight:600;">✅ ${nuevos.length} clientes nuevos detectados.</p>`; document.getElementById('btnImportarFinal').style.display = nuevos.length > 0 ? 'block' : 'none'; }
+        async function importarKmz() { let nombres = new Set(clientes.map(c => c.nombre.toLowerCase())); let nuevos = kmzPlacemarks.filter(p => !nombres.has(p.nombre.toLowerCase())); for (let p of nuevos) { await fetchWithAuth('/api/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: p.nombre, latitud: p.lat, longitud: p.lon, tipo_cliente: 'minorista/gastronómico' }) }); } alert(`Importados ${nuevos.length} clientes`); cerrarModalKml(); cargarClientes(); }
+
+        // ================= GESTION DE TRANSPORTES (CHOFERES Y VEHICULOS) =================
+        let transportesData = { choferes: [], vehiculos: [] };
+        
+        function abrirModalTransportes() { 
+            document.getElementById('modalTransportes').style.display = 'flex'; 
+            cargarTransportes(); 
+        }
+        function cerrarModalTransportes() { document.getElementById('modalTransportes').style.display = 'none'; }
+        
+        function cambiarTabTransporte(tab) {
+            document.getElementById('panelGestionChoferes').style.display = tab === 'choferes' ? 'block' : 'none';
+            document.getElementById('panelGestionVehiculos').style.display = tab === 'vehiculos' ? 'block' : 'none';
+            document.getElementById('btnTabChoferes').style.background = tab === 'choferes' ? 'var(--primary-main)' : 'rgba(255,255,255,0.1)';
+            document.getElementById('btnTabChoferes').style.color = tab === 'choferes' ? 'white' : 'var(--text-light)';
+            document.getElementById('btnTabVehiculos').style.background = tab === 'vehiculos' ? 'var(--primary-main)' : 'rgba(255,255,255,0.1)';
+            document.getElementById('btnTabVehiculos').style.color = tab === 'vehiculos' ? 'white' : 'var(--text-light)';
         }
 
-        // ========== GESTIÓN DE CLIENTES ==========
-        function abrirModalCliente() {
-            document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-user-plus"></i> Añadir Cliente';
-            document.getElementById('clienteId').value = '';
-            document.getElementById('formCliente').reset();
-            document.getElementById('nuevoGrupoContainer').style.display = 'none';
-            actualizarDesplegableCadenas();
-            document.getElementById('modalCliente').style.display = 'flex';
-        }
-
-        function verificarNuevoGrupo(valor) {
-            const container = document.getElementById('nuevoGrupoContainer');
-            container.style.display = (valor === 'NUEVO') ? 'block' : 'none';
-            if (valor === 'NUEVO') {
-                document.getElementById('nuevoGrupoNombre').focus();
-            }
-        }
-
-        function actualizarDesplegableCadenas() {
-            const optgroup = document.getElementById('optgroupExistentes');
-            const nombresCadenasAuto = ['Superseis', 'Stock', 'Box', 'Casa Rica', 'Punto Carne', 'Ahorrazo', 'Salemma', 'Real', 'Areté', 'Gran Via', 'Biggie'];
-
-            // Obtener cadenas manuales de la base de datos
-            const cadenasManuales = [...new Set(clientes.map(c => c.cadena).filter(c => c && c !== '' && c !== 'NINGUNO'))];
-
-            // Combinar ambas listas sin duplicados
-            const todasLasCadenas = [...new Set([...nombresCadenasAuto, ...cadenasManuales])];
-
-            optgroup.innerHTML = '';
-
-            todasLasCadenas.sort((a, b) => a.localeCompare(b)).forEach(cadena => {
-                const opt = document.createElement('option');
-                opt.value = cadena;
-                opt.textContent = "📁 " + cadena;
-                optgroup.appendChild(opt);
-            });
-        }
-
-        function cerrarModalCliente() {
-            document.getElementById('modalCliente').style.display = 'none';
-        }
-
-        function editarCliente(id) {
-            const cliente = clientes.find(c => c.id === id);
-            if (!cliente) return;
-
-            document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Cliente';
-            document.getElementById('clienteId').value = cliente.id;
-            document.getElementById('clienteNombre').value = cliente.nombre;
-            document.getElementById('clienteTipo').value = cliente.tipo_cliente || 'minorista/gastronómico';
-            actualizarDesplegableCadenas();
-            document.getElementById('clienteCadena').value = cliente.cadena || '';
-            verificarNuevoGrupo(document.getElementById('clienteCadena').value);
-            document.getElementById('clienteUrl').value = '';
-
-            document.getElementById('modalCliente').style.display = 'flex';
-        }
-
-        async function guardarCliente(event) {
-            event.preventDefault();
-            const id = document.getElementById('clienteId').value;
-            const nombre = document.getElementById('clienteNombre').value;
-            const tipo = document.getElementById('clienteTipo').value;
-            let cadena = document.getElementById('clienteCadena').value;
-
-            // Si hay un nuevo grupo escrito, usar ese
-            const nuevoGrupo = document.getElementById('nuevoGrupoNombre').value.trim();
-            if (cadena === 'NUEVO' && nuevoGrupo) {
-                cadena = nuevoGrupo;
-            }
-
-            const url = document.getElementById('clienteUrl').value;
-
-            const method = id ? 'PUT' : 'POST';
-            const payload = { nombre, tipo_cliente: tipo, url, cadena };
-
-            if (id) {
-                payload.id = parseInt(id);
-                // Si es edición y no hay URL nueva, enviar las coordenadas actuales
-                const clienteExistente = clientes.find(c => c.id === payload.id);
-                if (clienteExistente && !url) {
-                    payload.latitud = clienteExistente.latitud;
-                    payload.longitud = clienteExistente.longitud;
-                }
-            }
-
+        async function cargarTransportes() {
             try {
-                const response = await fetchWithAuth('http://localhost:8080/api/clientes', {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error('Error al guardar cliente');
-
-                cerrarModalCliente();
-                cargarClientes(); // Recargar lista
-            } catch (error) {
-                alert('❌ Error: ' + error.message);
+                let resC = await fetchWithAuth('/api/choferes');
+                transportesData.choferes = await resC.json();
+                
+                let resV = await fetchWithAuth('/api/vehiculos');
+                transportesData.vehiculos = await resV.json();
+                
+                renderTablasTransportes();
+            } catch (e) {
+                console.error("Error al cargar transportes", e);
             }
         }
 
-        async function eliminarCliente(id) {
-            const cliente = clientes.find(c => c.id === id);
-            if (!cliente) return;
+        function renderTablasTransportes() {
+            // Choferes
+            const tbC = document.getElementById('tbodyChoferes');
+            if (transportesData.choferes.length === 0) tbC.innerHTML = '<tr><td colspan="3">No hay choferes.</td></tr>';
+            else tbC.innerHTML = transportesData.choferes.map(c => 
+                `<tr>
+                    <td><strong>${escapeHtml(c.nombre)}</strong></td>
+                    <td>${escapeHtml(c.telefono || '-')}</td>
+                    <td>
+                        <button class="btn-icon" onclick="editarChofer(${c.id}, '${escapeHtml(c.nombre)}', '${escapeHtml(c.telefono || '')}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" onclick="eliminarChofer(${c.id})" style="color:var(--danger);" title="Inhabilitar"><i class="fas fa-ban"></i></button>
+                    </td>
+                </tr>`
+            ).join('');
 
-            if (confirm(`¿Estás seguro de que deseas eliminar al cliente "${cliente.nombre}"?`)) {
-                try {
-                    const response = await fetchWithAuth(`http://localhost:8080/api/clientes?id=${id}`, {
-                        method: 'DELETE'
-                    });
-
-                    if (!response.ok) throw new Error('Error al eliminar cliente');
-
-                    cargarClientes(); // Recargar lista
-                } catch (error) {
-                    alert('❌ Error: ' + error.message);
-                }
-            }
+            // Vehiculos
+            const tbV = document.getElementById('tbodyVehiculos');
+            if (transportesData.vehiculos.length === 0) tbV.innerHTML = '<tr><td colspan="3">No hay vehículos.</td></tr>';
+            else tbV.innerHTML = transportesData.vehiculos.map(v => 
+                `<tr>
+                    <td><strong>${escapeHtml(v.nombre)}</strong></td>
+                    <td><span class="badge-tag">${escapeHtml(v.chapa || '-')}</span></td>
+                    <td>
+                        <button class="btn-icon" onclick="editarVehiculo(${v.id}, '${escapeHtml(v.nombre)}', '${escapeHtml(v.chapa || '')}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" onclick="eliminarVehiculo(${v.id})" style="color:var(--danger);" title="Inhabilitar"><i class="fas fa-ban"></i></button>
+                    </td>
+                </tr>`
+            ).join('');
         }
 
-        // Dark Mode Logic
-        function toggleDarkMode(isDark) {
-            if (isDark) {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('darkMode', 'enabled');
-            } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('darkMode', 'disabled');
-            }
+        // Choferes CRUD
+        function resetFormChofer() { document.getElementById('formChofer').reset(); document.getElementById('choferId').value = ''; }
+        function editarChofer(id, nombre, tel) { 
+            document.getElementById('choferId').value = id; 
+            document.getElementById('choferNombre').value = nombre; 
+            document.getElementById('choferTelefono').value = tel; 
+        }
+        async function guardarChofer(e) { 
+            e.preventDefault(); 
+            let id = document.getElementById('choferId').value; 
+            let payload = { nombre: document.getElementById('choferNombre').value, telefono: document.getElementById('choferTelefono').value };
+            let method = 'POST';
+            if (id) { payload.id = parseInt(id); method = 'PUT'; }
+            
+            await fetchWithAuth('/api/choferes', { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            resetFormChofer();
+            cargarTransportes();
+        }
+        async function eliminarChofer(id) { 
+            if (confirm('¿Inhabilitar a este chofer? Ya no aparecerá para asignar pero las estadísticas se conservan.')) { 
+                await fetchWithAuth(`/api/choferes?id=${id}`, { method: 'DELETE' }); 
+                cargarTransportes(); 
+            } 
         }
 
-        // Initialize Dark Mode from localStorage
-        (function initDarkMode() {
-            const darkMode = localStorage.getItem('darkMode');
-            if (darkMode === 'enabled') {
-                document.body.classList.add('dark-mode');
-                document.getElementById('darkModeToggle').checked = true;
-            }
-        })();
-
-        function logout() {
-            localStorage.removeItem('nexo_user');
-            localStorage.removeItem('nexo_token');
-            window.location.href = 'login.html';
+        // Vehiculos CRUD
+        function resetFormVehiculo() { document.getElementById('formVehiculo').reset(); document.getElementById('vehiculoId').value = ''; }
+        function editarVehiculo(id, nombre, chapa) { 
+            document.getElementById('vehiculoId').value = id; 
+            document.getElementById('vehiculoNombre').value = nombre; 
+            document.getElementById('vehiculoChapa').value = chapa; 
+        }
+        async function guardarVehiculo(e) { 
+            e.preventDefault(); 
+            let id = document.getElementById('vehiculoId').value; 
+            let payload = { nombre: document.getElementById('vehiculoNombre').value, chapa: document.getElementById('vehiculoChapa').value };
+            let method = 'POST';
+            if (id) { payload.id = parseInt(id); method = 'PUT'; }
+            
+            await fetchWithAuth('/api/vehiculos', { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            resetFormVehiculo();
+            cargarTransportes();
+        }
+        async function eliminarVehiculo(id) { 
+            if (confirm('¿Inhabilitar a este vehículo? Ya no aparecerá para asignar pero las estadísticas se conservan.')) { 
+                await fetchWithAuth(`/api/vehiculos?id=${id}`, { method: 'DELETE' }); 
+                cargarTransportes(); 
+            } 
         }
 
-        // Inicializar
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+
+        function mostrarLoader(texto = "Optimizando rutas... por favor espere") {
+            const overlay = document.getElementById('loadingOverlay');
+            const textEl = document.getElementById('loadingText');
+            if (textEl) textEl.innerText = texto;
+            if (overlay) overlay.classList.add('active');
+        }
+
+        function ocultarLoader() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        document.getElementById('buscador').addEventListener('input', () => aplicarFiltros());
         cargarClientes();
     </script>
 
+    <!-- PANTALLA DE CARGA GENERAL (CELESTE & DORADO GLASS CON CAMIÓN ANIMADO) -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader">
+            <div class="truckWrapper">
+                <div class="truckBody">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 198 93" class="trucksvg">
+                        <path stroke-width="3" stroke="#282828" fill="#F83D3D" d="M135 22.5H177.264C178.295 22.5 179.22 23.133 179.594 24.0939L192.33 56.8443C192.442 57.1332 192.5 57.4404 192.5 57.7504V89C192.5 90.3807 191.381 91.5 190 91.5H135C133.619 91.5 132.5 90.3807 132.5 89V25C132.5 23.6193 133.619 22.5 135 22.5Z"></path>
+                        <path stroke-width="3" stroke="#282828" fill="#7D7C7C" d="M146 33.5H181.741C182.779 33.5 183.709 34.1415 184.078 35.112L190.538 52.112C191.16 53.748 189.951 55.5 188.201 55.5H146C144.619 55.5 143.5 54.3807 143.5 53V36C143.5 34.6193 144.619 33.5 146 33.5Z"></path>
+                        <path stroke-width="2" stroke="#282828" fill="#282828" d="M150 65C150 65.39 149.763 65.8656 149.127 66.2893C148.499 66.7083 147.573 67 146.5 67C145.427 67 144.501 66.7083 143.873 66.2893C143.237 65.8656 143 65.39 143 65C143 64.61 143.237 64.1344 143.873 63.7107C144.501 63.2917 145.427 63 146.5 63C147.573 63 148.499 63.2917 149.127 63.7107C149.763 64.1344 150 64.61 150 65Z"></path>
+                        <rect stroke-width="2" stroke="#282828" fill="#FFFCAB" rx="1" height="7" width="5" y="63" x="187"></rect>
+                        <rect stroke-width="2" stroke="#282828" fill="#282828" rx="1" height="11" width="4" y="81" x="193"></rect>
+                        <rect stroke-width="3" stroke="#282828" fill="#DFDFDF" rx="2.5" height="90" width="121" y="1.5" x="6.5"></rect>
+                        <rect stroke-width="2" stroke="#282828" fill="#DFDFDF" rx="2" height="4" width="6" y="84" x="1"></rect>
+                    </svg>
+                </div>
+                <div class="truckTires">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" class="tiresvg">
+                        <circle stroke-width="3" stroke="#282828" fill="#282828" r="13.5" cy="15" cx="15"></circle>
+                        <circle fill="#DFDFDF" r="7" cy="15" cx="15"></circle>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" class="tiresvg">
+                        <circle stroke-width="3" stroke="#282828" fill="#282828" r="13.5" cy="15" cx="15"></circle>
+                        <circle fill="#DFDFDF" r="7" cy="15" cx="15"></circle>
+                    </svg>
+                </div>
+                <div class="road"></div>
+                <svg xml:space="preserve" viewBox="0 0 453.459 453.459" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" id="Capa_1" version="1.1" fill="#000000" class="lampPost">
+                    <path d="M252.882,0c-37.781,0-68.686,29.953-70.245,67.358h-6.917v8.954c-26.109,2.163-45.463,10.011-45.463,19.366h9.993 c-1.65,5.146-2.507,10.54-2.507,16.017c0,28.956,23.558,52.514,52.514,52.514c28.956,0,52.514-23.558,52.514-52.514 c0-5.478-0.856-10.872-2.506-16.017h9.992c0-9.354-19.352-17.204-45.463-19.366v-8.954h-6.149C200.189,38.779,223.924,16,252.882,16 c29.952,0,54.32,24.368,54.32,54.32c0,28.774-11.078,37.009-25.105,47.437c-17.444,12.968-37.216,27.667-37.216,78.884v113.914 h-0.797c-5.068,0-9.174,4.108-9.174,9.177c0,2.844,1.293,5.383,3.321,7.066c-3.432,27.933-26.851,95.744-8.226,115.459v11.202h45.75 v-11.202c18.625-19.715-4.794-87.527-8.227-115.459c2.029-1.683,3.322-4.223,3.322-7.066c0-5.068-4.107-9.177-9.176-9.177h-0.795 V196.641c0-43.174,14.942-54.283,30.762-66.043c14.793-10.997,31.559-23.461,31.559-60.277C323.202,31.545,291.656,0,252.882,0z M232.77,111.694c0,23.442-19.071,42.514-42.514,42.514c-23.442,0-42.514-19.072-42.514-42.514c0-5.531,1.078-10.957,3.141-16.017 h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"></path>
+                </svg>
+            </div>
+        </div>
+        <div class="loading-text" id="loadingText">Optimizando rutas... por favor espere</div>
+    </div>
 </body>
 
 </html>
