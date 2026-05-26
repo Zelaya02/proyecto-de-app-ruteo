@@ -71,7 +71,7 @@ public class Main {
         DB_URL = detectDbUrl();
         usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
 
-        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8080), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8082), 0);
 
         // Archivos estaticos
         server.createContext("/", new StaticHandler());
