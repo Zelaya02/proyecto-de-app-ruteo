@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXO - Documentación de Diagramas y Casos de Uso</title>
+    <!-- Importación de la fuente Inter para un aspecto moderno y premium -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Carga del motor de diagramación Mermaid -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: { useMaxWidth: true, htmlLabels: true }
+        });
+    </script>
+    <style>
+        :root {
+            --primary: #1f4e78;
+            --primary-light: #eef4fa;
+            --secondary: #2d3748;
+            --accent: #2b6cb0;
+            --border-color: #cbd5e0;
+            --bg-light: #f7fafc;
+            --text-dark: #1a202c;
+            --text-light: #718096;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .header {
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: var(--primary);
+            margin: 0 0 10px 0;
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-light);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        h2 {
+            color: var(--primary);
+            border-left: 5px solid var(--primary);
+            padding-left: 15px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: var(--accent);
+            font-size: 1.25rem;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        p, li {
+            font-size: 1rem;
+            color: #2d3748;
+        }
+
+        .instruction-box {
+            background-color: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+
+        .instruction-box p {
+            margin: 0;
+            color: #2b6cb0;
+            font-weight: 500;
+        }
+
+        /* Contenedores para diagramas Mermaid */
+        .diagram-wrapper {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            margin: 25px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            display: flex;
+            justify-content: center;
+            align-content: center;
+            overflow-x: auto;
+        }
+
+        .mermaid {
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Estilos de tablas compatibles con Microsoft Word al copiar */
+        table.word-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        table.word-table th {
+            background-color: var(--primary);
+            color: #ffffff;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            font-size: 1.05rem;
+        }
+
+        table.word-table td {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            font-size: 0.95rem;
+            vertical-align: top;
+        }
+
+        table.word-table tr:nth-child(even) {
+            background-color: var(--primary-light);
+        }
+
+        .field-label {
+            font-weight: bold;
+            background-color: #f2f5f8 !important;
+            width: 25%;
+            color: var(--secondary);
+        }
+
+        /* Textareas para códigos como DBML */
+        .code-box {
+            width: 100%;
+            height: 250px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #2d3748;
+            color: #f7fafc;
+            resize: vertical;
+            box-sizing: border-box;
+            margin-bottom: 25px;
+        }
+
+        .btn-copy {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: 15px;
+            transition: background 0.2s;
+        }
+
+        .btn-copy:hover {
+            background-color: #2b6cb0;
+        }
+
+        @media print {
+            body {
+                background-color: #fff;
+            }
+            .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+                max-width: 100%;
+            }
+            .btn-copy, .instruction-box {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>NEXO - SISTEMA DE RUTEO INTELIGENTE</h1>
+        <p>Documentación Oficial de Análisis y Diseño de Sistemas para Proyecto Académico UNIDA 2026</p>
+    </div>
+
+    <div class="instruction-box">
+        <p>💡 <strong>Instrucciones para exportar a Microsoft Word (.docx):</strong></p>
+        <ol style="margin: 5px 0 0 0; padding-left: 20px; color: #2c5282;">
+            <li>Abre este archivo HTML en tu navegador web.</li>
+            <li>Espera a que los diagramas visuales se rendericen en pantalla.</li>
+            <li>Para copiar los <strong>Diagramas</strong>: Haz clic derecho sobre el dibujo resultante en el navegador, selecciona "Copiar Imagen" y pégala en Word.</li>
+            <li>Para copiar las <strong>Tablas y Texto</strong>: Selecciona el contenido con el ratón, cópialo (Ctrl+C) y pégalo directamente en Word (Ctrl+V). Los bordes y colores se mantendrán perfectamente estructurados.</li>
+        </ol>
+    </div>
+
+    <!-- SECCIÓN 1: DIAGRAMA DE CONTEXTO -->
+    <h2>1. Diagrama de Contexto del Software</h2>
+    <p>El Diagrama de Contexto representa los límites del software <strong>NEXO</strong>, modelando el sistema completo como un único proceso central que interactúa dinámicamente con las entidades externas (usuarios, choferes y APIs de terceros) mediante flujos de datos entrantes y salientes perfectamente justificados.</p>
+
+    <h3>1.1 Representación Gráfica (Renderizado en Vivo)</h3>
+    <div class="diagram-wrapper">
+        <div class="mermaid">
+        graph TD
+            classDef system fill:#1f4e78,stroke:#0f2a42,stroke-width:3px,color:#fff,font-weight:bold;
+            classDef entity fill:#f8f9fa,stroke:#718096,stroke-width:2px,color:#1a202c,font-weight:bold;
+            
+            NEXO["🚚 NEXO: Sistema de Ruteo Inteligente<br>(Proceso Central 0.0)"]:::system
+            
+            Admin["👤 Administrador / Despachador"]:::entity
+            Chofer["👨‍✈️ Chofer / Repartidor"]:::entity
+            ORS["🌐 OpenRouteService API<br>(Sistema Externo)"]:::entity
+            WA["💬 WhatsApp Web / API<br>(Sistema Externo)"]:::entity
+            
+            Admin -->|"1. Credenciales de Acceso<br>2. Datos Maestros (Clientes/Flota)<br>3. Reglas de Ruteo y Toggles<br>4. Solicitud de Generación"| NEXO
+            NEXO -->|"1. Token de Sesión<br>2. Reportes, Estadísticas y Dashboard<br>3. Propuesta de Ruta Optimizada<br>4. Alertas del Sistema"| Admin
+            
+            Chofer -->|"Actualización de Estado de Entrega"| NEXO
+            NEXO -->|"Enlace y Hoja de Ruta"| Chofer
+            
+            NEXO -->|"Coordenadas Geográficas (Lat/Long)"| ORS
+            ORS -->|"Matriz de Tiempos y Distancias"| NEXO
+            
+            NEXO -->|"Itinerario de Ruta Formateado"| WA
+            WA -->|"Confirmación de Despacho"| NEXO
+        </div>
+    </div>
+
+    <h3>1.2 Flujos de Datos Detallados</h3>
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th style="width: 25%;">Entidad Externa</th>
+                <th style="width: 35%;">Flujos Entrantes al Sistema</th>
+                <th style="width: 35%;">Flujos Salientes del Sistema</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Administrador / Despachador</strong></td>
+                <td>
+                    • Credenciales de Acceso (Usuario/Contraseña)<br>
+                    • Gestión de Datos Maestros (Clientes, Choferes, Vehículos)<br>
+                    • Reglas y Capacidad de Ruteo (Límites por móvil)<br>
+                    • Solicitud de Generación de Rutas (Clientes seleccionados)
+                </td>
+                <td>
+                    • Confirmación de Autenticación y Token de Sesión<br>
+                    • Visualización de Reportes, Tablas y Dashboard de Estadísticas<br>
+                    • Propuesta de Rutas Optimizadas en Mapa<br>
+                    • Alertas de Inactividad (Cierre tras 5 min)
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Chofer / Repartidor</strong></td>
+                <td>
+                    • Actualización de Estado de Entrega (Entregado, Rechazado, Pendiente con observaciones)
+                </td>
+                <td>
+                    • Enlace digital y Hoja de Ruta ordenada con coordenadas de Google Maps
+                </td>
+            </tr>
+            <tr>
+                <td><strong>OpenRouteService API</strong></td>
+                <td>
+                    • Coordenadas Geográficas de puntos de parada (Latitud/Longitud)
+                </td>
+                <td>
+                    • Matriz de distancias reales por carretera (m) y tiempos estimados de conducción (s)
+                </td>
+            </tr>
+            <tr>
+                <td><strong>WhatsApp Web / API</strong></td>
+                <td>
+                    • Itinerario de ruta y mensaje predefinido con enlaces de navegación
+                </td>
+                <td>
+                    • Confirmación de envío de la notificación
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr style="margin: 40px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+    <!-- SECCIÓN 2: DIAGRAMA DE ENTIDAD-RELACIÓN -->
+    <h2>2. Modelo de Base de Datos - Diagrama Entidad-Relación (DER)</h2>
+    <p>El diseño lógico representa la persistencia de datos relacionales en el motor <strong>PostgreSQL</strong>. A continuación se incluye el DER físico en notación de Pata de Cuervo (Crow's Foot), la especificación DBML y el Diccionario de Datos completo.</p>
+
+    <h3>2.1 Diagrama Físico (Renderizado en Vivo)</h3>
+    <div class="diagram-wrapper">
+        <div class="mermaid">
+        erDiagram
+            USUARIOS {
+                int id PK
+                string username
+                string password
+                string nombre
+                string rol
+            }
+            CLIENTES {
+                int id PK
+                string nombre
+                string tipo_cliente
+                double latitud
+                double longitud
+                string ciudad
+                string cadena
+                string url_google
+                boolean activo
+            }
+            CHOFERES {
+                int id PK
+                string nombre
+                string telefono
+                boolean activo
+            }
+            VEHICULOS {
+                int id PK
+                string nombre
+                string chapa
+                boolean activo
+            }
+            RUTAS_GENERADAS {
+                string token PK
+                int movil_numero
+                int chofer_id FK
+                int vehiculo_id FK
+                string clientes_json
+                double distancia_total
+                int tiempo_estimado
+                timestamp fecha
+            }
+            ENTREGAS {
+                int id PK
+                string ruta_token FK
+                int cliente_id FK
+                string estado
+                string observacion
+                int orden_en_ruta
+                timestamp fecha_actualizacion
+            }
+            REGLAS_RUTEO {
+                int id PK
+                string categoria
+                int limite_por_movil
+                boolean activo
+            }
+            
+            CHOFERES ||--o{ RUTAS_GENERADAS : "conduce"
+            VEHICULOS ||--o{ RUTAS_GENERADAS : "transporta"
+            RUTAS_GENERADAS ||--|{ ENTREGAS : "contiene"
+            CLIENTES ||--o{ ENTREGAS : "recibe"
+        </div>
+    </div>
+
+    <h3>2.2 Especificación DBML para dbdiagram.io</h3>
+    <p>Puedes copiar el siguiente código directamente en <a href="https://dbdiagram.io" target="_blank">dbdiagram.io</a> para editarlo:</p>
+    <button class="btn-copy" onclick="copyDbml()">Copiar Código DBML</button>
+    <textarea id="dbml-code" class="code-box" readonly>
+Table usuarios {
+  id serial [primary key]
+  username text [unique]
+  password text
+  nombre text
+  rol text
+}
+
+Table clientes {
+  id serial [primary key]
+  nombre text [unique]
+  tipo_cliente text
+  latitud double
+  longitud double
+  ciudad text
+  cadena text
+  url_google text
+  activo boolean [default: true]
+}
+
+Table choferes {
+  id serial [primary key]
+  nombre text
+  telefono text
+  activo boolean [default: true]
+}
+
+Table vehiculos {
+  id serial [primary key]
+  nombre text
+  chapa text
+  activo boolean [default: true]
+}
+
+Table rutas_generadas {
+  token text [primary key]
+  movil_numero integer
+  chofer_id integer
+  vehiculo_id integer
+  clientes_json text
+  distancia_total double
+  tiempo_estimado integer
+  fecha timestamp [default: `now()`]
+}
+
+Table entregas {
+  id serial [primary key]
+  ruta_token text
+  cliente_id integer
+  estado text
+  observacion text
+  orden_en_ruta integer
+  fecha_actualizacion timestamp [default: `now()`]
+}
+
+Table reglas_ruteo {
+  id serial [primary key]
+  categoria text [unique]
+  limite_por_movil integer
+  activo boolean [default: true]
+}
+
+Ref: rutas_generadas.chofer_id > choferes.id
+Ref: rutas_generadas.vehiculo_id > vehiculos.id
+Ref: entregas.ruta_token > rutas_generadas.token
+Ref: entregas.cliente_id > clientes.id</textarea>
+
+    <h3>2.3 Diccionario de Datos del Sistema</h3>
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th style="width: 25%;">Tabla</th>
+                <th style="width: 25%;">Columna (Clave)</th>
+                <th style="width: 20%;">Tipo de Dato</th>
+                <th style="width: 30%;">Descripción / Regla</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Clientes -->
+            <tr>
+                <td rowspan="3"><strong>clientes</strong><br>(Datos de entrega)</td>
+                <td>id (PK)</td>
+                <td>SERIAL</td>
+                <td>Autoincremental de cliente.</td>
+            </tr>
+            <tr>
+                <td>nombre (UK)</td>
+                <td>TEXT</td>
+                <td>Razón social o nombre comercial único.</td>
+            </tr>
+            <tr>
+                <td>activo</td>
+                <td>BOOLEAN</td>
+                <td>Estado lógico. Default TRUE.</td>
+            </tr>
+            <!-- Choferes -->
+            <tr>
+                <td rowspan="2"><strong>choferes</strong><br>(Repartidores)</td>
+                <td>id (PK)</td>
+                <td>SERIAL</td>
+                <td>Identificador único del conductor.</td>
+            </tr>
+            <tr>
+                <td>telefono</td>
+                <td>TEXT</td>
+                <td>Número con código de país para WhatsApp.</td>
+            </tr>
+            <!-- Rutas -->
+            <tr>
+                <td rowspan="4"><strong>rutas_generadas</strong><br>(Historial de viajes)</td>
+                <td>token (PK)</td>
+                <td>TEXT</td>
+                <td>Código hash único que sirve de link público.</td>
+            </tr>
+            <tr>
+                <td>chofer_id (FK)</td>
+                <td>INTEGER</td>
+                <td>Relaciona con tabla <code>choferes.id</code>.</td>
+            </tr>
+            <tr>
+                <td>vehiculo_id (FK)</td>
+                <td>INTEGER</td>
+                <td>Relaciona con tabla <code>vehiculos.id</code>.</td>
+            </tr>
+            <tr>
+                <td>distancia_total</td>
+                <td>DOUBLE PRECISION</td>
+                <td>Kilómetros acumulados del viaje.</td>
+            </tr>
+            <!-- Entregas -->
+            <tr>
+                <td rowspan="3"><strong>entregas</strong><br>(Paradas en ruta)</td>
+                <td>id (PK)</td>
+                <td>SERIAL</td>
+                <td>Identificador de la parada individual.</td>
+            </tr>
+            <tr>
+                <td>ruta_token (FK)</td>
+                <td>TEXT</td>
+                <td>Relaciona con tabla <code>rutas_generadas.token</code>.</td>
+            </tr>
+            <tr>
+                <td>estado</td>
+                <td>TEXT</td>
+                <td>Estados: "Pendiente", "Entregado", "Rechazado".</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr style="margin: 40px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+    <!-- SECCIÓN 3: DIAGRAMA DE CASOS DE USO Y FICHAS -->
+    <h2>3. Diagramas de Casos de Uso y Fichas Descriptivas (UML)</h2>
+    <p>Los Casos de Uso describen detalladamente el comportamiento del sistema desde la perspectiva de los actores del negocio. Para un análisis estructurado y riguroso, a continuación se desglosan los <strong>Diagramas de Casos de Uso específicos por cada Módulo funcional del sistema</strong>, seguidos de sus respectivas fichas técnicas normalizadas.</p>
+
+    <h3>3.1 Diagramas de Casos de Uso por Módulo (Renderizado en Vivo)</h3>
+
+    <!-- 3.1.1 SEGURIDAD -->
+    <h4 style="color: var(--primary); margin-top: 25px; margin-bottom: 10px;">3.1.1 Módulo de Seguridad y Autenticación</h4>
+    <p>Este módulo gestiona la protección de accesos a la plataforma logrando que el despachador acceda de forma segura tras validar contraseñas cifradas y controlando la sesión activa.</p>
+    <div class="diagram-wrapper">
+        <div class="mermaid">
+        graph LR
+            subgraph Seg ["Módulo de Seguridad y Autenticación"]
+                CU01_1(["CU-01.1: Iniciar Sesión"])
+                CU01_2(["CU-01.2: Validar Token y Sesión"])
+                CU01_3(["CU-01.3: Cifrar Contraseña con BCrypt"])
+                CU01_4(["CU-01.4: Controlar Inactividad<br>(Cierre Automático tras 5 Min)"])
+            end
+
+            Admin["👤 Administrador / Despachador"]
+
+            Admin --> CU01_1
+            Admin --> CU01_2
+            CU01_1 -.->|includes| CU01_3
+            CU01_2 -.->|includes| CU01_4
+        </div>
+    </div>
+
+    <!-- 3.1.2 GESTIÓN DE RECURSOS -->
+    <h4 style="color: var(--primary); margin-top: 25px; margin-bottom: 10px;">3.1.2 Módulo de Gestión de Recursos (Clientes y Flota)</h4>
+    <p>Permite administrar las entidades físicas que operan en la logística. Cubre los registros CRUD de clientes (con latitud/longitud), vehículos, y conductores.</p>
+    <div class="diagram-wrapper">
+        <div class="mermaid">
+        graph LR
+            subgraph Rec ["Módulo de Gestión de Recursos"]
+                CU02_1(["CU-02.1: Registrar / Modificar / Eliminar Cliente"])
+                CU02_2(["CU-02.2: Registrar / Modificar / Eliminar Chofer"])
+                CU02_3(["CU-02.3: Registrar / Modificar / Eliminar Vehículo"])
+                CU02_4(["CU-02.4: Cargar Coordenadas GPS de Cliente"])
+                CU02_5(["CU-02.5: Importar Clientes desde Archivo SQL"])
+            end
+
+            Admin["👤 Administrador / Despachador"]
+
+            Admin --> CU02_1
+            Admin --> CU02_2
+            Admin --> CU02_3
+            Admin --> CU02_5
+            CU02_1 -.->|includes| CU02_4
+        </div>
+    </div>
+
+    <!-- 3.1.3 OPTIMIZACIÓN Y PLANIFICACIÓN -->
+    <h4 style="color: var(--primary); margin-top: 25px; margin-bottom: 10px;">3.1.3 Módulo de Planificación y Optimización de Rutas</h4>
+    <p>Este es el núcleo inteligente del software. Integra el algoritmo de optimización de rutas cumpliendo con las reglas de capacidad de vehículos y consumiendo servicios externos de geolocalización.</p>
+    <div class="diagram-wrapper">
+        <div class="mermaid">
+        graph LR
+            subgraph Opt ["Módulo de Planificación y Ruteo"]
+                CU03_1(["CU-03.1: Seleccionar Clientes y Móviles Activos"])
+                CU03_2(["CU-03.2: Configurar Reglas de Ruteo<br>(Límites de Carga por Categoría)"])
+                CU03_3(["CU-03.3: Habilitar Flexibilidad de Reglas"])
+                CU03_4(["CU-03.4: Generar Ruta Optimizada"])
+                CU03_5(["CU-03.5: Consultar Matriz de Tiempos y Distancias"])
+                CU03_6(["CU-03.6: Reasignar Clientes entre Móviles"])
+            end
+
+            Admin["👤 Administrador / Despachador"]
+            ORS["🌐 OpenRouteService API (Ext)"]
+
+            Admin --> CU03_1
+            Admin --> CU03_2
+            Admin --> CU03_3
+            Admin --> CU03_4
+            Admin --> CU03_6
+            
+            CU03_4 -.->|includes| CU03_5
+            CU03_5 --> ORS
+        </div>
+    </div>
+
+    <!-- 3.1.4 DESPACHO Y COMUNICACIÓN -->
+    <h4 style="color: var(--primary); margin-top: 25px; margin-bottom: 10px;">3.1.4 Módulo de Despacho y Comunicación</h4>
+    <p>Encargado de convertir las rutas matemáticas generadas en enlaces y mensajes estructurados legibles para los repartidores en calle.</p>
+    <div class="diagram-wrapper">
+        <div class="mermaid">
+        graph LR
+            subgraph Desp ["Módulo de Despacho y Comunicación"]
+                CU04_1(["CU-04.1: Consultar Hoja de Ruta e Itinerarios"])
+                CU04_2(["CU-04.2: Asignar Recursos a Rutas"])
+                CU04_3(["CU-04.3: Generar Mensaje con Enlaces GPS"])
+                CU04_4(["CU-04.4: Despachar Ruta por WhatsApp"])
+            end
+
+            Admin["👤 Administrador / Despachador"]
+            WA["💬 WhatsApp Web / API (Ext)"]
+
+            Admin --> CU04_1
+            Admin --> CU04_2
+            Admin --> CU04_4
+            
+            CU04_4 -.->|includes| CU04_3
+            CU04_4 --> WA
+        </div>
+    </div>
+
+    <!-- 3.1.5 SEGUIMIENTO Y MONITOREO -->
+    <h4 style="color: var(--primary); margin-top: 25px; margin-bottom: 10px;">3.1.5 Módulo de Monitoreo y Seguimiento en Tiempo Real</h4>
+    <p>Permite registrar los resultados de las visitas físicas de reparto, dando soporte al chofer para reportar entregas exitosas o rechazos y manteniendo al despachador informado.</p>
+    <div class="diagram-wrapper">
+        <div class="mermaid">
+        graph LR
+            subgraph Mon ["Módulo de Monitoreo y Seguimiento"]
+                CU05_1(["CU-05.1: Cargar Ruta mediante Token"])
+                CU05_2(["CU-05.2: Consultar Secuencia de Paradas y Navegación GPS"])
+                CU05_3(["CU-05.3: Registrar Estado de Entrega<br>(Entregado / Rechazado con Observación)"])
+                CU05_4(["CU-05.4: Monitorear Progreso Logístico"])
+                CU05_5(["CU-05.5: Finalizar y Bloquear Ruta"])
+            end
+
+            Admin["👤 Administrador / Despachador"]
+            Chofer["👨‍✈️ Chofer / Repartidor"]
+
+            Chofer --> CU05_1
+            Chofer --> CU05_2
+            Chofer --> CU05_3
+            Chofer --> CU05_5
+            
+            Admin --> CU05_4
+            CU05_3 -.->|includes| CU05_4
+        </div>
+    </div>
+
+    <h3>3.2 Fichas Técnicas Normalizadas (Copiar a Word)</h3>
+
+    <!-- CU-01 -->
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th colspan="2">Tabla 1: Caso de Uso – Iniciar Sesión</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="field-label">Caso de Uso</td>
+                <td><strong>CU-01 Iniciar Sesión</strong></td>
+            </tr>
+            <tr>
+                <td class="field-label">Actor</td>
+                <td>Administrador / Despachador</td>
+            </tr>
+            <tr>
+                <td class="field-label">Descripción</td>
+                <td>Permite a un operador logístico autenticarse de forma segura en la plataforma para acceder al panel administrativo y sus herramientas de distribución.</td>
+            </tr>
+            <tr>
+                <td class="field-label">Pre-condiciones</td>
+                <td>
+                    • El usuario debe estar previamente registrado en el sistema.<br>
+                    • Disponer de conexión a internet o red local activa.<br>
+                    • El servidor backend de NEXO debe estar en ejecución.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Flujo de pasos</td>
+                <td>
+                    1. El operador ingresa a la pantalla de login (<code>login.html</code>).<br>
+                    2. El sistema muestra el formulario con los campos de usuario y contraseña.<br>
+                    3. El operador ingresa sus credenciales y presiona "Ingresar".<br>
+                    4. El sistema valida las credenciales contrastándolas en la base de datos PostgreSQL utilizando la librería BCrypt.<br>
+                    5. El sistema genera el token de sesión.<br>
+                    6. El sistema redirige al operador al Dashboard del panel principal (<code>index.html</code>).
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Post-condiciones</td>
+                <td>
+                    • La sesión del operador queda iniciada.<br>
+                    • Se habilita el temporizador de cierre automático por inactividad tras 5 minutos.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Excepciones</td>
+                <td>
+                    • <strong>Usuario o contraseña incorrectos:</strong> El sistema deniega el acceso y lanza una alerta visual.<br>
+                    • <strong>Servidor apagado:</strong> El navegador muestra error de conexión de red.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- CU-02 -->
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th colspan="2">Tabla 2: Caso de Uso – Gestionar Recursos de Flota y Clientes</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="field-label">Caso de Uso</td>
+                <td><strong>CU-02 Gestionar Recursos de Flota y Clientes</strong></td>
+            </tr>
+            <tr>
+                <td class="field-label">Actor</td>
+                <td>Administrador / Despachador</td>
+            </tr>
+            <tr>
+                <td class="field-label">Descripción</td>
+                <td>Permite registrar, actualizar, deshabilitar lógicamente y listar clientes (con geolocalización), vehículos y choferes disponibles.</td>
+            </tr>
+            <tr>
+                <td class="field-label">Pre-condiciones</td>
+                <td>
+                    • El operador debe estar debidamente autenticado en el sistema (CU-01).<br>
+                    • Los datos geográficos de los clientes deben corresponder a coordenadas decimales válidas.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Flujo de pasos</td>
+                <td>
+                    1. El operador ingresa a las pestañas correspondientes en el panel (<code>index.html</code>).<br>
+                    2. El sistema muestra el listado de recursos actuales con la opción de añadir nuevo.<br>
+                    3. El operador presiona "Agregar" y digita la información solicitada en el formulario modal.<br>
+                    4. El sistema valida que los campos clave (como el nombre del cliente o chapa del vehículo) no existan previamente.<br>
+                    5. El sistema almacena los datos en la tabla correspondiente de PostgreSQL.<br>
+                    6. El sistema refresca dinámicamente el listado en la UI sin necesidad de recargar la página.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Post-condiciones</td>
+                <td>
+                    • El recurso queda registrado en la base de datos y disponible para los algoritmos de optimización de rutas.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Excepciones</td>
+                <td>
+                    • <strong>Duplicidad de claves:</strong> El sistema cancela el guardado si el nombre de cliente o matrícula ya existen.<br>
+                    • <strong>Campos incompletos:</strong> Se solicita al operador rellenar los inputs obligatorios.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- CU-03 -->
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th colspan="2">Tabla 3: Caso de Uso – Configurar Reglas de Ruteo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="field-label">Caso de Uso</td>
+                <td><strong>CU-03 Configurar Reglas de Ruteo</strong></td>
+            </tr>
+            <tr>
+                <td class="field-label">Actor</td>
+                <td>Administrador / Despachador</td>
+            </tr>
+            <tr>
+                <td class="field-label">Descripción</td>
+                <td>Permite establecer y flexibilizar los límites de capacidad de paradas por móvil según la categoría de venta del cliente.</td>
+            </tr>
+            <tr>
+                <td class="field-label">Pre-condiciones</td>
+                <td>
+                    • El operador cuenta con sesión activa en el sistema.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Flujo de pasos</td>
+                <td>
+                    1. El operador navega hacia la sección "Reglas de Ruteo" (<code>reglas.html</code>).<br>
+                    2. El sistema despliega las reglas activas con sus categorías y topes máximos por móvil.<br>
+                    3. El operador modifica los valores numéricos o activa/desactiva la regla mediante el toggle de flexibilidad.<br>
+                    4. El operador presiona "Guardar Cambios".<br>
+                    5. El sistema valida los datos de entrada y sobrescribe las reglas en la tabla <code>reglas_ruteo</code>.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Post-condiciones</td>
+                <td>
+                    • Los límites y estados modificados se aplican dinámicamente al generar la siguiente ruta.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Excepciones</td>
+                <td>
+                    • <strong>Valor inválido:</strong> El sistema no permite guardar si se ingresa un límite negativo o vacío.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- CU-04 -->
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th colspan="2">Tabla 4: Caso de Uso – Generar y Optimizar Rutas</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="field-label">Caso de Uso</td>
+                <td><strong>CU-04 Generar y Optimizar Rutas</strong></td>
+            </tr>
+            <tr>
+                <td class="field-label">Actor</td>
+                <td>Administrador / Despachador, OpenRouteService API (Ext)</td>
+            </tr>
+            <tr>
+                <td class="field-label">Descripción</td>
+                <td>Agrupa de forma automatizada los clientes seleccionados en camiones asignados, ordenándolos óptimamente por su cercanía de carreteras.</td>
+            </tr>
+            <tr>
+                <td class="field-label">Pre-condiciones</td>
+                <td>
+                    • Deben existir clientes activos geolocalizados y choferes con vehículos libres.<br>
+                    • Conexión a internet estable y API Key de OpenRouteService configurada.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Flujo de pasos</td>
+                <td>
+                    1. El operador ingresa a "Planificación de Ruta" (<code>ruta.html</code>).<br>
+                    2. El operador marca en la lista interactiva los clientes a visitar y los choferes/vehículos habilitados.<br>
+                    3. El operador presiona "Generar Ruta Optimizada".<br>
+                    4. El backend inicia el cálculo heurístico y realiza consultas a <strong>OpenRouteService API</strong> para obtener matrices de distancias en carretera.<br>
+                    5. <strong>OpenRouteService</strong> retorna las distancias reales (m) y tiempos estimados de conducción (s).<br>
+                    6. El sistema estructura la ruta y las entregas ordenadas en la base de datos con un token único de seguimiento.<br>
+                    7. El sistema renderiza los recorridos en el mapa interactivo y muestra un resumen estadístico.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Post-condiciones</td>
+                <td>
+                    • Se crean las rutas y entregas asociadas en estado "Pendiente" y listas para despacho.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Excepciones</td>
+                <td>
+                    • <strong>Falla de API de mapas:</strong> Si OpenRouteService falla, el sistema realiza un fallback a distancias lineales por Haversine de manera transparente, notificando al operador.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- CU-05 -->
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th colspan="2">Tabla 5: Caso de Uso – Despachar Ruta por WhatsApp</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="field-label">Caso de Uso</td>
+                <td><strong>CU-05 Despachar Ruta por WhatsApp</strong></td>
+            </tr>
+            <tr>
+                <td class="field-label">Actor</td>
+                <td>Administrador / Despachador, WhatsApp Web / API (Ext)</td>
+            </tr>
+            <tr>
+                <td class="field-label">Descripción</td>
+                <td>Envía un mensaje formateado con las direcciones de entrega de la ruta y los links de localización GPS directamente al teléfono del chofer.</td>
+            </tr>
+            <tr>
+                <td class="field-label">Pre-condiciones</td>
+                <td>
+                    • La ruta del móvil correspondiente debe estar generada y persistida.<br>
+                    • El conductor asignado debe tener guardado un número de teléfono válido.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Flujo de pasos</td>
+                <td>
+                    1. El operador visualiza el itinerario generado en la sección de "Resultados de Ruta" (<code>resultados.html</code>).<br>
+                    2. El sistema despliega un botón con el icono de WhatsApp al lado del móvil asignado.<br>
+                    3. El operador presiona el botón "Enviar por WhatsApp".<br>
+                    4. El sistema compila la información (nombre del chofer, vehículo, secuencia ordenada de clientes y sus URLs directas a Google Maps) y crea un mensaje estructurado.<br>
+                    5. El sistema redirige al operador a la <strong>API Web de WhatsApp</strong> con el texto codificado en la URL.<br>
+                    6. El operador confirma el envío en la aplicación externa de WhatsApp.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Post-condiciones</td>
+                <td>
+                    • El chofer asignado recibe en su terminal móvil la hoja de ruta con acceso directo para navegación GPS.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Excepciones</td>
+                <td>
+                    • <strong>Falta número telefónico:</strong> El sistema muestra una alerta de error si el chofer no cuenta con un teléfono registrado.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- CU-06 -->
+    <table class="word-table">
+        <thead>
+            <tr>
+                <th colspan="2">Tabla 6: Caso de Uso – Registrar y Monitorear Entrega</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="field-label">Caso de Uso</td>
+                <td><strong>CU-06 Registrar y Monitorear Entrega</strong></td>
+            </tr>
+            <tr>
+                <td class="field-label">Actor</td>
+                <td>Chofer / Repartidor, Administrador / Despachador</td>
+            </tr>
+            <tr>
+                <td class="field-label">Descripción</td>
+                <td>Permite monitorear el progreso de las rutas y registrar el resultado de cada visita individual de entrega por parte de los choferes en calle.</td>
+            </tr>
+            <tr>
+                <td class="field-label">Pre-condiciones</td>
+                <td>
+                    • La ruta de reparto debe estar activa (no finalizada).<br>
+                    • Acceso a internet en el dispositivo móvil del chofer.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Flujo de pasos</td>
+                <td>
+                    1. El chofer accede al módulo de "Seguimiento" (<code>seguimiento.html</code>) ingresando el token de su ruta.<br>
+                    2. El sistema despliega las entregas ordenadas por visitar.<br>
+                    3. Al visitar un punto, el chofer hace clic en "Actualizar Estado" de la entrega correspondiente.<br>
+                    4. El chofer selecciona el estado final (Entregado, Rechazado) y, si es rechazado, añade una observación explicativa.<br>
+                    5. El sistema valida el cambio de estado, actualiza la fecha en PostgreSQL y refresca dinámicamente el progreso en el panel del despachador.<br>
+                    6. Al completar todas las entregas, la ruta se marca como "Finalizada" (bloqueándose para cambios).
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Post-condiciones</td>
+                <td>
+                    • El estado de las entregas y las rutas se sincronizan en tiempo real para el control logístico.
+                </td>
+            </tr>
+            <tr>
+                <td class="field-label">Excepciones</td>
+                <td>
+                    • <strong>Ruta Finalizada:</strong> El sistema impide modificar estados si la ruta fue marcada previamente como cerrada/finalizada.<br>
+                    • <strong>Pérdida de red:</strong> El dispositivo guarda el estado una vez que recupera señal.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+    function copyDbml() {
+        var copyText = document.getElementById("dbml-code");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        alert("¡Código DBML copiado al portapapeles!");
+    }
+</script>
+
+</body>
+</html>

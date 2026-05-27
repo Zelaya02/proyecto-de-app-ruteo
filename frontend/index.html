@@ -674,8 +674,8 @@
                 </form>
                 <div class="table-wrapper" style="max-height:300px;">
                     <table class="client-table">
-                        <thead><tr><th>Vehículo</th><th>Chapa</th><th style="width:100px;">Acciones</th></tr></thead>
-                        <tbody id="tbodyVehiculos"><tr><td colspan="3">Cargando...</td></tr></tbody>
+                        <thead><tr><th>Vehículo</th><th>Chapa</th><th>Tipo</th><th style="width:100px;">Acciones</th></tr></thead>
+                        <tbody id="tbodyVehiculos"><tr><td colspan="4">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -801,8 +801,35 @@
         async function guardarCliente(e) { e.preventDefault(); let id = document.getElementById('clienteId').value; let nombre = document.getElementById('clienteNombre').value; let tipo = document.getElementById('clienteTipo').value; let url = document.getElementById('clienteUrl').value; let method = id ? 'PUT' : 'POST'; let payload = { nombre, tipo_cliente: tipo, url }; if (id) payload.id = parseInt(id); try { let res = await fetchWithAuth('/api/clientes', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(); cerrarModalCliente(); cargarClientes(); } catch (e) { alert('Error al guardar'); } }
         async function eliminarCliente(id) { if (confirm('¿Eliminar?')) { await fetchWithAuth(`/api/clientes?id=${id}`, { method: 'DELETE' }); cargarClientes(); } }
 
-        function generarRutas() {
+        async function generarRutas() {
             if (clientes.filter(c => c.seleccionado).length === 0) return alert("Seleccioná clientes");
+            
+            let numM = parseInt(document.getElementById('numMoviles').value) || 1;
+            try {
+                const btn = document.getElementById('btnGenerar');
+                const origIcon = btn.innerHTML;
+                if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+
+                let resC = await fetchWithAuth('/api/choferes');
+                let choferes = await resC.json();
+                
+                let resV = await fetchWithAuth('/api/vehiculos');
+                let vehiculos = await resV.json();
+                
+                if(btn) { btn.innerHTML = origIcon; btn.disabled = false; }
+                
+                if (choferes.length < numM) {
+                    return alert(`No hay suficientes choferes registrados.\nRequeridos: ${numM}\nDisponibles: ${choferes.length}\n\nAgregue más en la sección de Configuración > Transportes.`);
+                }
+                if (vehiculos.length < numM) {
+                    return alert(`No hay suficientes vehículos registrados.\nRequeridos: ${numM}\nDisponibles: ${vehiculos.length}\n\nAgregue más en la sección de Configuración > Transportes.`);
+                }
+            } catch (e) {
+                console.error("Error validando recursos", e);
+                const btn = document.getElementById('btnGenerar');
+                if(btn) { btn.innerHTML = '<i class="fas fa-route"></i> Generar rutas'; btn.disabled = false; }
+            }
+
             generarRutasFinal([]);
         }
 
@@ -881,15 +908,15 @@
                 </tr>`
             ).join('');
 
-            // Vehiculos
             const tbV = document.getElementById('tbodyVehiculos');
-            if (transportesData.vehiculos.length === 0) tbV.innerHTML = '<tr><td colspan="3">No hay vehículos.</td></tr>';
+            if (transportesData.vehiculos.length === 0) tbV.innerHTML = '<tr><td colspan="4">No hay vehículos.</td></tr>';
             else tbV.innerHTML = transportesData.vehiculos.map(v => 
                 `<tr>
                     <td><strong>${escapeHtml(v.nombre)}</strong></td>
                     <td><span class="badge-tag">${escapeHtml(v.chapa || '-')}</span></td>
+                    <td>${escapeHtml(v.tipo || 'camion mediano')}</td>
                     <td>
-                        <button class="btn-icon" onclick="editarVehiculo(${v.id}, '${escapeHtml(v.nombre)}', '${escapeHtml(v.chapa || '')}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" onclick="editarVehiculo(${v.id}, '${escapeHtml(v.nombre)}', '${escapeHtml(v.chapa || '')}', '${escapeHtml(v.tipo || '')}')"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon" onclick="eliminarVehiculo(${v.id})" style="color:var(--danger);" title="Inhabilitar"><i class="fas fa-ban"></i></button>
                     </td>
                 </tr>`
@@ -923,15 +950,16 @@
 
         // Vehiculos CRUD
         function resetFormVehiculo() { document.getElementById('formVehiculo').reset(); document.getElementById('vehiculoId').value = ''; }
-        function editarVehiculo(id, nombre, chapa) { 
+        function editarVehiculo(id, nombre, chapa, tipo) { 
             document.getElementById('vehiculoId').value = id; 
             document.getElementById('vehiculoNombre').value = nombre; 
             document.getElementById('vehiculoChapa').value = chapa; 
+            document.getElementById('vehiculoTipo').value = tipo || 'camion mediano';
         }
         async function guardarVehiculo(e) { 
             e.preventDefault(); 
             let id = document.getElementById('vehiculoId').value; 
-            let payload = { nombre: document.getElementById('vehiculoNombre').value, chapa: document.getElementById('vehiculoChapa').value };
+            let payload = { nombre: document.getElementById('vehiculoNombre').value, chapa: document.getElementById('vehiculoChapa').value, tipo: document.getElementById('vehiculoTipo').value };
             let method = 'POST';
             if (id) { payload.id = parseInt(id); method = 'PUT'; }
             

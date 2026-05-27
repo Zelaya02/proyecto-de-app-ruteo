@@ -71,7 +71,7 @@ public class Main {
         DB_URL = detectDbUrl();
         usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
 
-        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8082), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8080), 0);
 
         // Archivos estaticos
         server.createContext("/", new StaticHandler());
@@ -1285,6 +1285,7 @@ public class Main {
                         v.put("id", rs.getInt("id"));
                         v.put("nombre", rs.getString("nombre"));
                         v.put("chapa", rs.getString("chapa"));
+                        v.put("tipo", rs.getString("tipo"));
                         vehiculos.add(v);
                     }
                     sendResponse(exchange, 200, gson.toJson(vehiculos));
@@ -1298,12 +1299,14 @@ public class Main {
                     Map<String, Object> req = gson.fromJson(body, Map.class);
                     String nombre = (String) req.get("nombre");
                     String chapa = (String) req.get("chapa");
+                    String tipo = (String) req.get("tipo");
 
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String sql = "INSERT INTO vehiculos (nombre, chapa) VALUES (?, ?)";
+                        String sql = "INSERT INTO vehiculos (nombre, chapa, tipo) VALUES (?, ?, ?)";
                         PreparedStatement pstmt = conn.prepareStatement(sql);
                         pstmt.setString(1, nombre);
                         pstmt.setString(2, chapa);
+                        pstmt.setString(3, tipo);
                         pstmt.executeUpdate();
                         sendResponse(exchange, 201, "{\"status\":\"ok\"}");
                     }
@@ -1331,12 +1334,14 @@ public class Main {
                     int id = ((Double) req.get("id")).intValue();
                     String nombre = (String) req.get("nombre");
                     String chapa = (String) req.get("chapa");
+                    String tipo = (String) req.get("tipo");
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String sql = "UPDATE vehiculos SET nombre = ?, chapa = ? WHERE id = ?";
+                        String sql = "UPDATE vehiculos SET nombre = ?, chapa = ?, tipo = ? WHERE id = ?";
                         PreparedStatement pstmt = conn.prepareStatement(sql);
                         pstmt.setString(1, nombre);
                         pstmt.setString(2, chapa);
-                        pstmt.setInt(3, id);
+                        pstmt.setString(3, tipo);
+                        pstmt.setInt(4, id);
                         pstmt.executeUpdate();
                         sendResponse(exchange, 200, "{\"status\":\"updated\"}");
                     }

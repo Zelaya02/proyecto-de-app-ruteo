@@ -38,7 +38,7 @@ public class CreacionDB {
                 dbStmt.executeUpdate("CREATE TABLE clientes (id SERIAL PRIMARY KEY, nombre TEXT UNIQUE, tipo_cliente TEXT, latitud DOUBLE PRECISION, longitud DOUBLE PRECISION, ciudad TEXT, cadena TEXT, url_google TEXT, activo BOOLEAN DEFAULT TRUE)");
                 
                 dbStmt.executeUpdate("CREATE TABLE choferes (id SERIAL PRIMARY KEY, nombre TEXT, telefono TEXT, activo BOOLEAN DEFAULT TRUE)");
-                dbStmt.executeUpdate("CREATE TABLE vehiculos (id SERIAL PRIMARY KEY, nombre TEXT, chapa TEXT, activo BOOLEAN DEFAULT TRUE)");
+                dbStmt.executeUpdate("CREATE TABLE vehiculos (id SERIAL PRIMARY KEY, nombre TEXT, chapa TEXT, tipo TEXT, activo BOOLEAN DEFAULT TRUE)");
                 
                 dbStmt.executeUpdate("CREATE TABLE rutas_generadas (token TEXT PRIMARY KEY, movil_numero INTEGER, chofer_id INTEGER REFERENCES choferes(id), vehiculo_id INTEGER REFERENCES vehiculos(id), chofer_nombre TEXT, vehiculo_nombre TEXT, clientes_json TEXT, distancia_total DOUBLE PRECISION, tiempo_estimado INTEGER, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
                 dbStmt.executeUpdate("CREATE TABLE entregas (id SERIAL PRIMARY KEY, ruta_token TEXT REFERENCES rutas_generadas(token), cliente_id INTEGER REFERENCES clientes(id), estado TEXT, observacion TEXT, orden_en_ruta INTEGER, fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
