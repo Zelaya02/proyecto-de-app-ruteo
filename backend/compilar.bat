@@ -27,6 +27,16 @@ if not exist "src\main\java\com\ruteo\Main.java" (
 echo ✅ Main.java encontrado
 echo.
 
+REM Configurar variables de entorno (cambiar segun sea necesario)
+if "%DB_PASSWORD%"=="" (
+    echo ⚠️  Variable DB_PASSWORD no definida. Configure sus credenciales:
+    echo    set DB_PASSWORD=su_contraseña
+    echo    set DB_USER=postgres
+    echo    set ORS_API_KEY=su_api_key_opencage
+    echo.
+)
+echo.
+
 REM Crear carpetas necesarias
 echo Creando carpetas...
 if not exist "target\classes" mkdir "target\classes"

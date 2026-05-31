@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.UUID;
 import java.net.http.HttpClient;
@@ -24,10 +25,9 @@ import com.ruteo.repository.UsuarioRepository;
 public class Main {
     private static final Gson gson = new Gson();
     private static String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db"; // se auto-detecta al inicio
-    private static final String DB_USER = "postgres";
-    private static final String DB_PASSWORD = "Zelaya1103";
-    private static final String ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; // Configura
-                                                                                                                                                                   // OpenRouteService
+    private static final String DB_USER = getEnvOrDefault("DB_USER", "postgres");
+    private static final String DB_PASSWORD = getEnvOrDefault("DB_PASSWORD", "Zelaya1103");
+    private static final String ORS_KEY = getEnvOrDefault("ORS_API_KEY", "");
     private static final String FRONTEND_DIR = "../frontend";
 
     // Modelos de Reglas
@@ -46,7 +46,13 @@ public class Main {
     }
 
     private static UsuarioRepository usuarioRepo; // se inicializa después de auto-detectar puerto
-    private static final Set<String> activeTokens = Collections.synchronizedSet(new HashSet<>());
+    private static final Map<String, Long> activeTokens = new ConcurrentHashMap<>();
+    private static final long TOKEN_TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
+
+    private static String getEnvOrDefault(String key, String def) {
+        String val = System.getenv(key);
+        return val != null && !val.isEmpty() ? val : def;
+    }
 
     /** Detecta el puerto PostgreSQL disponible (prueba 5000 primero, luego 5432). */
     private static String detectDbUrl() {
@@ -69,6 +75,14 @@ public class Main {
     public static void main(String[] args) throws IOException {
         // Auto-detección del puerto de PostgreSQL
         DB_URL = detectDbUrl();
+
+        if (System.getenv("DB_PASSWORD") == null || System.getenv("DB_PASSWORD").isEmpty()) {
+            System.out.println("⚠️  ADVERTENCIA: Usando contraseña por defecto. Configure DB_PASSWORD como variable de entorno para producción.");
+        }
+        if (System.getenv("ORS_API_KEY") == null || System.getenv("ORS_API_KEY").isEmpty()) {
+            System.out.println("ℹ️  ORS_API_KEY no configurada. Las distancias usarán Haversine (estimación lineal).");
+        }
+
         usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
 
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8080), 0);
@@ -105,7 +119,18 @@ public class Main {
             if (path.equals("/")) {
                 path = "/index.html";
             }
-            File file = new File(FRONTEND_DIR + path);
+            path = path.replaceAll("\\.\\./", "").replaceAll("\\.\\.", "").replaceAll("//+", "/");
+            if (path.contains("..") || path.contains("%") || path.contains(":") || path.contains("~")) {
+                exchange.sendResponseHeaders(403, -1);
+                return;
+            }
+            File file = new File(FRONTEND_DIR, path);
+            String canonicalPath = file.getCanonicalPath();
+            String frontendCanonical = new File(FRONTEND_DIR).getCanonicalPath();
+            if (!canonicalPath.startsWith(frontendCanonical)) {
+                exchange.sendResponseHeaders(403, -1);
+                return;
+            }
             if (file.exists() && !file.isDirectory()) {
                 String contentType = "text/html";
                 if (path.endsWith(".css"))
@@ -140,6 +165,10 @@ public class Main {
                 return;
             }
 
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM clientes WHERE activo = true ORDER BY id DESC";
@@ -162,6 +191,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(clientes));
                 } catch (SQLException e) {
+                    e.printStackTrace();
                     sendError(exchange, 500, "Error de base de datos");
                 }
             } else if ("POST".equals(exchange.getRequestMethod()) || "PUT".equals(exchange.getRequestMethod())) {
@@ -216,7 +246,8 @@ public class Main {
                         }
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, "Error: " + e.getMessage());
+                    e.printStackTrace();
+                    sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 try {
@@ -235,7 +266,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, "Error: " + e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -249,6 +280,10 @@ public class Main {
             setCORS(exchange);
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
                 return;
             }
             if ("POST".equals(exchange.getRequestMethod())) {
@@ -276,11 +311,14 @@ public class Main {
 
                     List<Cliente> clientes = new ArrayList<>();
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String idList = clienteIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-                        String sql = "SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE id IN ("
-                                + idList + ")";
-                        Statement stmt = conn.createStatement();
-                        ResultSet rs = stmt.executeQuery(sql);
+                        String placeholders = clienteIds.stream().map(id -> "?").collect(Collectors.joining(","));
+                        String sql = "SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE activo = true AND id IN ("
+                                + placeholders + ")";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        for (int i = 0; i < clienteIds.size(); i++) {
+                            pstmt.setInt(i + 1, clienteIds.get(i));
+                        }
+                        ResultSet rs = pstmt.executeQuery();
                         while (rs.next()) {
                             clientes.add(new Cliente(rs.getInt("id"), rs.getString("nombre"), rs.getDouble("latitud"),
                                     rs.getDouble("longitud"), rs.getString("tipo_cliente")));
@@ -436,7 +474,7 @@ public class Main {
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                    sendError(exchange, 500, "Error generando rutas: " + e.getMessage());
+                    sendError(exchange, 500, "Error generando rutas");
                 }
             }
         }
@@ -506,7 +544,8 @@ public class Main {
                         sendError(exchange, 404, "Ruta no encontrada");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, "Error " + e.getMessage());
+                    e.printStackTrace();
+                    sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -557,7 +596,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"ok\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -587,7 +626,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(reglas));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("POST".equals(exchange.getRequestMethod())) {
                 try {
@@ -619,7 +658,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"ok\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 try {
@@ -638,7 +677,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -649,6 +688,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 String query = exchange.getRequestURI().getQuery();
                 String periodo = "dia";
@@ -731,7 +778,7 @@ public class Main {
 
                     sendResponse(exchange, 200, gson.toJson(res));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -741,6 +788,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT e.id, c.nombre as cliente, e.estado, e.observacion, e.fecha_actualizacion, r.movil_numero, "
@@ -771,7 +826,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(reportes));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -829,7 +884,7 @@ public class Main {
 
                     if (usuario != null) {
                         String sessionToken = java.util.UUID.randomUUID().toString();
-                        activeTokens.add(sessionToken);
+                        activeTokens.put(sessionToken, System.currentTimeMillis());
                         response.put("success", true);
                         response.put("message", "Login exitoso");
                         response.put("usuario", usuario.getNombre());
@@ -842,7 +897,7 @@ public class Main {
                         sendResponse(exchange, 401, gson.toJson(response));
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, "Error en el servidor: " + e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -864,7 +919,13 @@ public class Main {
         String authHeader = authHeaders.get(0);
         if (authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7).trim();
-            return activeTokens.contains(token);
+            Long creationTime = activeTokens.get(token);
+            if (creationTime == null) return false;
+            if (System.currentTimeMillis() - creationTime > TOKEN_TTL_MS) {
+                activeTokens.remove(token);
+                return false;
+            }
+            return true;
         }
         return false;
     }
@@ -1195,6 +1256,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM choferes WHERE activo = true ORDER BY nombre";
@@ -1210,7 +1279,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(choferes));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("POST".equals(exchange.getRequestMethod())) {
                 try {
@@ -1229,7 +1298,7 @@ public class Main {
                         sendResponse(exchange, 201, "{\"status\":\"ok\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 try {
@@ -1243,7 +1312,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("PUT".equals(exchange.getRequestMethod())) {
                 try {
@@ -1262,7 +1331,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"updated\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -1274,6 +1343,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM vehiculos WHERE activo = true ORDER BY nombre";
@@ -1290,7 +1367,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(vehiculos));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("POST".equals(exchange.getRequestMethod())) {
                 try {
@@ -1311,7 +1388,7 @@ public class Main {
                         sendResponse(exchange, 201, "{\"status\":\"ok\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 try {
@@ -1325,7 +1402,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("PUT".equals(exchange.getRequestMethod())) {
                 try {
@@ -1346,7 +1423,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"updated\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -1359,6 +1436,10 @@ public class Main {
             setCORS(exchange);
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
                 return;
             }
             if ("POST".equals(exchange.getRequestMethod())) {
@@ -1446,7 +1527,7 @@ public class Main {
                     sendResponse(exchange, 200, "{\"status\":\"ok\"}");
                 } catch (Exception e) {
                     e.printStackTrace();
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -1460,6 +1541,10 @@ public class Main {
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("POST".equals(exchange.getRequestMethod())) {
                 try {
                     String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))
@@ -1468,6 +1553,22 @@ public class Main {
                     String url = json.has("url") ? json.get("url").getAsString() : "";
                     
                     if (url.isEmpty()) { sendError(exchange, 400, "URL requerida"); return; }
+                    
+                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                        sendError(exchange, 400, "URL inválida");
+                        return;
+                    }
+
+                    java.net.URI parsedUri = java.net.URI.create(url);
+                    String host = parsedUri.getHost();
+                    if (host == null) { sendError(exchange, 400, "URL inválida"); return; }
+                    String hostLower = host.toLowerCase();
+                    if (hostLower.equals("localhost") || hostLower.equals("127.0.0.1") || hostLower.equals("[::1]")
+                            || hostLower.startsWith("10.") || hostLower.startsWith("172.") || hostLower.startsWith("192.168.")
+                            || hostLower.startsWith("0.") || hostLower.endsWith(".local") || hostLower.endsWith(".internal")) {
+                        sendError(exchange, 400, "URL no permitida");
+                        return;
+                    }
                     
                     if (url.contains("google.com/maps/d/")) {
                         if (url.contains("mid=")) {
@@ -1505,7 +1606,7 @@ public class Main {
                     sendResponse(exchange, 200, "{\"status\":\"ok\", \"imported\":" + points.size() + "}");
                 } catch (Exception e) {
                     e.printStackTrace();
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -1542,6 +1643,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT nombre, latitud, longitud FROM clientes WHERE activo = true";
@@ -1574,7 +1683,7 @@ public class Main {
                     os.write(resp);
                     os.close();
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
