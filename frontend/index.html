@@ -26,29 +26,29 @@
 
         /* ========== PALETA REFINADA Y ELEGANTE (CELESTE & DORADO) ========== */
         :root {
-            --bg-light: #C5D7ED;
-            --card-light: linear-gradient(135deg, rgba(200, 225, 245, 0.92) 0%, rgba(248, 238, 215, 0.88) 100%);
-            --card-shadow: 0 10px 30px rgba(11, 43, 64, 0.08), 0 2px 8px rgba(200, 157, 74, 0.08);
-            --card-border: 1.5px solid rgba(200, 157, 74, 0.35);
-            --text-light: #072130;
-            --text-muted-light: #2A485C;
-            --border-light: rgba(200, 157, 74, 0.3);
-            --primary-dark: #0B2B40;
-            --primary-main: #1A4B5F;
-            --accent-gold: #C89D4A;
-            --accent-orange: #E67E22;
-            --success: #2E7D32;
-            --danger: #C62828;
-            --warning: #F57C00;
+            --bg-light: #F0F2F6;
+            --card-light: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(245,247,252,0.92) 100%);
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
+            --card-border: 1px solid #E8EAEE;
+            --text-light: #171A21;
+            --text-muted-light: #6B7280;
+            --border-light: #E2E5EB;
+            --primary-dark: #4A59E6;
+            --primary-main: #5B6BFF;
+            --accent-gold: #5B6BFF;
+            --accent-orange: #5B6BFF;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
             
-            /* Additions for Light Theme Depth */
-            --input-bg: rgba(225, 238, 248, 0.75);
-            --table-th-bg: linear-gradient(90deg, rgba(26, 75, 95, 0.12) 0%, rgba(200, 157, 74, 0.08) 100%);
-            --summary-bg: linear-gradient(90deg, rgba(200, 225, 245, 0.85) 0%, rgba(248, 238, 215, 0.8) 100%);
-            --summary-hover: linear-gradient(90deg, rgba(200, 157, 74, 0.18) 0%, rgba(26, 75, 95, 0.1) 100%);
-            --summary-border: 1.5px solid rgba(200, 157, 74, 0.35);
-            --counter-bg: linear-gradient(135deg, rgba(200, 157, 74, 0.18) 0%, rgba(200, 225, 245, 0.15) 100%);
-            --counter-border: 1.5px solid rgba(200, 157, 74, 0.45);
+            /* Additions for Light Theme */
+            --input-bg: #F3F4F8;
+            --table-th-bg: #F8F9FC;
+            --summary-bg: #FAFBFF;
+            --summary-hover: #F0F1F6;
+            --summary-border: 1px solid #E2E5EB;
+            --counter-bg: rgba(91, 107, 255, 0.06);
+            --counter-border: 1px solid rgba(91, 107, 255, 0.15);
         }
 
         body.dark-mode {
@@ -446,6 +446,73 @@
         }
 
         /* Switch personalizado */
+        .theme-switch {
+            font-size: 14px;
+            position: relative;
+            display: inline-block;
+            width: 4em;
+            height: 2.2em;
+            border-radius: 30px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .theme-switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2a2a2a;
+            transition: 0.4s;
+            border-radius: 30px;
+            overflow: hidden;
+        }
+        .theme-switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 1.2em;
+            width: 1.2em;
+            border-radius: 20px;
+            left: 0.5em;
+            bottom: 0.5em;
+            transition: 0.4s;
+            transition-timing-function: cubic-bezier(0.81, -0.04, 0.38, 1.5);
+            box-shadow: inset 8px -4px 0px 0px #fff;
+        }
+        .theme-switch input:checked + .slider {
+            background-color: #00a6ff;
+        }
+        .theme-switch input:checked + .slider:before {
+            transform: translateX(1.8em);
+            box-shadow: inset 15px -4px 0px 15px #ffcf48;
+        }
+        .theme-switch .star {
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            width: 5px;
+            transition: all 0.4s;
+            height: 5px;
+        }
+        .theme-switch .star_1 { left: 2.5em; top: 0.5em; }
+        .theme-switch .star_2 { left: 2.2em; top: 1.2em; }
+        .theme-switch .star_3 { left: 3em; top: 0.9em; }
+        .theme-switch input:checked ~ .slider .star { opacity: 0; }
+        .theme-switch .cloud {
+            width: 3.5em;
+            position: absolute;
+            bottom: -1.4em;
+            left: -1.1em;
+            opacity: 0;
+            transition: all 0.4s;
+        }
+        .theme-switch input:checked ~ .slider .cloud { opacity: 1; }
+
         .switch input {
             opacity: 0;
             width: 0;
@@ -547,12 +614,7 @@
                     <div>clientes seleccionados</div>
                     <div style="font-size:11px;" id="totalClientes">0 total</div>
                 </div>
-                <div>
-                    <button class="btn-secondary-outline" onclick="seleccionarTodos(true)"><i
-                            class="fas fa-check-double"></i> Todos</button>
-                    <button class="btn-secondary-outline" onclick="seleccionarTodos(false)" style="margin-left:8px;"><i
-                            class="fas fa-times"></i> Limpiar</button>
-                </div>
+
                 <div class="control-group" style="max-width:180px;">
                     <label><i class="fas fa-truck"></i> Móviles</label>
                     <input type="number" id="numMoviles" value="3" min="1" max="20" class="control-input">
@@ -566,8 +628,17 @@
             <div class="card-glass" style="border-left:4px solid var(--accent-gold);">
                 <div style="display:flex; justify-content:space-between;">
                     <h3><i class="fas fa-cog"></i> Ajustes</h3>
-                    <label style="display:flex; align-items:center; gap:8px;">🌙 Modo oscuro <input type="checkbox"
-                            id="darkModeToggle" onchange="toggleDarkMode(this.checked)"></label>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(!this.checked)">
+                        <span class="slider">
+                            <span class="star star_1"></span>
+                            <span class="star star_2"></span>
+                            <span class="star star_3"></span>
+                            <svg viewBox="0 0 100 100" class="cloud">
+                                <path fill="#fff" d="M30 65 Q30 50 45 50 Q45 35 60 35 Q75 35 75 50 Q90 50 90 65 Z"></path>
+                            </svg>
+                        </span>
+                    </label>
                 </div>
                 <hr style="margin:12px 0; border-color:var(--border-light);">
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px;">
@@ -584,12 +655,6 @@
     <label>📍 Punto de inicio (Google Maps URL)</label>
     <input type="url" id="puntoInicio" class="control-input" placeholder="https://maps.google.com/?q=lat,lon">
 </div>
-                    <div>
-                        <label>📌 Aplicar reglas</label>
-                        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-                            <input type="checkbox" id="usarReglas" checked> <span>Restricciones por tipo</span>
-                        </div>
-                    </div>
                 </div>
                 <div style="margin-top:20px; display:flex; gap:12px;">
                     <button class="btn-secondary-outline" onclick="window.location.href='reglas.html'">Gestionar reglas avanzadas</button>
@@ -854,17 +919,12 @@
         // Save prioridad
         const prioridad = document.getElementById('prioridadTipo').value;
         localStorage.setItem('prioridadTipo', prioridad);
-        // Save usar reglas checkbox
-        const usar = document.getElementById('usarReglas').checked;
-        localStorage.setItem('usarReglas', usar ? '1' : '0');
     } else {
         // If opening, load saved values
         const savedUrl = localStorage.getItem('puntoInicioUrl') || '';
         document.getElementById('puntoInicio').value = savedUrl;
         const savedPrioridad = localStorage.getItem('prioridadTipo') || 'ninguna';
         document.getElementById('prioridadTipo').value = savedPrioridad;
-        const savedUsar = localStorage.getItem('usarReglas');
-        document.getElementById('usarReglas').checked = savedUsar === '1';
     }
 }
         function toggleDarkMode(isDark) { if (isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); }
@@ -915,7 +975,7 @@
             try {
                 let response = await fetchWithAuth('/api/generar-rutas', {
                     method: 'POST',
-                    body: JSON.stringify({ cliente_ids: seleccionados, num_moviles: numM, prioridad: document.getElementById('prioridadTipo').value, punto_inicio: document.getElementById('puntoInicio').value, usar_reglas: document.getElementById('usarReglas').checked, asignaciones: asignaciones })
+                    body: JSON.stringify({ cliente_ids: seleccionados, num_moviles: numM, prioridad: document.getElementById('prioridadTipo').value, punto_inicio: document.getElementById('puntoInicio').value, asignaciones: asignaciones })
                 });
                 if (!response.ok) throw new Error();
                 let data = await response.json();
