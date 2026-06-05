@@ -241,14 +241,8 @@ public class Main {
 
         usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
 
-<<<<<<< HEAD
-        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
-        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
-=======
         int port = Integer.parseInt(getEnvOrDefault("PORT", "8080"));
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
-        System.out.println("🚀 Servidor iniciado en el puerto: " + port);
->>>>>>> c2f1fc1aa026077de94df7c52ba56b7ee4a8e73e
 
         // Archivos estaticos
         server.createContext("/", new StaticHandler());
