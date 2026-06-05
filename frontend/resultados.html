@@ -832,7 +832,7 @@
                 mensaje += `${i + 1}. ${c.nombre}\n`;
                 mensaje += `   📍 https://maps.google.com/?q=${c.latitud},${c.longitud}\n\n`;
             });
-            mensaje += `🔗 Seguimiento en tiempo real: http://${window.location.hostname}:8080/ruta.html?token=${token}`;
+            mensaje += `🔗 Seguimiento en tiempo real: ${window.location.origin}/ruta.html?token=${token}`;
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`, '_blank');
         }
 
