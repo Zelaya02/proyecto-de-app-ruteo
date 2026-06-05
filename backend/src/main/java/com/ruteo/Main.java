@@ -71,7 +71,8 @@ public class Main {
         DB_URL = detectDbUrl();
         usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
 
-        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8082), 0);
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
 
         // Archivos estaticos
         server.createContext("/", new StaticHandler());
@@ -94,7 +95,7 @@ public class Main {
 
         server.setExecutor(null);
         server.start();
-        System.out.println("Servidor iniciado en http://localhost:8080");
+        System.out.println("🚀 Servidor iniciado en el puerto: " + port);
         System.out.println("Presiona Ctrl+C para detener");
     }
 

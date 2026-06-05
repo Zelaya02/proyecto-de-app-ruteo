@@ -60,7 +60,11 @@
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 10000; /* super high to stay on top */
+            /* Lower Leaflet UI stacking */
+            .leaflet-top, .leaflet-bottom { z-index: 1 !important; }
+            .leaflet-pane, .leaflet-container { z-index: 0 !important; }
+
         }
 
         .header-content {
