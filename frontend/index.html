@@ -928,7 +928,12 @@
     }
 }
         function toggleDarkMode(isDark) { if (isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); }
-        if (localStorage.getItem('darkMode') === 'enabled') { document.body.classList.add('dark-mode'); if (document.getElementById('darkModeToggle')) document.getElementById('darkModeToggle').checked = true; }
+        if (localStorage.getItem('darkMode') === 'enabled') { 
+            document.body.classList.add('dark-mode'); 
+            if (document.getElementById('darkModeToggle')) document.getElementById('darkModeToggle').checked = false; 
+        } else {
+            if (document.getElementById('darkModeToggle')) document.getElementById('darkModeToggle').checked = true; 
+        }
 
         function abrirModalCliente() { document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-user-plus"></i> Añadir Cliente'; document.getElementById('clienteId').value = ''; document.getElementById('formCliente').reset(); document.getElementById('modalCliente').style.display = 'flex'; }
         function cerrarModalCliente() { document.getElementById('modalCliente').style.display = 'none'; }
