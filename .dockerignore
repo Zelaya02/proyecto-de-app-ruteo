@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vscode
+backend/target
+backend/lib
+backend/DumpSchema.java
+backend/*.class
+database/*.class
+docs/
+*.html
+*.bat
+*.ps1

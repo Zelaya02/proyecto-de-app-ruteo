@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.UUID;
 import java.net.http.HttpClient;
@@ -24,11 +25,10 @@ import com.ruteo.repository.UsuarioRepository;
 public class Main {
     private static final Gson gson = new Gson();
     private static String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db"; // se auto-detecta al inicio
-    private static final String DB_USER = "postgres";
-    private static final String DB_PASSWORD = "Zelaya1103";
-    private static final String ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0="; // Configura
-                                                                                                                                                                   // OpenRouteService
-    private static final String FRONTEND_DIR = "../frontend";
+    private static String DB_USER = getEnvOrDefault("DB_USER", "postgres");
+    private static String DB_PASSWORD = getEnvOrDefault("DB_PASSWORD", "Zelaya1103");
+    private static final String ORS_KEY = getEnvOrDefault("ORS_API_KEY", "");
+    private static final String FRONTEND_DIR = getEnvOrDefault("FRONTEND_DIR", "../frontend");
 
     // Modelos de Reglas
     static class Regla {
@@ -46,7 +46,168 @@ public class Main {
     }
 
     private static UsuarioRepository usuarioRepo; // se inicializa después de auto-detectar puerto
-    private static final Set<String> activeTokens = Collections.synchronizedSet(new HashSet<>());
+    private static final Map<String, Long> activeTokens = new ConcurrentHashMap<>();
+    private static final long TOKEN_TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
+
+    /** Parsea DATABASE_URL (formato Render o estandar de heroku) a JDBC */
+    private static void parseDatabaseUrl() {
+        String dbUrlEnv = System.getenv("DATABASE_URL");
+        if (dbUrlEnv == null || dbUrlEnv.isEmpty()) {
+            dbUrlEnv = System.getenv("DB_URL");
+        }
+        if (dbUrlEnv != null && !dbUrlEnv.isEmpty()) {
+            try {
+                if (dbUrlEnv.startsWith("postgres://") || dbUrlEnv.startsWith("postgresql://")) {
+                    String cleanUrl = dbUrlEnv.substring(dbUrlEnv.indexOf("//") + 2);
+                    String userInfo = "";
+                    String hostPortDb = cleanUrl;
+                    if (cleanUrl.contains("@")) {
+                        int atIndex = cleanUrl.indexOf("@");
+                        userInfo = cleanUrl.substring(0, atIndex);
+                        hostPortDb = cleanUrl.substring(atIndex + 1);
+                    }
+                    
+                    if (!userInfo.isEmpty() && userInfo.contains(":")) {
+                        String[] parts = userInfo.split(":", 2);
+                        DB_USER = parts[0];
+                        DB_PASSWORD = parts[1];
+                    }
+                    
+                    DB_URL = "jdbc:postgresql://" + hostPortDb;
+                    System.out.println("✅ DATABASE_URL parseada correctamente.");
+                } else {
+                    DB_URL = dbUrlEnv;
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Error al parsear DATABASE_URL, usando valores por defecto: " + e.getMessage());
+            }
+        } else {
+            DB_URL = detectDbUrl();
+        }
+    }
+
+    /** Inicializa el esquema de la base de datos si las tablas no existen */
+    private static void initializeDatabaseSchema() {
+        System.out.println("Comprobando esquema de base de datos...");
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             Statement stmt = conn.createStatement()) {
+            
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS usuarios (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "username TEXT UNIQUE, " +
+                    "password TEXT, " +
+                    "nombre TEXT, " +
+                    "rol TEXT)");
+            
+            ResultSet rsAdmin = stmt.executeQuery("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'");
+            if (rsAdmin.next() && rsAdmin.getInt(1) == 0) {
+                stmt.executeUpdate("INSERT INTO usuarios (username, password, nombre, rol) VALUES ('admin', 'nexo2025', 'Administrador', 'admin')");
+                System.out.println("✅ Usuario administrador por defecto creado (admin/nexo2025).");
+            }
+            
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS clientes (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "nombre TEXT, " +
+                    "tipo_cliente TEXT, " +
+                    "latitud DOUBLE PRECISION, " +
+                    "longitud DOUBLE PRECISION, " +
+                    "ciudad TEXT, " +
+                    "cadena TEXT, " +
+                    "activo BOOLEAN DEFAULT true, " +
+                    "url_google TEXT)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS reglas_ruteo (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "categoria TEXT UNIQUE, " +
+                    "limite_por_movil INTEGER, " +
+                    "activo BOOLEAN DEFAULT true)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS choferes (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "nombre TEXT, " +
+                    "telefono TEXT, " +
+                    "activo BOOLEAN DEFAULT true)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS vehiculos (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "nombre TEXT, " +
+                    "chapa TEXT, " +
+                    "tipo TEXT DEFAULT 'camion mediano', " +
+                    "activo BOOLEAN DEFAULT true)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS rutas_generadas (" +
+                    "token TEXT PRIMARY KEY, " +
+                    "movil_numero INTEGER, " +
+                    "clientes_json TEXT, " +
+                    "distancia_total DOUBLE PRECISION, " +
+                    "tiempo_estimado INTEGER, " +
+                    "chofer_id INTEGER, " +
+                    "vehiculo_id INTEGER, " +
+                    "chofer_nombre TEXT, " +
+                    "vehiculo_nombre TEXT, " +
+                    "fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS entregas (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "ruta_token TEXT, " +
+                    "cliente_id INTEGER, " +
+                    "estado TEXT DEFAULT 'pendiente', " +
+                    "observacion TEXT, " +
+                    "orden_en_ruta INTEGER, " +
+                    "fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+
+            System.out.println("✅ Esquema de base de datos verificado/creado.");
+            
+            ResultSet rsClientes = stmt.executeQuery("SELECT COUNT(*) FROM clientes");
+            if (rsClientes.next() && rsClientes.getInt(1) == 0) {
+                loadDefaultClients(conn);
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Error al inicializar el esquema de base de datos: " + e.getMessage());
+        }
+    }
+
+    private static void loadDefaultClients(Connection conn) {
+        String[] paths = {"database/import.sql", "import.sql", "../database/import.sql"};
+        File sqlFile = null;
+        for (String p : paths) {
+            File f = new File(p);
+            if (f.exists()) {
+                sqlFile = f;
+                break;
+            }
+        }
+        
+        if (sqlFile == null) {
+            System.out.println("ℹ️ Archivo import.sql no encontrado. No se inicializaron clientes por defecto.");
+            return;
+        }
+
+        System.out.println("Cargando clientes por defecto desde " + sqlFile.getPath() + "...");
+        try (BufferedReader reader = new BufferedReader(new FileReader(sqlFile, StandardCharsets.UTF_8));
+             Statement stmt = conn.createStatement()) {
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null) {
+                if (!line.trim().isEmpty() && !line.startsWith("--") && !line.contains("TRUNCATE")) {
+                    try {
+                        stmt.executeUpdate(line);
+                        count++;
+                    } catch (SQLException e) {
+                        // Ignorar errores individuales (como duplicados)
+                    }
+                }
+            }
+            System.out.println("✅ " + count + " clientes cargados exitosamente.");
+        } catch (Exception e) {
+            System.err.println("⚠️ Error al cargar los clientes por defecto: " + e.getMessage());
+        }
+    }
+
+    private static String getEnvOrDefault(String key, String def) {
+        String val = System.getenv(key);
+        return val != null && !val.isEmpty() ? val : def;
+    }
 
     /** Detecta el puerto PostgreSQL disponible (prueba 5000 primero, luego 5432). */
     private static String detectDbUrl() {
@@ -68,11 +229,26 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         // Auto-detección del puerto de PostgreSQL
-        DB_URL = detectDbUrl();
+        parseDatabaseUrl();
+        initializeDatabaseSchema();
+
+        if (System.getenv("DB_PASSWORD") == null || System.getenv("DB_PASSWORD").isEmpty()) {
+            System.out.println("⚠️  ADVERTENCIA: Usando contraseña por defecto. Configure DB_PASSWORD como variable de entorno para producción.");
+        }
+        if (System.getenv("ORS_API_KEY") == null || System.getenv("ORS_API_KEY").isEmpty()) {
+            System.out.println("ℹ️  ORS_API_KEY no configurada. Las distancias usarán Haversine (estimación lineal).");
+        }
+
         usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
 
+<<<<<<< HEAD
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
+=======
+        int port = Integer.parseInt(getEnvOrDefault("PORT", "8080"));
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
+        System.out.println("🚀 Servidor iniciado en el puerto: " + port);
+>>>>>>> c2f1fc1aa026077de94df7c52ba56b7ee4a8e73e
 
         // Archivos estaticos
         server.createContext("/", new StaticHandler());
@@ -106,7 +282,18 @@ public class Main {
             if (path.equals("/")) {
                 path = "/index.html";
             }
-            File file = new File(FRONTEND_DIR + path);
+            path = path.replaceAll("\\.\\./", "").replaceAll("\\.\\.", "").replaceAll("//+", "/");
+            if (path.contains("..") || path.contains("%") || path.contains(":") || path.contains("~")) {
+                exchange.sendResponseHeaders(403, -1);
+                return;
+            }
+            File file = new File(FRONTEND_DIR, path);
+            String canonicalPath = file.getCanonicalPath();
+            String frontendCanonical = new File(FRONTEND_DIR).getCanonicalPath();
+            if (!canonicalPath.startsWith(frontendCanonical)) {
+                exchange.sendResponseHeaders(403, -1);
+                return;
+            }
             if (file.exists() && !file.isDirectory()) {
                 String contentType = "text/html";
                 if (path.endsWith(".css"))
@@ -141,6 +328,10 @@ public class Main {
                 return;
             }
 
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM clientes WHERE activo = true ORDER BY id DESC";
@@ -163,6 +354,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(clientes));
                 } catch (SQLException e) {
+                    e.printStackTrace();
                     sendError(exchange, 500, "Error de base de datos");
                 }
             } else if ("POST".equals(exchange.getRequestMethod()) || "PUT".equals(exchange.getRequestMethod())) {
@@ -217,7 +409,8 @@ public class Main {
                         }
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, "Error: " + e.getMessage());
+                    e.printStackTrace();
+                    sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 try {
@@ -236,7 +429,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, "Error: " + e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -250,6 +443,10 @@ public class Main {
             setCORS(exchange);
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
                 return;
             }
             if ("POST".equals(exchange.getRequestMethod())) {
@@ -277,11 +474,14 @@ public class Main {
 
                     List<Cliente> clientes = new ArrayList<>();
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String idList = clienteIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-                        String sql = "SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE id IN ("
-                                + idList + ")";
-                        Statement stmt = conn.createStatement();
-                        ResultSet rs = stmt.executeQuery(sql);
+                        String placeholders = clienteIds.stream().map(id -> "?").collect(Collectors.joining(","));
+                        String sql = "SELECT id, nombre, latitud, longitud, tipo_cliente FROM clientes WHERE activo = true AND id IN ("
+                                + placeholders + ")";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        for (int i = 0; i < clienteIds.size(); i++) {
+                            pstmt.setInt(i + 1, clienteIds.get(i));
+                        }
+                        ResultSet rs = pstmt.executeQuery();
                         while (rs.next()) {
                             clientes.add(new Cliente(rs.getInt("id"), rs.getString("nombre"), rs.getDouble("latitud"),
                                     rs.getDouble("longitud"), rs.getString("tipo_cliente")));
@@ -331,6 +531,7 @@ public class Main {
                                     Cliente siguiente = ordenados.get(j + 1);
                                     try {
                                         // Intentar usar OpenRouteService (Distancia real por carretera)
+                                        System.out.printf("  📍 ORS: %s -> %s ...%n", c.nombre, siguiente.nombre);
                                         RouteService.RouteInfo info = RouteService.getRoute(c.lat, c.lon, siguiente.lat,
                                                 siguiente.lon);
                                         dist = info.distanceKm;
@@ -437,7 +638,7 @@ public class Main {
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                    sendError(exchange, 500, "Error generando rutas: " + e.getMessage());
+                    sendError(exchange, 500, "Error generando rutas");
                 }
             }
         }
@@ -507,7 +708,8 @@ public class Main {
                         sendError(exchange, 404, "Ruta no encontrada");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, "Error " + e.getMessage());
+                    e.printStackTrace();
+                    sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -558,7 +760,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"ok\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -588,7 +790,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(reglas));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("POST".equals(exchange.getRequestMethod())) {
                 try {
@@ -620,7 +822,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"ok\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 try {
@@ -639,7 +841,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -650,6 +852,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 String query = exchange.getRequestURI().getQuery();
                 String periodo = "dia";
@@ -732,7 +942,7 @@ public class Main {
 
                     sendResponse(exchange, 200, gson.toJson(res));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -742,6 +952,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT e.id, c.nombre as cliente, e.estado, e.observacion, e.fecha_actualizacion, r.movil_numero, "
@@ -772,7 +990,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(reportes));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -830,7 +1048,7 @@ public class Main {
 
                     if (usuario != null) {
                         String sessionToken = java.util.UUID.randomUUID().toString();
-                        activeTokens.add(sessionToken);
+                        activeTokens.put(sessionToken, System.currentTimeMillis());
                         response.put("success", true);
                         response.put("message", "Login exitoso");
                         response.put("usuario", usuario.getNombre());
@@ -843,7 +1061,7 @@ public class Main {
                         sendResponse(exchange, 401, gson.toJson(response));
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, "Error en el servidor: " + e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -865,7 +1083,13 @@ public class Main {
         String authHeader = authHeaders.get(0);
         if (authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7).trim();
-            return activeTokens.contains(token);
+            Long creationTime = activeTokens.get(token);
+            if (creationTime == null) return false;
+            if (System.currentTimeMillis() - creationTime > TOKEN_TTL_MS) {
+                activeTokens.remove(token);
+                return false;
+            }
+            return true;
         }
         return false;
     }
@@ -889,7 +1113,9 @@ public class Main {
         private static final String ORS_API_KEY = ORS_KEY.equals("PONER_AQUI_TU_API_KEY") ? System.getenv("ORS_API_KEY")
                 : ORS_KEY;
         private static final String ORS_BASE_URL = "https://api.openrouteservice.org/v2/directions/driving-car";
-        private static final HttpClient httpClient = HttpClient.newHttpClient();
+        private static final HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(5))
+                .build();
 
         static class RouteInfo {
             double distanceKm;
@@ -913,6 +1139,7 @@ public class Main {
                     ORS_BASE_URL, ORS_API_KEY, startLon, startLat, endLon, endLat);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(java.net.URI.create(url))
+                    .timeout(java.time.Duration.ofSeconds(5))
                     .GET()
                     .header("Accept",
                             "application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8")
@@ -921,6 +1148,8 @@ public class Main {
             if (response.statusCode() != 200) {
                 throw new IOException("OpenRouteService error: " + response.statusCode() + " " + response.body());
             }
+            // Small delay to respect API rate limits (40 req/min on free tier)
+            Thread.sleep(150);
             JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
             JsonObject summary = json.getAsJsonArray("features").get(0).getAsJsonObject()
                     .getAsJsonObject("properties").getAsJsonObject("summary");
@@ -1196,6 +1425,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM choferes WHERE activo = true ORDER BY nombre";
@@ -1211,7 +1448,7 @@ public class Main {
                     }
                     sendResponse(exchange, 200, gson.toJson(choferes));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("POST".equals(exchange.getRequestMethod())) {
                 try {
@@ -1230,7 +1467,7 @@ public class Main {
                         sendResponse(exchange, 201, "{\"status\":\"ok\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 try {
@@ -1244,7 +1481,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("PUT".equals(exchange.getRequestMethod())) {
                 try {
@@ -1263,7 +1500,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"updated\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -1275,6 +1512,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT * FROM vehiculos WHERE activo = true ORDER BY nombre";
@@ -1286,11 +1531,12 @@ public class Main {
                         v.put("id", rs.getInt("id"));
                         v.put("nombre", rs.getString("nombre"));
                         v.put("chapa", rs.getString("chapa"));
+                        v.put("tipo", rs.getString("tipo"));
                         vehiculos.add(v);
                     }
                     sendResponse(exchange, 200, gson.toJson(vehiculos));
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("POST".equals(exchange.getRequestMethod())) {
                 try {
@@ -1299,17 +1545,19 @@ public class Main {
                     Map<String, Object> req = gson.fromJson(body, Map.class);
                     String nombre = (String) req.get("nombre");
                     String chapa = (String) req.get("chapa");
+                    String tipo = (String) req.get("tipo");
 
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String sql = "INSERT INTO vehiculos (nombre, chapa) VALUES (?, ?)";
+                        String sql = "INSERT INTO vehiculos (nombre, chapa, tipo) VALUES (?, ?, ?)";
                         PreparedStatement pstmt = conn.prepareStatement(sql);
                         pstmt.setString(1, nombre);
                         pstmt.setString(2, chapa);
+                        pstmt.setString(3, tipo);
                         pstmt.executeUpdate();
                         sendResponse(exchange, 201, "{\"status\":\"ok\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("DELETE".equals(exchange.getRequestMethod())) {
                 try {
@@ -1323,7 +1571,7 @@ public class Main {
                         sendResponse(exchange, 200, "{\"status\":\"deleted\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else if ("PUT".equals(exchange.getRequestMethod())) {
                 try {
@@ -1332,17 +1580,19 @@ public class Main {
                     int id = ((Double) req.get("id")).intValue();
                     String nombre = (String) req.get("nombre");
                     String chapa = (String) req.get("chapa");
+                    String tipo = (String) req.get("tipo");
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String sql = "UPDATE vehiculos SET nombre = ?, chapa = ? WHERE id = ?";
+                        String sql = "UPDATE vehiculos SET nombre = ?, chapa = ?, tipo = ? WHERE id = ?";
                         PreparedStatement pstmt = conn.prepareStatement(sql);
                         pstmt.setString(1, nombre);
                         pstmt.setString(2, chapa);
-                        pstmt.setInt(3, id);
+                        pstmt.setString(3, tipo);
+                        pstmt.setInt(4, id);
                         pstmt.executeUpdate();
                         sendResponse(exchange, 200, "{\"status\":\"updated\"}");
                     }
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -1355,6 +1605,10 @@ public class Main {
             setCORS(exchange);
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
                 return;
             }
             if ("POST".equals(exchange.getRequestMethod())) {
@@ -1442,7 +1696,7 @@ public class Main {
                     sendResponse(exchange, 200, "{\"status\":\"ok\"}");
                 } catch (Exception e) {
                     e.printStackTrace();
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -1456,6 +1710,10 @@ public class Main {
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("POST".equals(exchange.getRequestMethod())) {
                 try {
                     String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))
@@ -1464,6 +1722,22 @@ public class Main {
                     String url = json.has("url") ? json.get("url").getAsString() : "";
                     
                     if (url.isEmpty()) { sendError(exchange, 400, "URL requerida"); return; }
+                    
+                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                        sendError(exchange, 400, "URL inválida");
+                        return;
+                    }
+
+                    java.net.URI parsedUri = java.net.URI.create(url);
+                    String host = parsedUri.getHost();
+                    if (host == null) { sendError(exchange, 400, "URL inválida"); return; }
+                    String hostLower = host.toLowerCase();
+                    if (hostLower.equals("localhost") || hostLower.equals("127.0.0.1") || hostLower.equals("[::1]")
+                            || hostLower.startsWith("10.") || hostLower.startsWith("172.") || hostLower.startsWith("192.168.")
+                            || hostLower.startsWith("0.") || hostLower.endsWith(".local") || hostLower.endsWith(".internal")) {
+                        sendError(exchange, 400, "URL no permitida");
+                        return;
+                    }
                     
                     if (url.contains("google.com/maps/d/")) {
                         if (url.contains("mid=")) {
@@ -1501,7 +1775,7 @@ public class Main {
                     sendResponse(exchange, 200, "{\"status\":\"ok\", \"imported\":" + points.size() + "}");
                 } catch (Exception e) {
                     e.printStackTrace();
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }
@@ -1538,6 +1812,14 @@ public class Main {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             setCORS(exchange);
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            if (!isAuthorized(exchange)) {
+                sendError(exchange, 401, "No autorizado");
+                return;
+            }
             if ("GET".equals(exchange.getRequestMethod())) {
                 try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
                     String sql = "SELECT nombre, latitud, longitud FROM clientes WHERE activo = true";
@@ -1570,7 +1852,7 @@ public class Main {
                     os.write(resp);
                     os.close();
                 } catch (Exception e) {
-                    sendError(exchange, 500, e.getMessage());
+                    e.printStackTrace(); sendError(exchange, 500, "Error interno del servidor");
                 }
             }
         }

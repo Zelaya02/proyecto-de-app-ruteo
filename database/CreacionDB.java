@@ -6,8 +6,8 @@ public class CreacionDB {
     public static void main(String[] args) {
         int port = 5432; 
         String dbName = "ruteo_db";
-        String user = "postgres";
-        String pass = "Zelaya1103";
+        String user = System.getenv().getOrDefault("DB_USER", "postgres");
+        String pass = System.getenv().getOrDefault("DB_PASSWORD", "");
         
         System.out.println("Iniciando creacion de Base de Datos...");
 
@@ -33,24 +33,10 @@ public class CreacionDB {
             try (Connection conn = DriverManager.getConnection(dbUrl, user, pass);
                  Statement dbStmt = conn.createStatement()) {
                 
-                System.out.println("Creando tablas...");
+        System.out.println("Creando tablas...");
                 dbStmt.executeUpdate("CREATE TABLE usuarios (id SERIAL PRIMARY KEY, username TEXT UNIQUE, password TEXT, nombre TEXT, rol TEXT)");
-                dbStmt.executeUpdate("CREATE TABLE clientes (id SERIAL PRIMARY KEY, nombre TEXT UNIQUE, tipo_cliente TEXT, latitud DOUBLE PRECISION, longitud DOUBLE PRECISION, ciudad TEXT, cadena TEXT, url_google TEXT, activo BOOLEAN DEFAULT TRUE)");
-                
-                dbStmt.executeUpdate("CREATE TABLE choferes (id SERIAL PRIMARY KEY, nombre TEXT, telefono TEXT, activo BOOLEAN DEFAULT TRUE)");
-                dbStmt.executeUpdate("CREATE TABLE vehiculos (id SERIAL PRIMARY KEY, nombre TEXT, chapa TEXT, activo BOOLEAN DEFAULT TRUE)");
-                
-                dbStmt.executeUpdate("CREATE TABLE rutas_generadas (token TEXT PRIMARY KEY, movil_numero INTEGER, chofer_id INTEGER REFERENCES choferes(id), vehiculo_id INTEGER REFERENCES vehiculos(id), chofer_nombre TEXT, vehiculo_nombre TEXT, clientes_json TEXT, distancia_total DOUBLE PRECISION, tiempo_estimado INTEGER, fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
-                dbStmt.executeUpdate("CREATE TABLE entregas (id SERIAL PRIMARY KEY, ruta_token TEXT REFERENCES rutas_generadas(token), cliente_id INTEGER REFERENCES clientes(id), estado TEXT, observacion TEXT, orden_en_ruta INTEGER, fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
-                dbStmt.executeUpdate("CREATE TABLE reglas_ruteo (id SERIAL PRIMARY KEY, categoria TEXT UNIQUE, limite_por_movil INTEGER, activo BOOLEAN DEFAULT TRUE)");
-                
-                dbStmt.executeUpdate("INSERT INTO choferes (nombre, telefono) VALUES ('Juan Pérez', '0981123456'), ('Carlos Gómez', '0972654321'), ('Luis Torres', '0991999888')");
-                dbStmt.executeUpdate("INSERT INTO vehiculos (nombre, chapa) VALUES ('Camión Isuzu 01', 'ABC 123'), ('Furgoneta Toyota 02', 'XYZ 789'), ('Moto Carga 03', 'RUT 456')");
-                
-                // Reglas por defecto
-                dbStmt.executeUpdate("INSERT INTO reglas_ruteo (categoria, limite_por_movil) VALUES ('supermercado', 5), ('mayorista / distribuidor', 8), ('minorista/gastronómico', 15)");
-                
-                dbStmt.executeUpdate("INSERT INTO usuarios (username, password, nombre, rol) VALUES ('admin', 'admin', 'Administrador', 'admin')");
+
+                dbStmt.executeUpdate("INSERT INTO usuarios (username, password, nombre, rol) VALUES ('admin', 'nexo2025', 'Administrador', 'admin')");
                 
                 Path sqlPath = Paths.get("import.sql");
                 if (Files.exists(sqlPath)) {

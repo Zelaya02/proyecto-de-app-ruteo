@@ -4,6 +4,15 @@ echo Inicializando Base de Datos NEXO
 echo ========================================
 echo.
 
+REM Configurar variables de entorno (cambiar segun sea necesario)
+if "%DB_PASSWORD%"=="" (
+    echo ⚠️  Variable DB_PASSWORD no definida.
+    echo    Configure antes de ejecutar:
+    echo    set DB_PASSWORD=su_contraseña
+    echo    set DB_USER=postgres
+    echo.
+)
+
 REM Verificar driver
 if not exist "lib\postgresql-42.6.0.jar" (
     echo ERROR: No se encuentra el driver de PostgreSQL en lib/

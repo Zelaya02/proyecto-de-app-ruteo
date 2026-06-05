@@ -14,22 +14,22 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         :root {
-            --primary: linear-gradient(135deg, #0B2B40 0%, #1A4B5F 100%);
-            --secondary: #C89D4A;
-            --bg: #C5D7ED;
-            --white: linear-gradient(135deg, rgba(200, 225, 245, 0.92) 0%, rgba(248, 238, 215, 0.88) 100%);
-            --text: #072130;
-            --border: rgba(200, 157, 74, 0.35);
-            --card-shadow: 0 10px 30px rgba(11, 43, 64, 0.08), 0 2px 8px rgba(200, 157, 74, 0.08);
+            --primary: linear-gradient(135deg, #5B6BFF 0%, #3DD7E5 100%);
+            --secondary: #5B6BFF;
+            --bg: #F0F2F6;
+            --white: #FFFFFF;
+            --text: #171A21;
+            --border: #E2E5EB;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
         }
 
         body.dark-mode {
-            --bg: #0B1120;
-            --white: #1A2332;
-            --text: #E2E8F0;
-            --border: #2D3A4E;
-            --primary: linear-gradient(135deg, #0F212E 0%, #1F4A60 100%);
-            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+            --bg: #0A0B0F;
+            --white: #14151C;
+            --text: #F2F4F8;
+            --border: #2A2D38;
+            --primary: linear-gradient(135deg, #5B6BFF 0%, #3DD7E5 100%);
+            --card-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.03) inset;
         }
 
         body {
@@ -97,35 +97,48 @@
         }
 
         .switch {
+            --circle-dim: 1em;
+            font-size: 12px;
             position: relative;
             display: inline-block;
-            width: 50px;
-            height: 24px;
+            width: 2.8em;
+            height: 1.5em;
         }
-
-        .switch input { opacity: 0; width: 0; height: 0; }
-
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: background-color .3s;
+            border-radius: 30px;
         }
-
-        .slider:before {
+        .slider-card {
             position: absolute;
-            content: "";
-            height: 16px; width: 16px;
-            left: 4px; bottom: 4px;
-            background-color: white;
-            transition: .4s;
+            height: var(--circle-dim);
+            width: var(--circle-dim);
             border-radius: 50%;
+            left: 0.3em;
+            bottom: 0.3em;
+            background-color: #000;
+            transition: transform .3s, background-color .3s;
+            pointer-events: none;
+            transform: translateX(0);
         }
-
-        input:checked + .slider { background-color: var(--secondary); }
-        input:checked + .slider:before { transform: translateX(26px); }
+        input:checked ~ .slider { background-color: #b3e5fc; }
+        input:checked ~ .slider-card {
+            transform: translateX(1.2em);
+            background-color: #4FC3F7;
+        }
+        body.dark-mode input:checked ~ .slider { background-color: #5B6BFF; }
+        body.dark-mode input:checked ~ .slider-card { background-color: #5B6BFF; }
 
         .btn-save {
             background: var(--primary);
@@ -255,8 +268,9 @@
                     </div>
                     <div style="text-align: right; display: flex; align-items: center; gap: 10px; justify-content: flex-end;">
                         <label class="switch">
-                            <input type="checkbox" ${regla.activo ? 'checked' : ''}>
+                            <input type="checkbox" class="toggle" ${regla.activo ? 'checked' : ''}>
                             <span class="slider"></span>
+                            <span class="slider-card"></span>
                         </label>
                         <button onclick="eliminarReglaLocal('${catEscaped}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;" title="Eliminar regla">
                             <i class="fas fa-trash-alt"></i>
@@ -376,5 +390,10 @@
         </div>
         <div class="loading-text" id="loadingText">Optimizando rutas... por favor espere</div>
     </div>
+    <script>
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
 </body>
 </html>

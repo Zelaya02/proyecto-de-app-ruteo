@@ -26,52 +26,55 @@
 
         /* ========== PALETA REFINADA Y ELEGANTE (CELESTE & DORADO) ========== */
         :root {
-            --bg-light: #C5D7ED;
-            --card-light: linear-gradient(135deg, rgba(200, 225, 245, 0.92) 0%, rgba(248, 238, 215, 0.88) 100%);
-            --card-shadow: 0 10px 30px rgba(11, 43, 64, 0.08), 0 2px 8px rgba(200, 157, 74, 0.08);
-            --card-border: 1.5px solid rgba(200, 157, 74, 0.35);
-            --text-light: #072130;
-            --text-muted-light: #2A485C;
-            --border-light: rgba(200, 157, 74, 0.3);
-            --primary-dark: #0B2B40;
-            --primary-main: #1A4B5F;
-            --accent-gold: #C89D4A;
-            --accent-orange: #E67E22;
-            --success: #2E7D32;
-            --danger: #C62828;
-            --warning: #F57C00;
+            --bg-light: #F0F2F6;
+            --card-light: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(245,247,252,0.92) 100%);
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
+            --card-border: 1px solid #E8EAEE;
+            --text-light: #171A21;
+            --text-muted-light: #6B7280;
+            --border-light: #E2E5EB;
+            --primary-dark: #4A59E6;
+            --primary-main: #5B6BFF;
+            --accent-gold: #5B6BFF;
+            --accent-orange: #5B6BFF;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
             
-            /* Additions for Light Theme Depth */
-            --input-bg: rgba(225, 238, 248, 0.75);
-            --table-th-bg: linear-gradient(90deg, rgba(26, 75, 95, 0.12) 0%, rgba(200, 157, 74, 0.08) 100%);
-            --summary-bg: linear-gradient(90deg, rgba(200, 225, 245, 0.85) 0%, rgba(248, 238, 215, 0.8) 100%);
-            --summary-hover: linear-gradient(90deg, rgba(200, 157, 74, 0.18) 0%, rgba(26, 75, 95, 0.1) 100%);
-            --summary-border: 1.5px solid rgba(200, 157, 74, 0.35);
-            --counter-bg: linear-gradient(135deg, rgba(200, 157, 74, 0.18) 0%, rgba(200, 225, 245, 0.15) 100%);
-            --counter-border: 1.5px solid rgba(200, 157, 74, 0.45);
+            /* Additions for Light Theme */
+            --input-bg: #F3F4F8;
+            --table-th-bg: #F8F9FC;
+            --summary-bg: #FAFBFF;
+            --summary-hover: #F0F1F6;
+            --summary-border: 1px solid #E2E5EB;
+            --counter-bg: rgba(91, 107, 255, 0.06);
+            --counter-border: 1px solid rgba(91, 107, 255, 0.15);
         }
 
         body.dark-mode {
-            --bg-light: #0B1120;
-            --card-light: #1A2332;
-            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-            --card-border: 1px solid #2D3A4E;
-            --text-light: #E2E8F0;
-            --text-muted-light: #94A3B8;
-            --border-light: #2D3A4E;
-            --primary-dark: #0F212E;
-            --primary-main: #1F4A60;
-            --accent-gold: #C89D4A;
-            --accent-orange: #D45B0A;
+            --bg-light: #0A0B0F;
+            --card-light: #14151C;
+            --card-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.03) inset;
+            --card-border: 1px solid #2A2D38;
+            --text-light: #F2F4F8;
+            --text-muted-light: #9AA0AE;
+            --border-light: #2A2D38;
+            --primary-dark: #0A0B0F;
+            --primary-main: #5B6BFF;
+            --accent-gold: #5B6BFF;
+            --accent-orange: #5B6BFF;
+            --success: #2BE08C;
+            --danger: #FF3A5C;
+            --warning: #F5D547;
             
-            /* Additions for Dark Theme */
-            --input-bg: #0F172A;
+            /* Halo additions */
+            --input-bg: #14151C;
             --table-th-bg: rgba(255, 255, 255, 0.02);
-            --summary-bg: rgba(255, 255, 255, 0.03);
-            --summary-hover: rgba(255, 255, 255, 0.06);
-            --summary-border: 1px solid #2D3A4E;
-            --counter-bg: rgba(200, 157, 74, 0.08);
-            --counter-border: 1px solid rgba(200, 157, 74, 0.25);
+            --summary-bg: #14151C;
+            --summary-hover: #1E2029;
+            --summary-border: 1px solid #2A2D38;
+            --counter-bg: rgba(91, 107, 255, 0.08);
+            --counter-border: 1px solid rgba(91, 107, 255, 0.25);
         }
 
         body {
@@ -208,7 +211,7 @@
         }
         
         body.dark-mode .card-glass:hover {
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
         }
 
         .controls-row {
@@ -442,6 +445,124 @@
             }
         }
 
+        /* Switch personalizado */
+        .theme-switch {
+            font-size: 14px;
+            position: relative;
+            display: inline-block;
+            width: 4em;
+            height: 2.2em;
+            border-radius: 30px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .theme-switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2a2a2a;
+            transition: 0.4s;
+            border-radius: 30px;
+            overflow: hidden;
+        }
+        .theme-switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 1.2em;
+            width: 1.2em;
+            border-radius: 20px;
+            left: 0.5em;
+            bottom: 0.5em;
+            transition: 0.4s;
+            transition-timing-function: cubic-bezier(0.81, -0.04, 0.38, 1.5);
+            box-shadow: inset 8px -4px 0px 0px #fff;
+        }
+        .theme-switch input:checked + .slider {
+            background-color: #00a6ff;
+        }
+        .theme-switch input:checked + .slider:before {
+            transform: translateX(1.8em);
+            box-shadow: inset 15px -4px 0px 15px #ffcf48;
+        }
+        .theme-switch .star {
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            width: 5px;
+            transition: all 0.4s;
+            height: 5px;
+        }
+        .theme-switch .star_1 { left: 2.5em; top: 0.5em; }
+        .theme-switch .star_2 { left: 2.2em; top: 1.2em; }
+        .theme-switch .star_3 { left: 3em; top: 0.9em; }
+        .theme-switch input:checked ~ .slider .star { opacity: 0; }
+        .theme-switch .cloud {
+            width: 3.5em;
+            position: absolute;
+            bottom: -1.4em;
+            left: -1.1em;
+            opacity: 0;
+            transition: all 0.4s;
+        }
+        .theme-switch input:checked ~ .slider .cloud { opacity: 1; }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: background-color .3s;
+            border-radius: 30px;
+        }
+
+        .slider-card {
+            position: absolute;
+            height: var(--circle-dim);
+            width: var(--circle-dim);
+            border-radius: 50%;
+            left: 0.3em;
+            bottom: 0.3em;
+            background-color: #000;
+            transition: transform .3s, background-color .3s;
+            pointer-events: none;
+            transform: translateX(0);
+        }
+
+        input:checked~.slider {
+            background-color: #b3e5fc;
+        }
+
+        input:checked~.slider-card {
+            transform: translateX(1.2em);
+            background-color: #4FC3F7;
+        }
+
+        /* Switch pequeño */
+        .switch {
+            --circle-dim: 1em;
+            font-size: 12px;
+            position: relative;
+            display: inline-block;
+            width: 2.8em;
+            height: 1.5em;
+        }
+
         @media (max-width: 768px) {
             .main-container {
                 padding: 16px;
@@ -493,12 +614,7 @@
                     <div>clientes seleccionados</div>
                     <div style="font-size:11px;" id="totalClientes">0 total</div>
                 </div>
-                <div>
-                    <button class="btn-secondary-outline" onclick="seleccionarTodos(true)"><i
-                            class="fas fa-check-double"></i> Todos</button>
-                    <button class="btn-secondary-outline" onclick="seleccionarTodos(false)" style="margin-left:8px;"><i
-                            class="fas fa-times"></i> Limpiar</button>
-                </div>
+
                 <div class="control-group" style="max-width:180px;">
                     <label><i class="fas fa-truck"></i> Móviles</label>
                     <input type="number" id="numMoviles" value="3" min="1" max="20" class="control-input">
@@ -512,8 +628,17 @@
             <div class="card-glass" style="border-left:4px solid var(--accent-gold);">
                 <div style="display:flex; justify-content:space-between;">
                     <h3><i class="fas fa-cog"></i> Ajustes</h3>
-                    <label style="display:flex; align-items:center; gap:8px;">🌙 Modo oscuro <input type="checkbox"
-                            id="darkModeToggle" onchange="toggleDarkMode(this.checked)"></label>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(!this.checked)">
+                        <span class="slider">
+                            <span class="star star_1"></span>
+                            <span class="star star_2"></span>
+                            <span class="star star_3"></span>
+                            <svg viewBox="0 0 100 100" class="cloud">
+                                <path fill="#fff" d="M30 65 Q30 50 45 50 Q45 35 60 35 Q75 35 75 50 Q90 50 90 65 Z"></path>
+                            </svg>
+                        </span>
+                    </label>
                 </div>
                 <hr style="margin:12px 0; border-color:var(--border-light);">
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px;">
@@ -530,12 +655,6 @@
     <label>📍 Punto de inicio (Google Maps URL)</label>
     <input type="url" id="puntoInicio" class="control-input" placeholder="https://maps.google.com/?q=lat,lon">
 </div>
-                    <div>
-                        <label>📌 Aplicar reglas</label>
-                        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-                            <input type="checkbox" id="usarReglas" checked> <span>Restricciones por tipo</span>
-                        </div>
-                    </div>
                 </div>
                 <div style="margin-top:20px; display:flex; gap:12px;">
                     <button class="btn-secondary-outline" onclick="window.location.href='reglas.html'">Gestionar reglas avanzadas</button>
@@ -548,7 +667,7 @@
             <table class="client-table">
                 <thead>
                     <tr>
-                        <th style="width:40px;"><input type="checkbox" id="checkboxTodo" onclick="toggleAll()"></th>
+                        <th style="width:70px;"><label class="switch"><input type="checkbox" class="toggle" id="checkboxTodo" onclick="toggleAll()"><span class="slider"></span><span class="slider-card"></span></label></th>
                         <th>Cliente / Sucursal</th>
                         <th style="width:100px;">Acciones</th>
                     </tr>
@@ -674,8 +793,8 @@
                 </form>
                 <div class="table-wrapper" style="max-height:300px;">
                     <table class="client-table">
-                        <thead><tr><th>Vehículo</th><th>Chapa</th><th style="width:100px;">Acciones</th></tr></thead>
-                        <tbody id="tbodyVehiculos"><tr><td colspan="3">Cargando...</td></tr></tbody>
+                        <thead><tr><th>Vehículo</th><th>Chapa</th><th>Tipo</th><th style="width:100px;">Acciones</th></tr></thead>
+                        <tbody id="tbodyVehiculos"><tr><td colspan="4">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -739,14 +858,14 @@
                 const todosSel = lista.every(c => c.seleccionado);
                 const selCount = lista.filter(c => c.seleccionado).length;
                 const abierto = gruposAbiertos.has(nom);
-                html += `<tr style="background:rgba(0,0,0,0.02);"><td colspan="3" style="padding:0;"><details ${abierto ? 'open' : ''} ontoggle="registrarToggle('${nom}',this.open)"><summary style="padding:15px; cursor:pointer; display:flex; justify-content:space-between;"><div><input type="checkbox" ${todosSel ? 'checked' : ''} onclick="event.stopPropagation(); toggleGrupo('${nom}',this.checked)"> <i class="fas fa-store"></i> ${nom.toUpperCase()} <span class="badge-tag">${lista.length}</span></div><div>${selCount} seleccionados <i class="fas fa-chevron-down"></i></div></summary><table style="width:100%">${lista.map(c => renderFila(c)).join('')}</table></details></td></tr>`;
+                html += `<tr style="background:rgba(0,0,0,0.02);"><td colspan="3" style="padding:0;"><details ${abierto ? 'open' : ''} ontoggle="registrarToggle('${nom}',this.open)"><summary style="padding:15px; cursor:pointer; display:flex; justify-content:space-between;"><div><label class="switch" style="display:inline-flex; vertical-align:middle;"><input type="checkbox" class="toggle" ${todosSel ? 'checked' : ''} onclick="event.stopPropagation(); toggleGrupo('${nom}',this.checked)"><span class="slider"></span><span class="slider-card"></span></label> <i class="fas fa-store"></i> ${nom.toUpperCase()} <span class="badge-tag">${lista.length}</span></div><div>${selCount} seleccionados <i class="fas fa-chevron-down"></i></div></summary><table style="width:100%">${lista.map(c => renderFila(c)).join('')}</table></details></td></tr>`;
             });
             individuales.forEach(c => html += renderFila(c));
             tbody.innerHTML = html;
         }
 
         function renderFila(c) {
-            return `<tr><td style="padding-left:20px;"><input type="checkbox" class="checkbox-cliente" data-id="${c.id}" ${c.seleccionado ? 'checked' : ''} onchange="toggleCliente(${c.id})"></td><td><strong>${escapeHtml(c.nombre)}</strong><br><span class="badge-tag"><i class="fas fa-tag"></i> ${c.tipo_cliente || 'minorista/gastronómico'}</span><small style="display:block; color:var(--text-muted-light);">${c.direccion || 'Gran Asunción'}</small></td><td style="white-space: nowrap;"><div style="display: flex; gap: 8px; align-items: center;"><button class="btn-icon" onclick="editarCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="copiarUrlCliente(${c.id})" title="Copiar URL"><i class="fas fa-link"></i></button><button class="btn-icon" onclick="eliminarCliente(${c.id})" style="color:var(--danger);" title="Eliminar"><i class="fas fa-trash"></i></button></div></td></tr>`;
+            return `<tr><td style="padding-left:10px;"><label class="switch" style="display:inline-flex; vertical-align:middle;"><input type="checkbox" class="toggle checkbox-cliente" data-id="${c.id}" ${c.seleccionado ? 'checked' : ''} onchange="toggleCliente(${c.id})"><span class="slider"></span><span class="slider-card"></span></label></td><td><strong>${escapeHtml(c.nombre)}</strong><br><span class="badge-tag"><i class="fas fa-tag"></i> ${c.tipo_cliente || 'minorista/gastronómico'}</span><small style="display:block; color:var(--text-muted-light);">${c.direccion || 'Gran Asunción'}</small></td><td style="white-space: nowrap;"><div style="display: flex; gap: 8px; align-items: center;"><button class="btn-icon" onclick="editarCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="copiarUrlCliente(${c.id})" title="Copiar URL"><i class="fas fa-link"></i></button><button class="btn-icon" onclick="eliminarCliente(${c.id})" style="color:var(--danger);" title="Eliminar"><i class="fas fa-trash"></i></button></div></td></tr>`;
         }
         
         function copiarUrlCliente(id) { 
@@ -759,9 +878,30 @@
         }
 
         function registrarToggle(nom, abierto) { abierto ? gruposAbiertos.add(nom) : gruposAbiertos.delete(nom); }
-        function toggleGrupo(nom, sel) { clientes.forEach(c => { if ((c.cadena && c.cadena.toLowerCase() === nom) || c.nombre.toLowerCase().includes(nom)) c.seleccionado = sel; }); actualizarTabla(); actualizarContadores(); }
-        function toggleCliente(id) { let c = clientes.find(c => c.id === id); if (c) c.seleccionado = !c.seleccionado; actualizarTabla(); actualizarContadores(); }
-        function seleccionarTodos(val) { clientes.forEach(c => c.seleccionado = val); actualizarTabla(); actualizarContadores(); }
+        function toggleGrupo(nom, sel) {
+            clientes.forEach(c => {
+                if ((c.cadena && c.cadena.toLowerCase() === nom) || c.nombre.toLowerCase().includes(nom))
+                    c.seleccionado = sel;
+            });
+            document.querySelectorAll('.checkbox-cliente').forEach(el => {
+                const id = parseInt(el.dataset.id);
+                const c = clientes.find(cl => cl.id === id);
+                if (c) el.checked = c.seleccionado;
+            });
+            actualizarContadores();
+        }
+
+        function toggleCliente(id) {
+            let c = clientes.find(c => c.id === id);
+            if (c) c.seleccionado = !c.seleccionado;
+            actualizarContadores();
+        }
+
+        function seleccionarTodos(val) {
+            clientes.forEach(c => c.seleccionado = val);
+            document.querySelectorAll('.checkbox-cliente').forEach(el => el.checked = val);
+            actualizarContadores();
+        }
         function toggleAll() { seleccionarTodos(document.getElementById('checkboxTodo').checked); }
         function actualizarContadores() { document.getElementById('seleccionados').innerText = clientes.filter(c => c.seleccionado).length; document.getElementById('totalClientes').innerText = clientes.length; }
         function escapeHtml(t) { if (!t) return ''; const div = document.createElement('div'); div.textContent = t; return div.innerHTML; }
@@ -779,17 +919,12 @@
         // Save prioridad
         const prioridad = document.getElementById('prioridadTipo').value;
         localStorage.setItem('prioridadTipo', prioridad);
-        // Save usar reglas checkbox
-        const usar = document.getElementById('usarReglas').checked;
-        localStorage.setItem('usarReglas', usar ? '1' : '0');
     } else {
         // If opening, load saved values
         const savedUrl = localStorage.getItem('puntoInicioUrl') || '';
         document.getElementById('puntoInicio').value = savedUrl;
         const savedPrioridad = localStorage.getItem('prioridadTipo') || 'ninguna';
         document.getElementById('prioridadTipo').value = savedPrioridad;
-        const savedUsar = localStorage.getItem('usarReglas');
-        document.getElementById('usarReglas').checked = savedUsar === '1';
     }
 }
         function toggleDarkMode(isDark) { if (isDark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); }
@@ -801,8 +936,35 @@
         async function guardarCliente(e) { e.preventDefault(); let id = document.getElementById('clienteId').value; let nombre = document.getElementById('clienteNombre').value; let tipo = document.getElementById('clienteTipo').value; let url = document.getElementById('clienteUrl').value; let method = id ? 'PUT' : 'POST'; let payload = { nombre, tipo_cliente: tipo, url }; if (id) payload.id = parseInt(id); try { let res = await fetchWithAuth('/api/clientes', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(); cerrarModalCliente(); cargarClientes(); } catch (e) { alert('Error al guardar'); } }
         async function eliminarCliente(id) { if (confirm('¿Eliminar?')) { await fetchWithAuth(`/api/clientes?id=${id}`, { method: 'DELETE' }); cargarClientes(); } }
 
-        function generarRutas() {
+        async function generarRutas() {
             if (clientes.filter(c => c.seleccionado).length === 0) return alert("Seleccioná clientes");
+            
+            let numM = parseInt(document.getElementById('numMoviles').value) || 1;
+            try {
+                const btn = document.getElementById('btnGenerar');
+                const origIcon = btn.innerHTML;
+                if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+
+                let resC = await fetchWithAuth('/api/choferes');
+                let choferes = await resC.json();
+                
+                let resV = await fetchWithAuth('/api/vehiculos');
+                let vehiculos = await resV.json();
+                
+                if(btn) { btn.innerHTML = origIcon; btn.disabled = false; }
+                
+                if (choferes.length < numM) {
+                    return alert(`No hay suficientes choferes registrados.\nRequeridos: ${numM}\nDisponibles: ${choferes.length}\n\nAgregue más en la sección de Configuración > Transportes.`);
+                }
+                if (vehiculos.length < numM) {
+                    return alert(`No hay suficientes vehículos registrados.\nRequeridos: ${numM}\nDisponibles: ${vehiculos.length}\n\nAgregue más en la sección de Configuración > Transportes.`);
+                }
+            } catch (e) {
+                console.error("Error validando recursos", e);
+                const btn = document.getElementById('btnGenerar');
+                if(btn) { btn.innerHTML = '<i class="fas fa-route"></i> Generar rutas'; btn.disabled = false; }
+            }
+
             generarRutasFinal([]);
         }
 
@@ -813,7 +975,7 @@
             try {
                 let response = await fetchWithAuth('/api/generar-rutas', {
                     method: 'POST',
-                    body: JSON.stringify({ cliente_ids: seleccionados, num_moviles: numM, prioridad: document.getElementById('prioridadTipo').value, punto_inicio: document.getElementById('puntoInicio').value, usar_reglas: document.getElementById('usarReglas').checked, asignaciones: asignaciones })
+                    body: JSON.stringify({ cliente_ids: seleccionados, num_moviles: numM, prioridad: document.getElementById('prioridadTipo').value, punto_inicio: document.getElementById('puntoInicio').value, asignaciones: asignaciones })
                 });
                 if (!response.ok) throw new Error();
                 let data = await response.json();
@@ -827,7 +989,23 @@
         function abrirModalKml() { kmzPlacemarks = []; document.getElementById('kmzFileInput').value = ''; document.getElementById('kmlUrlInput').value = ''; document.getElementById('kmzDropzone').style.display = 'block'; document.getElementById('kmzPreviewArea').style.display = 'none'; document.getElementById('btnImportarFinal').style.display = 'none'; document.getElementById('modalKml').style.display = 'flex'; }
         function cerrarModalKml() { document.getElementById('modalKml').style.display = 'none'; }
         async function importarKmlUrl() { const url = document.getElementById('kmlUrlInput').value; if (!url) return alert("Ingresá un link válido"); const btn = event.currentTarget; const originalIcon = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; try { const res = await fetchWithAuth('/api/kml/importar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) }); if (!res.ok) throw new Error(); const data = await res.json(); alert(`✅ Importación finalizada: ${data.imported} clientes agregados.`); cerrarModalKml(); cargarClientes(); } catch (e) { alert("Error al importar desde el link. Asegurate que el mapa sea público."); } finally { btn.innerHTML = originalIcon; btn.disabled = false; } }
-        function exportarKml() { window.location.href = '/api/kml/exportar'; }
+        async function exportarKml() {
+            try {
+                const res = await fetchWithAuth('/api/kml/exportar');
+                if (!res.ok) throw new Error();
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'clientes_exportados.kml';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('Error al exportar KML');
+            }
+        }
         function onKmzDrop(e) { e.preventDefault(); let file = e.dataTransfer.files[0]; if (file) onKmzFileSelected(file); }
         async function onKmzFileSelected(file) { if (!file) return; try { let kmlText; if (file.name.endsWith('.kmz')) { let zip = await JSZip.loadAsync(file); let kmlFile = Object.values(zip.files).find(f => f.name.endsWith('.kml')); if (!kmlFile) throw new Error(); kmlText = await kmlFile.async('text'); } else kmlText = await file.text(); parsearKml(kmlText); } catch (e) { alert('Error al leer archivo'); } }
         function parsearKml(kmlText) { let parser = new DOMParser(); let doc = parser.parseFromString(kmlText, 'text/xml'); let placemarks = doc.querySelectorAll('Placemark'); kmzPlacemarks = []; placemarks.forEach(pm => { let nombre = pm.querySelector('name')?.textContent?.trim() || 'Sin nombre'; let point = pm.querySelector('Point coordinates') || pm.querySelector('coordinates'); if (point) { let coords = point.textContent.trim().split(','); if (coords.length >= 2) { let lon = parseFloat(coords[0]), lat = parseFloat(coords[1]); if (!isNaN(lat) && !isNaN(lon)) kmzPlacemarks.push({ nombre, lat, lon }); } } }); mostrarPreviewKmz(); }
@@ -881,15 +1059,15 @@
                 </tr>`
             ).join('');
 
-            // Vehiculos
             const tbV = document.getElementById('tbodyVehiculos');
-            if (transportesData.vehiculos.length === 0) tbV.innerHTML = '<tr><td colspan="3">No hay vehículos.</td></tr>';
+            if (transportesData.vehiculos.length === 0) tbV.innerHTML = '<tr><td colspan="4">No hay vehículos.</td></tr>';
             else tbV.innerHTML = transportesData.vehiculos.map(v => 
                 `<tr>
                     <td><strong>${escapeHtml(v.nombre)}</strong></td>
                     <td><span class="badge-tag">${escapeHtml(v.chapa || '-')}</span></td>
+                    <td>${escapeHtml(v.tipo || 'camion mediano')}</td>
                     <td>
-                        <button class="btn-icon" onclick="editarVehiculo(${v.id}, '${escapeHtml(v.nombre)}', '${escapeHtml(v.chapa || '')}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" onclick="editarVehiculo(${v.id}, '${escapeHtml(v.nombre)}', '${escapeHtml(v.chapa || '')}', '${escapeHtml(v.tipo || '')}')"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon" onclick="eliminarVehiculo(${v.id})" style="color:var(--danger);" title="Inhabilitar"><i class="fas fa-ban"></i></button>
                     </td>
                 </tr>`
@@ -923,15 +1101,16 @@
 
         // Vehiculos CRUD
         function resetFormVehiculo() { document.getElementById('formVehiculo').reset(); document.getElementById('vehiculoId').value = ''; }
-        function editarVehiculo(id, nombre, chapa) { 
+        function editarVehiculo(id, nombre, chapa, tipo) { 
             document.getElementById('vehiculoId').value = id; 
             document.getElementById('vehiculoNombre').value = nombre; 
             document.getElementById('vehiculoChapa').value = chapa; 
+            document.getElementById('vehiculoTipo').value = tipo || 'camion mediano';
         }
         async function guardarVehiculo(e) { 
             e.preventDefault(); 
             let id = document.getElementById('vehiculoId').value; 
-            let payload = { nombre: document.getElementById('vehiculoNombre').value, chapa: document.getElementById('vehiculoChapa').value };
+            let payload = { nombre: document.getElementById('vehiculoNombre').value, chapa: document.getElementById('vehiculoChapa').value, tipo: document.getElementById('vehiculoTipo').value };
             let method = 'POST';
             if (id) { payload.id = parseInt(id); method = 'PUT'; }
             

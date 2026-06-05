@@ -37,6 +37,7 @@
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
         </dependency>
+<<<<<<< HEAD
 
         <!-- Test Dependencies -->
         <dependency>
@@ -51,6 +52,8 @@
             <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
+=======
+>>>>>>> c2f1fc1aa026077de94df7c52ba56b7ee4a8e73e
     </dependencies>
     
     <build>

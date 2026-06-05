@@ -8,8 +8,12 @@ public class CheckDB {
         try (Connection conn = DriverManager.getConnection(dbUrl, user, pass);
              Statement stmt = conn.createStatement()) {
             
-            int deleted = stmt.executeUpdate("DELETE FROM reglas_ruteo WHERE categoria = 'minorista'");
-            System.out.println("Deleted " + deleted + " rows.");
+            try {
+                stmt.executeUpdate("ALTER TABLE vehiculos ADD COLUMN tipo TEXT DEFAULT 'camion mediano'");
+                System.out.println("Columna 'tipo' agregada a tabla vehiculos exitosamente.");
+            } catch (Exception ex) {
+                System.out.println("La columna 'tipo' probablemente ya existe o hubo un error: " + ex.getMessage());
+            }
             
         } catch (Exception e) {
             e.printStackTrace();
