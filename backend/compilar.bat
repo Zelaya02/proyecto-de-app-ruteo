@@ -89,6 +89,10 @@ echo ========================================
 echo ✅ Compilacion exitosa!
 echo ========================================
 echo.
+echo Configurando API keys...
+set ORS_API_KEY=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE2Y2NjNjBiOTNiYjRlMTZiNmY2MDQxZGI3NWYyZTljIiwiaCI6Im11cm11cjY0In0=
+echo ✅ ORS_API_KEY configurada
+echo.
 echo Ejecutando servidor...
 echo ========================================
 echo.

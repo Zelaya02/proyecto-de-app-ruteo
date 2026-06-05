@@ -25,10 +25,10 @@ import com.ruteo.repository.UsuarioRepository;
 public class Main {
     private static final Gson gson = new Gson();
     private static String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db"; // se auto-detecta al inicio
-    private static final String DB_USER = getEnvOrDefault("DB_USER", "postgres");
-    private static final String DB_PASSWORD = getEnvOrDefault("DB_PASSWORD", "Zelaya1103");
+    private static String DB_USER = getEnvOrDefault("DB_USER", "postgres");
+    private static String DB_PASSWORD = getEnvOrDefault("DB_PASSWORD", "Zelaya1103");
     private static final String ORS_KEY = getEnvOrDefault("ORS_API_KEY", "");
-    private static final String FRONTEND_DIR = "../frontend";
+    private static final String FRONTEND_DIR = getEnvOrDefault("FRONTEND_DIR", "../frontend");
 
     // Modelos de Reglas
     static class Regla {
@@ -48,6 +48,161 @@ public class Main {
     private static UsuarioRepository usuarioRepo; // se inicializa después de auto-detectar puerto
     private static final Map<String, Long> activeTokens = new ConcurrentHashMap<>();
     private static final long TOKEN_TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
+
+    /** Parsea DATABASE_URL (formato Render o estandar de heroku) a JDBC */
+    private static void parseDatabaseUrl() {
+        String dbUrlEnv = System.getenv("DATABASE_URL");
+        if (dbUrlEnv == null || dbUrlEnv.isEmpty()) {
+            dbUrlEnv = System.getenv("DB_URL");
+        }
+        if (dbUrlEnv != null && !dbUrlEnv.isEmpty()) {
+            try {
+                if (dbUrlEnv.startsWith("postgres://") || dbUrlEnv.startsWith("postgresql://")) {
+                    String cleanUrl = dbUrlEnv.substring(dbUrlEnv.indexOf("//") + 2);
+                    String userInfo = "";
+                    String hostPortDb = cleanUrl;
+                    if (cleanUrl.contains("@")) {
+                        int atIndex = cleanUrl.indexOf("@");
+                        userInfo = cleanUrl.substring(0, atIndex);
+                        hostPortDb = cleanUrl.substring(atIndex + 1);
+                    }
+                    
+                    if (!userInfo.isEmpty() && userInfo.contains(":")) {
+                        String[] parts = userInfo.split(":", 2);
+                        DB_USER = parts[0];
+                        DB_PASSWORD = parts[1];
+                    }
+                    
+                    DB_URL = "jdbc:postgresql://" + hostPortDb;
+                    System.out.println("✅ DATABASE_URL parseada correctamente.");
+                } else {
+                    DB_URL = dbUrlEnv;
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Error al parsear DATABASE_URL, usando valores por defecto: " + e.getMessage());
+            }
+        } else {
+            DB_URL = detectDbUrl();
+        }
+    }
+
+    /** Inicializa el esquema de la base de datos si las tablas no existen */
+    private static void initializeDatabaseSchema() {
+        System.out.println("Comprobando esquema de base de datos...");
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             Statement stmt = conn.createStatement()) {
+            
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS usuarios (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "username TEXT UNIQUE, " +
+                    "password TEXT, " +
+                    "nombre TEXT, " +
+                    "rol TEXT)");
+            
+            ResultSet rsAdmin = stmt.executeQuery("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'");
+            if (rsAdmin.next() && rsAdmin.getInt(1) == 0) {
+                stmt.executeUpdate("INSERT INTO usuarios (username, password, nombre, rol) VALUES ('admin', 'nexo2025', 'Administrador', 'admin')");
+                System.out.println("✅ Usuario administrador por defecto creado (admin/nexo2025).");
+            }
+            
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS clientes (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "nombre TEXT, " +
+                    "tipo_cliente TEXT, " +
+                    "latitud DOUBLE PRECISION, " +
+                    "longitud DOUBLE PRECISION, " +
+                    "ciudad TEXT, " +
+                    "cadena TEXT, " +
+                    "activo BOOLEAN DEFAULT true, " +
+                    "url_google TEXT)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS reglas_ruteo (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "categoria TEXT UNIQUE, " +
+                    "limite_por_movil INTEGER, " +
+                    "activo BOOLEAN DEFAULT true)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS choferes (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "nombre TEXT, " +
+                    "telefono TEXT, " +
+                    "activo BOOLEAN DEFAULT true)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS vehiculos (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "nombre TEXT, " +
+                    "chapa TEXT, " +
+                    "tipo TEXT DEFAULT 'camion mediano', " +
+                    "activo BOOLEAN DEFAULT true)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS rutas_generadas (" +
+                    "token TEXT PRIMARY KEY, " +
+                    "movil_numero INTEGER, " +
+                    "clientes_json TEXT, " +
+                    "distancia_total DOUBLE PRECISION, " +
+                    "tiempo_estimado INTEGER, " +
+                    "chofer_id INTEGER, " +
+                    "vehiculo_id INTEGER, " +
+                    "chofer_nombre TEXT, " +
+                    "vehiculo_nombre TEXT, " +
+                    "fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS entregas (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "ruta_token TEXT, " +
+                    "cliente_id INTEGER, " +
+                    "estado TEXT DEFAULT 'pendiente', " +
+                    "observacion TEXT, " +
+                    "orden_en_ruta INTEGER, " +
+                    "fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+
+            System.out.println("✅ Esquema de base de datos verificado/creado.");
+            
+            ResultSet rsClientes = stmt.executeQuery("SELECT COUNT(*) FROM clientes");
+            if (rsClientes.next() && rsClientes.getInt(1) == 0) {
+                loadDefaultClients(conn);
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Error al inicializar el esquema de base de datos: " + e.getMessage());
+        }
+    }
+
+    private static void loadDefaultClients(Connection conn) {
+        String[] paths = {"database/import.sql", "import.sql", "../database/import.sql"};
+        File sqlFile = null;
+        for (String p : paths) {
+            File f = new File(p);
+            if (f.exists()) {
+                sqlFile = f;
+                break;
+            }
+        }
+        
+        if (sqlFile == null) {
+            System.out.println("ℹ️ Archivo import.sql no encontrado. No se inicializaron clientes por defecto.");
+            return;
+        }
+
+        System.out.println("Cargando clientes por defecto desde " + sqlFile.getPath() + "...");
+        try (BufferedReader reader = new BufferedReader(new FileReader(sqlFile, StandardCharsets.UTF_8));
+             Statement stmt = conn.createStatement()) {
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null) {
+                if (!line.trim().isEmpty() && !line.startsWith("--") && !line.contains("TRUNCATE")) {
+                    try {
+                        stmt.executeUpdate(line);
+                        count++;
+                    } catch (SQLException e) {
+                        // Ignorar errores individuales (como duplicados)
+                    }
+                }
+            }
+            System.out.println("✅ " + count + " clientes cargados exitosamente.");
+        } catch (Exception e) {
+            System.err.println("⚠️ Error al cargar los clientes por defecto: " + e.getMessage());
+        }
+    }
 
     private static String getEnvOrDefault(String key, String def) {
         String val = System.getenv(key);
@@ -74,7 +229,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         // Auto-detección del puerto de PostgreSQL
-        DB_URL = detectDbUrl();
+        parseDatabaseUrl();
+        initializeDatabaseSchema();
 
         if (System.getenv("DB_PASSWORD") == null || System.getenv("DB_PASSWORD").isEmpty()) {
             System.out.println("⚠️  ADVERTENCIA: Usando contraseña por defecto. Configure DB_PASSWORD como variable de entorno para producción.");
@@ -85,7 +241,9 @@ public class Main {
 
         usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
 
-        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8080), 0);
+        int port = Integer.parseInt(getEnvOrDefault("PORT", "8080"));
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
+        System.out.println("🚀 Servidor iniciado en el puerto: " + port);
 
         // Archivos estaticos
         server.createContext("/", new StaticHandler());
@@ -368,6 +526,7 @@ public class Main {
                                     Cliente siguiente = ordenados.get(j + 1);
                                     try {
                                         // Intentar usar OpenRouteService (Distancia real por carretera)
+                                        System.out.printf("  📍 ORS: %s -> %s ...%n", c.nombre, siguiente.nombre);
                                         RouteService.RouteInfo info = RouteService.getRoute(c.lat, c.lon, siguiente.lat,
                                                 siguiente.lon);
                                         dist = info.distanceKm;
@@ -949,7 +1108,9 @@ public class Main {
         private static final String ORS_API_KEY = ORS_KEY.equals("PONER_AQUI_TU_API_KEY") ? System.getenv("ORS_API_KEY")
                 : ORS_KEY;
         private static final String ORS_BASE_URL = "https://api.openrouteservice.org/v2/directions/driving-car";
-        private static final HttpClient httpClient = HttpClient.newHttpClient();
+        private static final HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(5))
+                .build();
 
         static class RouteInfo {
             double distanceKm;
@@ -973,6 +1134,7 @@ public class Main {
                     ORS_BASE_URL, ORS_API_KEY, startLon, startLat, endLon, endLat);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(java.net.URI.create(url))
+                    .timeout(java.time.Duration.ofSeconds(5))
                     .GET()
                     .header("Accept",
                             "application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8")
@@ -981,6 +1143,8 @@ public class Main {
             if (response.statusCode() != 200) {
                 throw new IOException("OpenRouteService error: " + response.statusCode() + " " + response.body());
             }
+            // Small delay to respect API rate limits (40 req/min on free tier)
+            Thread.sleep(150);
             JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
             JsonObject summary = json.getAsJsonArray("features").get(0).getAsJsonObject()
                     .getAsJsonObject("properties").getAsJsonObject("summary");
