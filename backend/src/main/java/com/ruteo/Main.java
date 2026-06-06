@@ -10,8 +10,6 @@ import java.net.InetSocketAddress;
 import java.sql.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -22,6 +20,7 @@ import java.net.http.HttpResponse;
 import com.ruteo.model.Usuario;
 import com.ruteo.repository.UsuarioRepository;
 
+@SuppressWarnings({ "unchecked", "resource" })
 public class Main {
     private static final Gson gson = new Gson();
     private static String DB_URL = "jdbc:postgresql://localhost:5000/ruteo_db"; // se auto-detecta al inicio
@@ -126,7 +125,9 @@ public class Main {
                     "id SERIAL PRIMARY KEY, " +
                     "nombre TEXT, " +
                     "telefono TEXT, " +
+                    "ci TEXT, " +
                     "activo BOOLEAN DEFAULT true)");
+            try { stmt.executeUpdate("ALTER TABLE choferes ADD COLUMN ci TEXT"); } catch (SQLException e) { /* ignorar si ya existe */ }
 
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS vehiculos (" +
                     "id SERIAL PRIMARY KEY, " +
@@ -241,14 +242,8 @@ public class Main {
 
         usuarioRepo = new UsuarioRepository(DB_URL, DB_USER, DB_PASSWORD);
 
-<<<<<<< HEAD
-        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
-        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
-=======
         int port = Integer.parseInt(getEnvOrDefault("PORT", "8080"));
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
-        System.out.println("🚀 Servidor iniciado en el puerto: " + port);
->>>>>>> c2f1fc1aa026077de94df7c52ba56b7ee4a8e73e
 
         // Archivos estaticos
         server.createContext("/", new StaticHandler());
@@ -280,7 +275,7 @@ public class Main {
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
             if (path.equals("/")) {
-                path = "/index.html";
+                path = "/login.html";
             }
             path = path.replaceAll("\\.\\./", "").replaceAll("\\.\\.", "").replaceAll("//+", "/");
             if (path.contains("..") || path.contains("%") || path.contains(":") || path.contains("~")) {
@@ -1444,6 +1439,7 @@ public class Main {
                         c.put("id", rs.getInt("id"));
                         c.put("nombre", rs.getString("nombre"));
                         c.put("telefono", rs.getString("telefono"));
+                        c.put("ci", rs.getString("ci"));
                         choferes.add(c);
                     }
                     sendResponse(exchange, 200, gson.toJson(choferes));
@@ -1457,12 +1453,14 @@ public class Main {
                     Map<String, Object> req = gson.fromJson(body, Map.class);
                     String nombre = (String) req.get("nombre");
                     String telefono = (String) req.get("telefono");
+                    String ci = req.containsKey("ci") ? (String) req.get("ci") : "";
 
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String sql = "INSERT INTO choferes (nombre, telefono) VALUES (?, ?)";
+                        String sql = "INSERT INTO choferes (nombre, telefono, ci) VALUES (?, ?, ?)";
                         PreparedStatement pstmt = conn.prepareStatement(sql);
                         pstmt.setString(1, nombre);
                         pstmt.setString(2, telefono);
+                        pstmt.setString(3, ci);
                         pstmt.executeUpdate();
                         sendResponse(exchange, 201, "{\"status\":\"ok\"}");
                     }
@@ -1490,12 +1488,14 @@ public class Main {
                     int id = ((Double) req.get("id")).intValue();
                     String nombre = (String) req.get("nombre");
                     String telefono = (String) req.get("telefono");
+                    String ci = req.containsKey("ci") ? (String) req.get("ci") : "";
                     try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                        String sql = "UPDATE choferes SET nombre = ?, telefono = ? WHERE id = ?";
+                        String sql = "UPDATE choferes SET nombre = ?, telefono = ?, ci = ? WHERE id = ?";
                         PreparedStatement pstmt = conn.prepareStatement(sql);
                         pstmt.setString(1, nombre);
                         pstmt.setString(2, telefono);
-                        pstmt.setInt(3, id);
+                        pstmt.setString(3, ci);
+                        pstmt.setInt(4, id);
                         pstmt.executeUpdate();
                         sendResponse(exchange, 200, "{\"status\":\"updated\"}");
                     }

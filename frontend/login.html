@@ -4,134 +4,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXO | Acceso Corporativo</title>
+    <script>
+        if (localStorage.getItem('mivoto_token')) {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+    <title>Mi Voto | Acceso al Sistema de Asambleas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap"
         rel="stylesheet">
     <style>
+        :root {
+            --primary: #0D552C;
+            --primary-dark: #073D1F;
+            --primary-light: #1A7A3A;
+            --accent: #2ECC71;
+            --accent-glow: #27AE60;
+            --gold: #B8860B;
+            --gold-light: #D4A017;
+            --text: #1A1D23;
+            --text-light: #6B7280;
+            --text-white: #F8FAFC;
+            --bg-card: rgba(255, 255, 255, 0.97);
+            --border: rgba(13, 85, 44, 0.15);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --shadow: 0 15px 35px -8px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.18);
+            --input-bg: #F7F9F8;
+            --error-bg: #FEF2F2;
+            --error-text: #DC2626;
+            --error-border: #FECACA;
+            --success-bg: #F0FDF6;
+            --success-text: #0D552C;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #0B2B40;
-            --primary-dark: #071e2c;
-            --primary-light: #1A4B5F;
-            --secondary: #C8A55A;
-            --secondary-dark: #A8863E;
-            --accent: #E8B86B;
-            --card-bg: rgba(18, 28, 36, 0.75);
-            --text: #F5F7FA;
-            --text-muted: #B0C4DE;
-            --border: rgba(200, 165, 90, 0.35);
-            --shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.4);
-            --overlay-color: rgba(0, 0, 0, 0.65);
-            --error-bg: rgba(180, 50, 50, 0.85);
-            --input-bg: rgba(255, 255, 255, 0.08);
-            --focus-glow: rgba(200, 165, 90, 0.4);
-        }
-
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            background: linear-gradient(155deg, #0A4622 0%, #0D552C 30%, #0F5F32 60%, #073D1F 100%);
             position: relative;
-            background: #0a0f1e;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Fondo con GIF animado + capa oscura + fallback */
-        .bg-gif {
+        /* Patrón de fondo geométrico */
+        .bg-pattern {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: url('assets/img/fondologin.gif') center center / cover no-repeat fixed;
-            filter: brightness(0.45) contrast(1.1);
-            z-index: -2;
-            transition: opacity 0.5s;
-        }
-
-        /* Si el GIF falla, se muestra un color sólido oscuro */
-        .bg-fallback {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(145deg, #0B2B40 0%, #071e2c 100%);
-            z-index: -3;
-        }
-
-        body::after {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 20% 40%, rgba(0, 0, 0, 0.5) 0%, var(--overlay-color) 100%);
-            z-index: -1;
-        }
-
-        /* Partículas flotantes */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
+            background-image:
+                radial-gradient(circle at 15% 25%, rgba(46, 204, 113, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 65%, rgba(184, 134, 11, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, rgba(13, 85, 44, 0.15) 0%, transparent 50%);
             z-index: 0;
+            pointer-events: none;
         }
 
-        .particle {
-            position: absolute;
-            background: rgba(200, 165, 90, 0.25);
-            border-radius: 50%;
-            filter: blur(3px);
-            animation: floatParticle 12s infinite ease-in-out;
-        }
-
-        @keyframes floatParticle {
-            0% {
-                transform: translateY(0) translateX(0) scale(1);
-                opacity: 0;
-            }
-
-            20% {
-                opacity: 0.6;
-            }
-
-            80% {
-                opacity: 0.3;
-            }
-
-            100% {
-                transform: translateY(-100px) translateX(40px) scale(0.5);
-                opacity: 0;
-            }
+        /* Líneas sutiles decorativas */
+        .bg-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                linear-gradient(0deg, transparent 49.5%, rgba(255, 255, 255, 0.015) 49.5%, rgba(255, 255, 255, 0.015) 50.5%, transparent 50.5%),
+                linear-gradient(90deg, transparent 49.5%, rgba(255, 255, 255, 0.015) 49.5%, rgba(255, 255, 255, 0.015) 50.5%, transparent 50.5%);
+            background-size: 80px 80px;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.6;
         }
 
         .login-container {
             width: 100%;
-            max-width: 480px;
-            padding: 20px;
+            max-width: 470px;
+            padding: 24px;
             position: relative;
             z-index: 2;
-            animation: fadeSlideUp 0.8s cubic-bezier(0.15, 0.85, 0.35, 1.05) forwards;
+            animation: fadeSlideUp 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
         }
 
         @keyframes fadeSlideUp {
             from {
                 opacity: 0;
-                transform: translateY(45px);
+                transform: translateY(35px);
             }
 
             to {
@@ -141,193 +111,120 @@
         }
 
         .login-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 42px;
-            padding: 52px 40px;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 48px 40px 40px;
+            box-shadow: var(--shadow-lg);
             text-align: center;
-            transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1), box-shadow 0.4s ease;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .login-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 30px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.25);
         }
 
-        .brand-header {
-            margin-bottom: 38px;
-            animation: gentlePulse 2s infinite alternate;
-        }
-
-        @keyframes gentlePulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.95;
-            }
-
-            100% {
-                transform: scale(1.02);
-                opacity: 1;
-            }
-        }
-
-        .logo {
-            height: 90px;
-            margin-bottom: 20px;
-            filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.3));
-            transition: transform 0.3s ease, filter 0.3s;
-        }
-
-        .logo:hover {
-            transform: scale(1.06) rotate(1deg);
-            filter: drop-shadow(0 10px 18px rgba(200, 165, 90, 0.4));
-        }
-
-        .login-card h1 {
-            font-size: 32px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #FFF, var(--secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 8px;
-        }
-
-        .login-card p {
-            color: var(--text-muted);
-            font-size: 15px;
-            font-weight: 500;
-        }
-
-        .form-group {
-            margin-bottom: 28px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 700;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--secondary);
-            padding-left: 6px;
-        }
-
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-            transition: all 0.2s;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            left: 20px;
-            color: var(--text-muted);
-            font-size: 18px;
-            transition: color 0.25s, transform 0.2s;
-            z-index: 1;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 16px 18px 16px 55px;
-            background: var(--input-bg);
-            border: 1.5px solid var(--border);
-            border-radius: 50px;
-            font-size: 15px;
-            font-family: 'Inter', monospace;
-            font-weight: 500;
-            color: var(--text);
-            transition: all 0.3s ease;
-            backdrop-filter: blur(4px);
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--secondary);
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 0 0 4px var(--focus-glow);
-            transform: scale(1.01);
-        }
-
-        .form-group input:focus+i {
-            color: var(--secondary);
-            transform: scale(1.1);
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(95deg, var(--primary), var(--primary-light));
-            border: none;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 14px;
-            margin-top: 12px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn-login::before {
+        /* Borde superior decorativo */
+        .login-card::before {
             content: '';
             position: absolute;
             top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.6s;
+            left: 24px;
+            right: 24px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent), var(--gold-light), var(--accent));
+            border-radius: 0 0 12px 12px;
+            opacity: 0.8;
         }
 
-        .btn-login:hover::before {
-            left: 100%;
+        .brand-header {
+            margin-bottom: 40px;
         }
 
-        .btn-login:hover {
-            transform: translateY(-3px);
-            filter: brightness(1.08);
-            box-shadow: 0 14px 24px -6px rgba(0, 0, 0, 0.4);
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px -8px rgba(13, 85, 44, 0.35);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn-login:active {
-            transform: translateY(1px);
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.15) 50%, transparent 60%);
+            transition: transform 0.4s;
         }
 
-        .btn-login:disabled {
-            opacity: 0.7;
-            transform: none;
-            cursor: not-allowed;
+        .logo-icon:hover {
+            transform: translateY(-3px) rotate(-2deg);
+            box-shadow: 0 14px 30px -6px rgba(13, 85, 44, 0.45);
+        }
+
+        .logo-icon:hover::after {
+            transform: translateX(100%);
+        }
+
+        .logo-icon i {
+            font-size: 36px;
+            color: white;
+            z-index: 1;
+        }
+
+        .login-card h1 {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .login-card h1 .accent {
+            color: var(--accent-glow);
+        }
+
+        .login-card .subtitle {
+            color: var(--text-light);
+            font-size: 14.5px;
+            font-weight: 500;
+            letter-spacing: 0.2px;
         }
 
         .error-msg {
             background: var(--error-bg);
-            backdrop-filter: blur(8px);
-            color: white;
+            color: var(--error-text);
             padding: 14px 18px;
-            border-radius: 60px;
+            border-radius: 14px;
             margin-bottom: 28px;
             display: none;
-            font-size: 13px;
+            font-size: 13.5px;
             font-weight: 600;
             text-align: center;
-            border-left: 5px solid #ffb3b3;
+            border: 1px solid var(--error-border);
             animation: shakeError 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .error-msg.visible {
+            display: flex;
+        }
+
+        .error-msg i {
+            font-size: 16px;
+            color: #EF4444;
         }
 
         @keyframes shakeError {
@@ -337,31 +234,168 @@
                 transform: translateX(0);
             }
 
-            20% {
-                transform: translateX(-8px);
+            25% {
+                transform: translateX(-6px);
             }
 
-            40% {
-                transform: translateX(8px);
+            50% {
+                transform: translateX(6px);
             }
 
-            60% {
-                transform: translateX(-4px);
-            }
-
-            80% {
-                transform: translateX(4px);
+            75% {
+                transform: translateX(-3px);
             }
         }
 
-        .loader {
+        .form-group {
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 9px;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-light);
+            padding-left: 4px;
+            transition: color 0.2s;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 18px;
+            color: #9CA3AF;
+            font-size: 17px;
+            transition: all 0.25s ease;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px 18px 15px 50px;
+            background: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 14px;
+            font-size: 14.5px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            color: var(--text);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
+            letter-spacing: 0.2px;
+        }
+
+        .form-group input::placeholder {
+            color: #B0B8C1;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input:hover {
+            background: #F0F3F1;
+            border-color: rgba(13, 85, 44, 0.2);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: #FFFFFF;
+            box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+            transform: translateY(-1px);
+        }
+
+        .form-group input:focus+i {
+            color: var(--accent-glow);
+            transform: scale(1.08);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #9CA3AF;
+            cursor: pointer;
+            padding: 8px;
+            transition: color 0.2s;
+            z-index: 1;
+        }
+
+        .password-toggle:hover {
+            color: var(--accent-glow);
+        }
+
+        .password-toggle i {
+            font-size: 16px;
+            position: static;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 20px -8px rgba(13, 85, 44, 0.4);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -6px rgba(13, 85, 44, 0.5);
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px -4px rgba(13, 85, 44, 0.3);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.75;
+            transform: none;
+            cursor: wait;
+            pointer-events: none;
+        }
+
+        .btn-login .loader {
             display: none;
-            width: 22px;
-            height: 22px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            width: 20px;
+            height: 20px;
+            border: 2.5px solid rgba(255, 255, 255, 0.35);
             border-radius: 50%;
-            border-top-color: var(--secondary);
+            border-top-color: white;
             animation: spin 0.7s linear infinite;
+        }
+
+        .btn-login.loading .loader {
+            display: inline-block;
+        }
+
+        .btn-login.loading .btn-text {
+            opacity: 0.9;
         }
 
         @keyframes spin {
@@ -371,92 +405,134 @@
         }
 
         .footer-info {
-            margin-top: 40px;
-            font-size: 12px;
+            margin-top: 36px;
+            font-size: 12.5px;
             font-weight: 500;
-            color: var(--text-muted);
+            color: #9CA3AF;
             text-align: center;
-            border-top: 1px solid var(--border);
-            padding-top: 24px;
-            transition: color 0.2s;
+            border-top: 1px solid #E5E7EB;
+            padding-top: 22px;
+            letter-spacing: 0.2px;
         }
 
         .footer-info a {
-            color: var(--secondary);
+            color: var(--accent-glow);
             text-decoration: none;
             font-weight: 700;
-            transition: all 0.2s;
+            transition: color 0.2s;
             position: relative;
         }
 
-        .footer-info a::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 1px;
-            background: var(--secondary);
-            transition: width 0.3s;
+        .footer-info a:hover {
+            color: var(--primary);
         }
 
-        .footer-info a:hover::after {
-            width: 100%;
+        .footer-info .separator {
+            margin: 0 12px;
+            color: #D1D5DB;
+        }
+
+        .watermark {
+            position: fixed;
+            bottom: 20px;
+            right: 28px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.25);
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            z-index: 1;
+            pointer-events: none;
         }
 
         @media (max-width: 520px) {
             .login-card {
-                padding: 38px 24px;
+                padding: 36px 24px 28px;
+                border-radius: 20px;
             }
 
-            .logo {
-                height: 75px;
+            .login-card::before {
+                left: 16px;
+                right: 16px;
+            }
+
+            .logo-icon {
+                width: 68px;
+                height: 68px;
+                border-radius: 18px;
+            }
+
+            .logo-icon i {
+                font-size: 30px;
             }
 
             .login-card h1 {
-                font-size: 28px;
+                font-size: 26px;
+            }
+
+            .form-group input {
+                padding: 14px 16px 14px 46px;
+                font-size: 14px;
+            }
+
+            .btn-login {
+                padding: 14px;
+                font-size: 15px;
             }
         }
 
-        @keyframes ripple {
-            0% {
-                transform: scale(0);
-                opacity: 0.5;
+        @media (max-width: 380px) {
+            .login-container {
+                padding: 16px;
             }
 
-            100% {
-                transform: scale(4);
-                opacity: 0;
+            .login-card {
+                padding: 30px 18px 24px;
+            }
+
+            .login-card h1 {
+                font-size: 23px;
+            }
+
+            .footer-info {
+                font-size: 11px;
+            }
+
+            .footer-info .separator {
+                margin: 0 8px;
             }
         }
     </style>
 </head>
 
 <body>
-    <!-- Fondo GIF (fallback sólido si no carga) -->
-    <div class="bg-fallback"></div>
-    <div class="bg-gif" id="bgGif"></div>
-
-    <div class="particles" id="particlesContainer"></div>
+    <!-- Patrón de fondo -->
+    <div class="bg-pattern"></div>
+    <div class="bg-lines"></div>
 
     <div class="login-container">
         <div class="login-card">
+            <!-- Cabecera de marca -->
             <div class="brand-header">
-                <img src="assets/img/LogoNexo.png" alt="NEXO" class="logo">
-                <h1>Bienvenido de nuevo</h1>
-                <p>Acceso seguro a la plataforma de ruteo</p>
+                <div class="logo-icon">
+                    <i class="fas fa-vote-yea"></i>
+                </div>
+                <h1>Mi <span class="accent">Voto</span></h1>
+                <p class="subtitle">Sistema de Gestión de Asambleas Cooperativas</p>
             </div>
 
+            <!-- Mensaje de error -->
             <div id="errorMsg" class="error-msg">
-                <i class="fas fa-shield-alt"></i> Usuario o clave incorrectos
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Usuario o contraseña incorrectos</span>
             </div>
 
-            <form id="loginForm">
+            <!-- Formulario de login -->
+            <form id="loginForm" autocomplete="off">
                 <div class="form-group">
-                    <label for="username">Usuario corporativo</label>
+                    <label for="username">Usuario</label>
                     <div class="input-wrapper">
-                        <i class="far fa-user-circle"></i>
-                        <input type="text" id="username" placeholder="usuario@nexo.com" autocomplete="off" required>
+                        <i class="far fa-user"></i>
+                        <input type="text" id="username" placeholder="Ingrese su usuario" required autocomplete="off">
                     </div>
                 </div>
 
@@ -464,112 +540,114 @@
                     <label for="password">Contraseña</label>
                     <div class="input-wrapper">
                         <i class="fas fa-lock"></i>
-                        <input type="password" id="password" placeholder="••••••••" required>
+                        <input type="password" id="password" placeholder="••••••••" required autocomplete="off">
+                        <button type="button" class="password-toggle" id="togglePassword"
+                            aria-label="Mostrar contraseña">
+                            <i class="far fa-eye"></i>
+                        </button>
                     </div>
                 </div>
 
                 <button type="submit" class="btn-login" id="btnLogin">
-                    <span id="btnText">Ingresar al sistema</span>
-                    <div id="loader" class="loader"></div>
+                    <span class="btn-text" id="btnText">Iniciar Sesión</span>
+                    <div class="loader" id="loader"></div>
                 </button>
             </form>
 
+            <!-- Pie -->
             <div class="footer-info">
-                NEXO Routing Intelligence &copy; 2026<br>
-                <a href="https://wa.me/595992267868" target="_blank">Soporte técnico</a> &bull; <a href="#"></a>
+                Mi Voto <span class="separator">&copy;</span> 2026
+                <span class="separator">|</span>
+                <a href="#" target="_blank">Soporte Técnico</a>
             </div>
         </div>
     </div>
 
+    <!-- Marca de agua -->
+    <div class="watermark">MI VOTO &mdash; ASAMBLEAS</div>
+
     <script>
-        // Verificar si el GIF carga, si no, ocultar la capa para que se vea el fallback
-        const bgGif = document.getElementById('bgGif');
-        const imgTest = new Image();
-        imgTest.src = 'assets/img/fondologin.gif';
-        imgTest.onload = () => {
-            // El GIF existe, no hacer nada
-            bgGif.style.opacity = '1';
-        };
-        imgTest.onerror = () => {
-            // Falló la carga, ocultar la capa del GIF (se verá el fondo sólido)
-            bgGif.style.display = 'none';
-            console.warn('No se pudo cargar el GIF de fondo. Verifica la ruta assets/img/fondologin.gif');
-        };
+        // ========================
+        // Mostrar/ocultar contraseña
+        // ========================
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
 
-        // Generar partículas flotantes
-        function createParticles() {
-            const container = document.getElementById('particlesContainer');
-            for (let i = 0; i < 45; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                const size = Math.random() * 8 + 2;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                particle.style.left = `${Math.random() * 100}%`;
-                particle.style.top = `${Math.random() * 100}%`;
-                particle.style.animationDelay = `${Math.random() * 10}s`;
-                particle.style.animationDuration = `${8 + Math.random() * 10}s`;
-                container.appendChild(particle);
-            }
-        }
-        createParticles();
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            const icon = togglePassword.querySelector('i');
+            icon.className = type === 'password' ? 'far fa-eye' : 'far fa-eye-slash';
+        });
 
-        // Modo oscuro heredado (opcional)
-        (function initDarkMode() {
-            const darkMode = localStorage.getItem('darkMode');
-            if (darkMode === 'enabled') {
-                document.body.classList.add('dark-mode');
-            }
-        })();
-
-        // DOM Elements
+        // ========================
+        // Elementos del DOM
+        // ========================
         const form = document.getElementById('loginForm');
         const btnLogin = document.getElementById('btnLogin');
         const btnText = document.getElementById('btnText');
         const loader = document.getElementById('loader');
         const errorDiv = document.getElementById('errorMsg');
         const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
+        const passwordInputField = document.getElementById('password');
 
-        // Ripple effect en botón
-        btnLogin.addEventListener('click', (e) => {
-            if (!btnLogin.disabled) {
-                const rect = btnLogin.getBoundingClientRect();
-                const ripple = document.createElement('span');
-                const diameter = Math.max(rect.width, rect.height);
-                const radius = diameter / 2;
-                ripple.style.width = ripple.style.height = `${diameter}px`;
-                ripple.style.position = 'absolute';
-                ripple.style.left = `${e.clientX - rect.left - radius}px`;
-                ripple.style.top = `${e.clientY - rect.top - radius}px`;
-                ripple.style.background = 'rgba(255,255,255,0.3)';
-                ripple.style.borderRadius = '50%';
-                ripple.style.transform = 'scale(0)';
-                ripple.style.transition = 'transform 0.5s ease-out';
-                ripple.style.pointerEvents = 'none';
-                btnLogin.style.position = 'relative';
-                btnLogin.style.overflow = 'hidden';
-                btnLogin.appendChild(ripple);
-                setTimeout(() => {
-                    ripple.style.transform = 'scale(4)';
-                    setTimeout(() => ripple.remove(), 500);
-                }, 10);
+        // ========================
+        // Efecto de partículas (opcional, más ligero que antes)
+        // ========================
+        function createParticles() {
+            const container = document.createElement('div');
+            container.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                pointer-events: none; z-index: 1;
+            `;
+            document.body.appendChild(container);
+
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                const size = Math.random() * 3 + 1;
+                particle.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background: rgba(46, 204, 113, 0.3);
+                    border-radius: 50%;
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    animation: floatParticle ${6 + Math.random() * 8}s infinite ease-in-out;
+                    animation-delay: ${Math.random() * 10}s;
+                `;
+                container.appendChild(particle);
             }
-        });
 
-        // Envío del formulario
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes floatParticle {
+                    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+                    25% { transform: translate(20px, -30px) scale(1.5); opacity: 0.5; }
+                    50% { transform: translate(-15px, -60px) scale(0.8); opacity: 0.3; }
+                    75% { transform: translate(25px, -40px) scale(1.2); opacity: 0.4; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        createParticles();
+
+        // ========================
+        // Manejo del formulario
+        // ========================
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            btnText.textContent = 'Autenticando...';
-            loader.style.display = 'block';
+            // Mostrar estado de carga
+            btnLogin.classList.add('loading');
+            btnText.textContent = 'Verificando credenciales...';
             btnLogin.disabled = true;
-            errorDiv.style.display = 'none';
+            errorDiv.classList.remove('visible');
 
             const username = usernameInput.value.trim();
-            const password = passwordInput.value.trim();
+            const password = passwordInputField.value.trim();
 
-            // Codificación Base64 con UTF-8 (igual que antes)
+            // Codificación Base64 con UTF-8
             const utf8Bytes = new TextEncoder().encode(JSON.stringify({ username, password }));
             const authPayload = btoa(String.fromCharCode(...utf8Bytes));
 
@@ -583,29 +661,52 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    localStorage.setItem('nexo_user', data.usuario);
-                    localStorage.setItem('nexo_token', data.token);
+                    // Guardar sesión
+                    localStorage.setItem('mivoto_user', data.usuario);
+                    localStorage.setItem('mivoto_token', data.token);
 
-                    btnText.textContent = 'Acceso concedido';
-                    btnLogin.style.background = 'linear-gradient(95deg, #2E7D32, #1B5E20)';
-                    btnLogin.style.filter = 'brightness(1.1)';
+                    // Feedback visual de éxito
+                    btnLogin.style.background = 'linear-gradient(135deg, #0D552C, #27AE60)';
+                    btnText.textContent = '✓ Acceso Concedido';
+                    btnLogin.classList.remove('loading');
 
+                    // Redirigir después de breve pausa
                     setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 800);
+                        window.location.href = 'dashboard.html';
+                    }, 600);
                 } else {
                     throw new Error(data.message || 'Credenciales inválidas');
                 }
             } catch (error) {
-                console.error(error);
-                errorDiv.style.display = 'block';
-                passwordInput.value = '';
-                btnText.textContent = 'Ingresar al sistema';
+                console.error('Error de autenticación:', error);
+
+                // Mostrar error
+                errorDiv.classList.add('visible');
+                passwordInputField.value = '';
+                passwordInputField.focus();
+
+                // Resetear botón
+                btnText.textContent = 'Iniciar Sesión';
                 btnLogin.style.background = '';
-            } finally {
-                loader.style.display = 'none';
+                btnLogin.classList.remove('loading');
                 btnLogin.disabled = false;
+
+                // Ocultar error después de 5 segundos
+                setTimeout(() => {
+                    errorDiv.classList.remove('visible');
+                }, 5000);
             }
+        });
+
+        // ========================
+        // Limpiar error al escribir
+        // ========================
+        [usernameInput, passwordInputField].forEach(input => {
+            input.addEventListener('input', () => {
+                if (errorDiv.classList.contains('visible')) {
+                    errorDiv.classList.remove('visible');
+                }
+            });
         });
     </script>
 </body>

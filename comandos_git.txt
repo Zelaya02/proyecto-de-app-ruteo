@@ -1,0 +1,36 @@
+=== Comandos Básicos de Git para App de Ruteo ===
+
+1. Cambiar entre ramas (main y desarrollo):
+Para ir a la rama principal:
+git checkout main
+
+Para ir a la rama de desarrollo:
+git checkout desarrollo
+
+2. Actualizar tu entorno local con cambios de la nube (Pull):
+Asegúrate de estar en la rama que quieres actualizar y ejecuta:
+git pull origin main
+(o 'git pull origin desarrollo' si estás en la rama de desarrollo)
+
+3. Subir tus cambios a la nube (Push):
+Paso 1: Agregar todos los archivos modificados
+git add .
+
+Paso 2: Guardar los cambios con un mensaje
+git commit -m "Escribe aquí lo que cambiaste"
+
+Paso 3: Subir los cambios a la rama en la que estás trabajando
+git push origin main
+(o 'git push origin desarrollo' si estás trabajando en desarrollo)
+
+4. Ver en qué rama estás actualmente y el estado de tus archivos:
+git status
+
+# Cambias a la rama principal
+git checkout main
+
+# Actualizas la rama main por si alguien más (o tú mismo desde otro lugar) subió cambios
+git pull origin main
+
+# Fusionas lo que hiciste en desarrollo hacia main
+git merge desarrollo
